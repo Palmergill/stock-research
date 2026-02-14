@@ -148,29 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Load TSLA by default on homepage
-    console.log('DOM ready, loading TSLA...');
-    tickerInput.value = 'TSLA';
-    empty.classList.add('hidden');
-    loading.classList.remove('hidden');
-    
-    // Load with small delay
-    setTimeout(async () => {
-        try {
-            await loadStock('TSLA');
-        } catch (err) {
-            console.error('Failed to load TSLA:', err);
-            loading.classList.add('hidden');
-            error.classList.remove('hidden');
-            if (errorMessage) {
-                errorMessage.textContent = err.message || 'Failed to load data';
-            }
-            // Show empty state again on error
-            empty.classList.remove('hidden');
-        }
-    }, 100);
-    
-    // Refresh button handler
+    // Refresh button handler - MOVED: auto-load at end of file
     const refreshBtn = document.getElementById('refreshBtn');
     if (refreshBtn) {
         refreshBtn.addEventListener('click', async () => {
@@ -799,4 +777,30 @@ function drawPriceChart(data) {
         ctx.fillText(`${changeSymbol}${change.toFixed(1)}% (8Q)`, padding.left + 110, 27);
     }
 }
+
+    // ============================================
+    // AUTO-LOAD TSLA ON HOMEPAGE (moved to end to ensure all functions are defined)
+    // ============================================
+    console.log('Initializing auto-load for TSLA...');
+    tickerInput.value = 'TSLA';
+    empty.classList.add('hidden');
+    loading.classList.remove('hidden');
+    
+    // Small delay to ensure everything is ready
+    setTimeout(async () => {
+        try {
+            console.log('Auto-loading TSLA...');
+            await loadStock('TSLA');
+            console.log('TSLA loaded successfully');
+        } catch (err) {
+            console.error('Failed to load TSLA:', err);
+            loading.classList.add('hidden');
+            error.classList.remove('hidden');
+            if (errorMessage) {
+                errorMessage.textContent = err.message || 'Failed to load data';
+            }
+            // Show empty state again on error
+            empty.classList.remove('hidden');
+        }
+    }, 100);
 });

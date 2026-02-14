@@ -45,7 +45,7 @@ class PolygonClient:
                 "ticker": ticker,
                 "market_cap": details.get("market_cap"),
                 "current_price": price_data.get("close"),
-                "pe_ratio": self._calculate_pe(details, price_data),
+                "pe_ratio": self._calculate_pe(details, price_data, financials),
                 "price_52w_high": year_high_low.get("high"),
                 "price_52w_low": year_high_low.get("low"),
                 "profit_margin": self._extract_metric(financials, "profit_margin"),
@@ -172,16 +172,41 @@ class PolygonClient:
         
         return earnings
     
-    def _calculate_pe(self, details: Dict, price_data: Dict) -> Optional[float]:
-        """Calculate P/E ratio from price and earnings"""
+    def _calculate_pe(self, details: Dict, price_data: Dict, financials: List[Dict]) -> Optional[float]:
+        """Calculate P/E ratio from price and earnings (TTM)"""
         try:
             price = price_data.get("close")
-            # Use basic EPS from details if available
+            if not price:
+                return None
+            
+            # Try to get EPS from ticker details first
             eps = details.get("eps") or details.get("earnings_per_share")
-            if price and eps and eps > 0:
-                return price / eps
-        except:
-            pass
+            if eps and eps > 0:
+                return round(price / eps, 2)
+            
+            # Calculate TTM EPS from financials
+            if financials and len(financials) >= 4:
+                total_eps = 0
+                quarters_with_eps = 0
+                
+                for fin in financials[:4]:  # Last 4 quarters
+                    fin_data = fin.get("financials", {})
+                    income = fin_data.get("income_statement", {})
+                    balance = fin_data.get("balance_sheet", {})
+                    
+                    net_income = income.get("net_income_loss", {}).get("value")
+                    shares = balance.get("shares", {}).get("value")
+                    
+                    if net_income and shares and shares > 0:
+                        quarterly_eps = net_income / shares
+                        total_eps += quarterly_eps
+                        quarters_with_eps += 1
+                
+                if quarters_with_eps > 0 and total_eps > 0:
+                    return round(price / total_eps, 2)
+                    
+        except Exception as e:
+            logger.warning(f"Could not calculate P/E: {e}")
         return None
     
     def _extract_metric(self, financials: List[Dict], metric_name: str) -> Optional[float]:
