@@ -97,66 +97,76 @@ class YFinanceClient:
         """Save fallback API data (Alpha Vantage or Finnhub) to database"""
         logger.info(f"Saving {source} data for {ticker}")
         
-        # Clear old data - commit immediately to avoid conflicts
+        # Check if data was already saved by another concurrent request
+        existing = db.query(StockSummary).filter(StockSummary.ticker == ticker).first()
+        if existing:
+            logger.info(f"Data for {ticker} already exists (saved by concurrent request), using cached")
+            earnings = db.query(EarningsRecord).filter(
+                EarningsRecord.ticker == ticker
+            ).order_by(EarningsRecord.fiscal_date.desc()).all()
+            return self._format_response(ticker, existing, earnings)
+        
+        # Create summary and earnings in a single transaction
         try:
-            db.query(StockSummary).filter(StockSummary.ticker == ticker).delete(synchronize_session=False)
-            db.query(EarningsRecord).filter(EarningsRecord.ticker == ticker).delete(synchronize_session=False)
-            db.commit()
-        except:
-            db.rollback()
-            raise
-        
-        # Create summary
-        summary = StockSummary(
-            ticker=ticker,
-            name=data["name"],
-            market_cap=data.get("market_cap"),
-            pe_ratio=data.get("pe_ratio"),
-            next_earnings_date=data.get("next_earnings_date"),
-            profit_margin=data.get("profit_margin"),
-            operating_margin=data.get("operating_margin"),
-            roe=data.get("roe"),
-            debt_to_equity=data.get("debt_to_equity"),
-            dividend_yield=data.get("dividend_yield"),
-            beta=data.get("beta"),
-            price_52w_high=data.get("price_52w_high"),
-            price_52w_low=data.get("price_52w_low"),
-            current_price=data.get("current_price")
-        )
-        db.add(summary)
-        
-        # Create placeholder earnings (fallback APIs don't have historical earnings in free tier)
-        # Generate 8 quarters of synthetic earnings based on current data
-        now = datetime.utcnow()
-        for i in range(8):
-            quarter_date = now - timedelta(days=90 * (i + 1))
-            quarter_end = self._get_quarter_end(quarter_date)
-            
-            # Estimate EPS from P/E and price
-            price = data.get("current_price") or 100
-            pe = data.get("pe_ratio") or 20
-            estimated_eps = price / pe if pe and pe > 0 else 1.0
-            
-            # Add some variance
-            variance = 1 + random.uniform(-0.2, 0.2)
-            reported_eps = round(estimated_eps * variance * (8-i)/8, 2)
-            
-            record = EarningsRecord(
+            summary = StockSummary(
                 ticker=ticker,
-                fiscal_date=quarter_end.date(),
-                period=self._get_period(quarter_end),
-                reported_eps=reported_eps,
-                estimated_eps=round(reported_eps * 0.95, 2),
-                surprise_pct=round((reported_eps - reported_eps*0.95)/(reported_eps*0.95)*100, 2),
-                revenue=None,  # Not available in free tier
-                free_cash_flow=None,
+                name=data["name"],
+                market_cap=data.get("market_cap"),
                 pe_ratio=data.get("pe_ratio"),
-                price=price * (1 + random.uniform(-0.15, 0.15))
+                next_earnings_date=data.get("next_earnings_date"),
+                profit_margin=data.get("profit_margin"),
+                operating_margin=data.get("operating_margin"),
+                roe=data.get("roe"),
+                debt_to_equity=data.get("debt_to_equity"),
+                dividend_yield=data.get("dividend_yield"),
+                beta=data.get("beta"),
+                price_52w_high=data.get("price_52w_high"),
+                price_52w_low=data.get("price_52w_low"),
+                current_price=data.get("current_price")
             )
-            db.add(record)
-        
-        db.commit()
-        db.refresh(summary)
+            db.add(summary)
+            
+            # Create placeholder earnings (fallback APIs don't have historical earnings in free tier)
+            now = datetime.utcnow()
+            for i in range(8):
+                quarter_date = now - timedelta(days=90 * (i + 1))
+                quarter_end = self._get_quarter_end(quarter_date)
+                
+                price = data.get("current_price") or 100
+                pe = data.get("pe_ratio") or 20
+                estimated_eps = price / pe if pe and pe > 0 else 1.0
+                
+                variance = 1 + random.uniform(-0.2, 0.2)
+                reported_eps = round(estimated_eps * variance * (8-i)/8, 2)
+                
+                record = EarningsRecord(
+                    ticker=ticker,
+                    fiscal_date=quarter_end.date(),
+                    period=self._get_period(quarter_end),
+                    reported_eps=reported_eps,
+                    estimated_eps=round(reported_eps * 0.95, 2),
+                    surprise_pct=round((reported_eps - reported_eps*0.95)/(reported_eps*0.95)*100, 2),
+                    revenue=None,
+                    free_cash_flow=None,
+                    pe_ratio=data.get("pe_ratio"),
+                    price=price * (1 + random.uniform(-0.15, 0.15))
+                )
+                db.add(record)
+            
+            db.commit()
+            db.refresh(summary)
+            
+        except Exception as e:
+            db.rollback()
+            # Check if another request saved it while we were working
+            existing = db.query(StockSummary).filter(StockSummary.ticker == ticker).first()
+            if existing:
+                logger.info(f"Data for {ticker} was saved by another request, using that")
+                earnings = db.query(EarningsRecord).filter(
+                    EarningsRecord.ticker == ticker
+                ).order_by(EarningsRecord.fiscal_date.desc()).all()
+                return self._format_response(ticker, existing, earnings)
+            raise
         
         earnings = db.query(EarningsRecord).filter(
             EarningsRecord.ticker == ticker
@@ -166,34 +176,32 @@ class YFinanceClient:
     
     def _fetch_and_cache(self, ticker: str, db: Session) -> dict:
         try:
+            # Check if another request already saved this while we were waiting
+            existing = db.query(StockSummary).filter(StockSummary.ticker == ticker).first()
+            if existing and self._is_cache_fresh(existing.fetched_at):
+                logger.info(f"Data for {ticker} already cached by another request")
+                earnings = db.query(EarningsRecord).filter(
+                    EarningsRecord.ticker == ticker
+                ).order_by(EarningsRecord.fiscal_date.desc()).all()
+                return self._format_response(ticker, existing, earnings)
+            
             # Rate limit before making request
             self._rate_limit()
             
             stock = yf.Ticker(ticker)
             info = stock.info
             
-            # Check if we got valid data
             if not info or info.get('regularMarketPrice') is None:
                 raise ValueError(f"No data found for ticker {ticker}")
             
-            # Get earnings dates
             earnings_df = stock.earnings_dates
-            
-            # Get quarterly income statement for revenue
             quarterly_income = stock.quarterly_income_stmt
-            
-            # Get quarterly cash flow for free cash flow
             quarterly_cashflow = stock.quarterly_cashflow
-            
-            # Get price history
             hist = stock.history(period="2y")
             
-            # Extract earnings data with price and revenue
             earnings_records = self._parse_earnings(
                 ticker, earnings_df, quarterly_income, quarterly_cashflow, hist, db
             )
-            
-            # Extract summary with all metrics
             summary = self._parse_summary(ticker, info, db)
             
             return self._format_response(ticker, summary, earnings_records)
