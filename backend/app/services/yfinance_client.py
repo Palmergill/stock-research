@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 from typing import Optional, List
 from sqlalchemy.orm import Session
 from app.database import EarningsRecord, StockSummary
-from app.services.mock_client import mock_client
 from app.services.alpha_vantage_client import alpha_vantage_client
 from app.services.finnhub_client import finnhub_client
 import logging
@@ -51,47 +50,51 @@ class YFinanceClient:
             
             return self._format_response(ticker, cached_summary, cached_earnings)
         
-        # Try multiple data sources in order - FINNHUB IS PRIMARY
+        # Try multiple data sources in order - NO MOCK DATA
         errors = []
         
         # Source 1: Finnhub (60 calls/min free) - PRIMARY
         if finnhub_client.is_configured():
             try:
-                logger.info(f"[Source 1/4] Trying Finnhub (primary) for {ticker}")
+                logger.info(f"[Source 1/3] Trying Finnhub (primary) for {ticker}")
                 fh_data = finnhub_client.get_stock_data(ticker)
                 if fh_data:
                     return self._save_fallback_data(ticker, fh_data, db, "Finnhub")
+                else:
+                    errors.append("Finnhub: No data returned")
             except Exception as e:
-                errors.append(f"Finnhub: {str(e)[:50]}")
+                errors.append(f"Finnhub: {str(e)[:100]}")
                 logger.warning(f"Finnhub failed: {e}")
         else:
-            logger.info("Finnhub not configured (no API key)")
+            errors.append("Finnhub: API key not configured")
         
         # Source 2: Yahoo Finance (yfinance) - fallback
         try:
-            logger.info(f"[Source 2/4] Trying Yahoo Finance for {ticker}")
+            logger.info(f"[Source 2/3] Trying Yahoo Finance for {ticker}")
             return self._fetch_and_cache(ticker, db)
         except Exception as e:
-            errors.append(f"Yahoo: {str(e)[:50]}")
+            errors.append(f"Yahoo Finance: {str(e)[:100]}")
             logger.warning(f"Yahoo Finance failed: {e}")
         
         # Source 3: Alpha Vantage (5 calls/min free)
         if alpha_vantage_client.is_configured():
             try:
-                logger.info(f"[Source 3/4] Trying Alpha Vantage for {ticker}")
+                logger.info(f"[Source 3/3] Trying Alpha Vantage for {ticker}")
                 av_data = alpha_vantage_client.get_stock_data(ticker)
                 if av_data:
                     return self._save_fallback_data(ticker, av_data, db, "AlphaVantage")
+                else:
+                    errors.append("Alpha Vantage: No data returned")
             except Exception as e:
-                errors.append(f"AlphaVantage: {str(e)[:50]}")
+                errors.append(f"Alpha Vantage: {str(e)[:100]}")
                 logger.warning(f"Alpha Vantage failed: {e}")
         else:
-            logger.info("Alpha Vantage not configured (no API key)")
+            errors.append("Alpha Vantage: API key not configured")
         
-        # Source 4: Mock data (always works)
-        logger.info(f"[Source 4/4] Using mock data for {ticker}")
-        logger.warning(f"All real data sources failed: {'; '.join(errors)}")
-        return mock_client.get_stock_data(ticker, db)
+        # No mock data - raise error with details
+        error_msg = f"Could not fetch data for {ticker}. Tried: {', '.join(errors)}"
+        logger.error(error_msg)
+        raise Exception(error_msg)
     
     def _save_fallback_data(self, ticker: str, data: dict, db: Session, source: str) -> dict:
         """Save fallback API data (Alpha Vantage or Finnhub) to database"""

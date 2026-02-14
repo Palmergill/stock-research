@@ -188,6 +188,13 @@ button:disabled {
     padding: 20px;
     border-radius: 8px;
     text-align: center;
+    margin: 20px 0;
+}
+
+.error strong {
+    color: #ef4444;
+    display: block;
+    margin-bottom: 8px;
 }
 
 .retry-btn {

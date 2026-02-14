@@ -148,24 +148,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Load TSLA by default on homepage
-    tickerInput.value = 'TSLA';
-    
-    // Hide empty state immediately and show loading
-    empty.classList.add('hidden');
-    loading.classList.remove('hidden');
-    
-    // Delay auto-load slightly to ensure everything is ready
-    setTimeout(async () => {
-        try {
-            await loadStock('TSLA');
-        } catch (err) {
-            console.error('Auto-load error:', err);
-            loading.classList.add('hidden');
-            error.classList.remove('hidden');
-            errorMessage.textContent = `Failed to load: ${err.message}. Try searching manually.`;
-        }
-    }, 500);
+    // Clear any previous state
+    tickerInput.value = '';
 
     // Tab switching
     const tabBtns = document.querySelectorAll('.tab-btn');
@@ -231,17 +215,38 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                const errorDetail = errorData.detail || `HTTP ${response.status}: ${response.statusText}`;
+                let errorDetail = errorData.detail || `Server error: ${response.status}`;
+                
+                // Clean up error message for display
+                if (errorDetail.includes('Finnhub') && errorDetail.includes('Yahoo') && errorDetail.includes('Alpha')) {
+                    errorDetail = `Unable to fetch data for "${ticker}". All data sources failed. Please check the ticker symbol and try again.`;
+                }
+                
                 throw new Error(errorDetail);
             }
             
             const data = await response.json();
+            
+            // Validate data is not mock
+            if (!data.summary || !data.summary.current_price) {
+                throw new Error('Invalid data received from server');
+            }
+            
             displayResults(data);
             
         } catch (err) {
             loading.classList.add('hidden');
             error.classList.remove('hidden');
-            errorMessage.textContent = `${err.message}`;
+            
+            // Show user-friendly error
+            let displayError = err.message;
+            if (displayError.includes('Failed to fetch')) {
+                displayError = 'Network error. Please check your connection and try again.';
+            } else if (displayError.includes('404')) {
+                displayError = `Stock "${ticker}" not found. Please check the ticker symbol.`;
+            }
+            
+            errorMessage.innerHTML = `<strong>Error:</strong> ${displayError}<br><br><button onclick="document.getElementById('retryBtn').click()" class="retry-btn">Try Again</button>`;
             console.error('Load error:', err);
         } finally {
             searchBtn.disabled = false;
