@@ -1,4 +1,4 @@
-import React from 'react';
+// Free cash flow chart component
 import {
   ComposedChart,
   Bar,

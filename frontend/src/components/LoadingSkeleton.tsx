@@ -1,4 +1,4 @@
-import React from 'react';
+// Loading skeleton component
 
 export const LoadingSkeleton: React.FC = () => {
   return (

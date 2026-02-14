@@ -1,0 +1,15 @@
+{
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "https://stock-research-production-b3ac.up.railway.app/api/$1" }
+  ],
+  "headers": [
+    {
+      "source": "**/*.js",
+      "headers": [{ "key": "Content-Type", "value": "application/javascript" }]
+    },
+    {
+      "source": "**/*.css",
+      "headers": [{ "key": "Content-Type", "value": "text/css" }]
+    }
+  ]
+}

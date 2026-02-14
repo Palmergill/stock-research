@@ -1,4 +1,4 @@
-import React from 'react';
+// Revenue chart component
 import {
   BarChart,
   Bar,

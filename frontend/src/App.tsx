@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { SearchBar } from './components/SearchBar';
 import { MetricCard } from './components/MetricCard';
 import { EarningsChart } from './components/EarningsChart';
