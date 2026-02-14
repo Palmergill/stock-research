@@ -42,10 +42,17 @@
             </div>
 
             <div id="results" class="hidden">
-                <!-- Header with company name -->
+                <!-- Header with company name and refresh -->
                 <div class="card company-header">
-                    <h2 id="companyName"></h2>
-                    <span id="companyTicker" class="ticker"></span>
+                    <div class="company-header-content">
+                        <div>
+                            <h2 id="companyName"></h2>
+                            <span id="companyTicker" class="ticker"></span>
+                        </div>
+                        <button id="refreshBtn" class="refresh-btn" title="Refresh data">
+                            ↻ Refresh
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Tab Navigation -->

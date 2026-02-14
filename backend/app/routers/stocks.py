@@ -14,13 +14,22 @@ async def search_stocks_endpoint(q: str = Query(..., min_length=1), limit: int =
     return {"results": results, "query": q}
 
 @router.get("/{ticker}")
-async def get_stock(ticker: str, db: Session = Depends(get_db)):
+async def get_stock(ticker: str, refresh: bool = False, db: Session = Depends(get_db)):
     """Get stock data including earnings and summary"""
     try:
-        data = yfinance_client.get_stock_data(ticker, db)
+        data = yfinance_client.get_stock_data(ticker, db, force_refresh=refresh)
         return data
     except Exception as e:
         raise HTTPException(status_code=404, detail=f"Could not fetch data for {ticker}: {str(e)}")
+
+@router.post("/{ticker}/refresh")
+async def refresh_stock(ticker: str, db: Session = Depends(get_db)):
+    """Force refresh stock data (bypass cache)"""
+    try:
+        data = yfinance_client.get_stock_data(ticker, db, force_refresh=True)
+        return {"success": True, "message": f"Refreshed data for {ticker}", "data": data}
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=f"Could not refresh data for {ticker}: {str(e)}")
 
 @router.get("/{ticker}/earnings")
 async def get_earnings(ticker: str, db: Session = Depends(get_db)):

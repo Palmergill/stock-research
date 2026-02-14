@@ -33,22 +33,25 @@ class YFinanceClient:
     def _is_cache_fresh(self, fetched_at: datetime) -> bool:
         return datetime.utcnow() - fetched_at < timedelta(hours=CACHE_HOURS)
     
-    def get_stock_data(self, ticker: str, db: Session) -> dict:
+    def get_stock_data(self, ticker: str, db: Session, force_refresh: bool = False) -> dict:
         """Get stock data with caching - tries multiple sources"""
         ticker = ticker.upper().strip()
         
-        # Check if we have fresh cached data
-        cached_summary = db.query(StockSummary).filter(
-            StockSummary.ticker == ticker
-        ).first()
-        
-        if cached_summary and self._is_cache_fresh(cached_summary.fetched_at):
-            logger.info(f"Using cached data for {ticker}")
-            cached_earnings = db.query(EarningsRecord).filter(
-                EarningsRecord.ticker == ticker
-            ).order_by(EarningsRecord.fiscal_date.desc()).all()
+        # Check if we have fresh cached data (unless force_refresh)
+        if not force_refresh:
+            cached_summary = db.query(StockSummary).filter(
+                StockSummary.ticker == ticker
+            ).first()
             
-            return self._format_response(ticker, cached_summary, cached_earnings)
+            if cached_summary and self._is_cache_fresh(cached_summary.fetched_at):
+                logger.info(f"Using cached data for {ticker}")
+                cached_earnings = db.query(EarningsRecord).filter(
+                    EarningsRecord.ticker == ticker
+                ).order_by(EarningsRecord.fiscal_date.desc()).all()
+                
+                return self._format_response(ticker, cached_summary, cached_earnings)
+        else:
+            logger.info(f"Force refresh requested for {ticker}, bypassing cache")
         
         # Try multiple data sources in order - NO MOCK DATA
         errors = []

@@ -148,8 +148,26 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Clear any previous state
-    tickerInput.value = '';
+    // Load TSLA by default on homepage
+    tickerInput.value = 'TSLA';
+    loadStock('TSLA');
+    
+    // Refresh button handler
+    const refreshBtn = document.getElementById('refreshBtn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', async () => {
+            if (currentTicker) {
+                refreshBtn.disabled = true;
+                refreshBtn.textContent = 'Refreshing...';
+                try {
+                    await loadStock(currentTicker, true); // force refresh
+                } finally {
+                    refreshBtn.disabled = false;
+                    refreshBtn.textContent = '↻ Refresh';
+                }
+            }
+        });
+    }
 
     // Tab switching
     const tabBtns = document.querySelectorAll('.tab-btn');
@@ -200,7 +218,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    async function loadStock(ticker) {
+    async function loadStock(ticker, forceRefresh = false) {
         currentTicker = ticker;
         
         // Show loading
@@ -210,8 +228,12 @@ document.addEventListener('DOMContentLoaded', () => {
         results.classList.add('hidden');
         searchBtn.disabled = true;
         
+        const url = forceRefresh 
+            ? `${API_BASE}/stocks/${ticker}/refresh`
+            : `${API_BASE}/stocks/${ticker}`;
+        
         try {
-            const response = await fetch(`${API_BASE}/stocks/${ticker}`);
+            const response = await fetch(url, forceRefresh ? {method: 'POST'} : {});
             
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
@@ -225,9 +247,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(errorDetail);
             }
             
-            const data = await response.json();
+            let data = await response.json();
             
-            // Validate data is not mock
+            // Handle refresh endpoint response (wrapped in success object)
+            if (data.success && data.data) {
+                data = data.data;
+            }
+            
+            // Validate data
             if (!data.summary || !data.summary.current_price) {
                 throw new Error('Invalid data received from server');
             }

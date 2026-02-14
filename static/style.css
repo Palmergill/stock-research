@@ -224,8 +224,15 @@ button:disabled {
 }
 
 .company-header {
-    text-align: center;
     padding: 20px 24px;
+}
+
+.company-header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
 }
 
 .company-header h2 {
@@ -233,6 +240,28 @@ button:disabled {
     font-weight: 700;
     color: var(--text-primary);
     margin-bottom: 4px;
+}
+
+.refresh-btn {
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    background: transparent;
+    border: 1px solid var(--accent-blue);
+    color: var(--accent-blue);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.refresh-btn:hover {
+    background: var(--accent-blue);
+    color: white;
+}
+
+.refresh-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 /* Tabs */
