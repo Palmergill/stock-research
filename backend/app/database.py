@@ -61,6 +61,9 @@ class StockSummary(Base):
     price_52w_high = Column(Float, nullable=True)
     price_52w_low = Column(Float, nullable=True)
     current_price = Column(Float, nullable=True)
+    # Key overview metrics
+    revenue_growth = Column(Float, nullable=True)
+    free_cash_flow = Column(Float, nullable=True)
     fetched_at = Column(DateTime, default=datetime.utcnow)
 
 def get_db():

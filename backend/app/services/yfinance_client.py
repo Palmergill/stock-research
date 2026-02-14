@@ -121,6 +121,8 @@ class StockDataClient:
             "price_52w_high": data.get("price_52w_high"),
             "price_52w_low": data.get("price_52w_low"),
             "current_price": data.get("current_price"),
+            "revenue_growth": data.get("revenue_growth"),
+            "free_cash_flow": data.get("free_cash_flow"),
             "fetched_at": datetime.utcnow()
         }
         
@@ -244,6 +246,8 @@ class StockDataClient:
                 "name": summary.name,
                 "market_cap": summary.market_cap,
                 "pe_ratio": summary.pe_ratio,
+                "revenue_growth": summary.revenue_growth,
+                "free_cash_flow": summary.free_cash_flow,
                 "next_earnings_date": summary.next_earnings_date.isoformat() if summary.next_earnings_date else None,
                 "profit_margin": summary.profit_margin,
                 "operating_margin": summary.operating_margin,
