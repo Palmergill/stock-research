@@ -42,19 +42,10 @@ class YFinanceClient:
             if cached:
                 return cached
         
-        # Try data sources in order
+        # Try data sources in order - YAHOO FIRST for complete data
         errors = []
         
-        # 1. Finnhub (60/min)
-        if finnhub_client.is_configured():
-            try:
-                data = finnhub_client.get_stock_data(ticker)
-                if data:
-                    return self._save_stock_data(ticker, data, db, "Finnhub")
-            except Exception as e:
-                errors.append(f"Finnhub: {str(e)[:50]}")
-        
-        # 2. Yahoo Finance
+        # 1. Yahoo Finance (best data including revenue/FCF)
         try:
             self._rate_limit()
             yf_data = self._fetch_yahoo_data(ticker)
@@ -63,7 +54,16 @@ class YFinanceClient:
         except Exception as e:
             errors.append(f"Yahoo: {str(e)[:50]}")
         
-        # 3. Alpha Vantage (5/min)
+        # 2. Finnhub (60/min) - fallback
+        if finnhub_client.is_configured():
+            try:
+                data = finnhub_client.get_stock_data(ticker)
+                if data:
+                    return self._save_stock_data(ticker, data, db, "Finnhub")
+            except Exception as e:
+                errors.append(f"Finnhub: {str(e)[:50]}")
+        
+        # 3. Alpha Vantage (5/min) - last fallback
         if alpha_vantage_client.is_configured():
             try:
                 data = alpha_vantage_client.get_stock_data(ticker)
