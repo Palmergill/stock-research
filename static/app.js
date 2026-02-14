@@ -2,6 +2,25 @@ const API_BASE = 'https://stock-research-production-b3ac.up.railway.app/api';
 
 let currentTicker = '';
 
+// Helper functions (defined globally for use in displayResults)
+function formatMarketCap(value) {
+    if (!value) return 'N/A';
+    if (value >= 1e12) return `$${(value / 1e12).toFixed(2)}T`;
+    if (value >= 1e9) return `$${(value / 1e9).toFixed(2)}B`;
+    if (value >= 1e6) return `$${(value / 1e6).toFixed(2)}M`;
+    return `$${value.toLocaleString()}`;
+}
+
+function formatPercent(value) {
+    if (value === null || value === undefined) return 'N/A';
+    return `${value.toFixed(2)}%`;
+}
+
+function formatNumber(value, decimals = 2) {
+    if (value === null || value === undefined) return 'N/A';
+    return value.toFixed(decimals);
+}
+
 // Wait for DOM to be ready
 document.addEventListener('DOMContentLoaded', () => {
     // DOM elements
@@ -19,6 +38,10 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error('Search form not found');
         return;
     }
+
+    // Load TSLA by default on homepage
+    tickerInput.value = 'TSLA';
+    loadStock('TSLA');
 
     // Search handler
     searchForm.addEventListener('submit', async (e) => {
@@ -66,21 +89,47 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function displayResults(data) {
-    loading.classList.add('hidden');
-    results.classList.remove('hidden');
-    
-    // Update metrics
-    document.getElementById('companyName').textContent = data.name;
-    document.getElementById('companyTicker').textContent = data.ticker;
-    document.getElementById('marketCap').textContent = formatMarketCap(data.summary.market_cap);
-    document.getElementById('peRatio').textContent = data.summary.pe_ratio?.toFixed(2) || 'N/A';
-    document.getElementById('nextEarnings').textContent = data.summary.next_earnings_date 
-        ? new Date(data.summary.next_earnings_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-        : 'N/A';
-    
-    // Draw charts (reverse data for chronological order)
-    const chartData = [...data.earnings].reverse();
-    
+        loading.classList.add('hidden');
+        results.classList.remove('hidden');
+        
+        // Update basic metrics
+        document.getElementById('companyName').textContent = data.name;
+        document.getElementById('companyTicker').textContent = data.ticker;
+        document.getElementById('currentPrice').textContent = data.summary.current_price 
+            ? `$${data.summary.current_price.toFixed(2)}` 
+            : 'N/A';
+        document.getElementById('marketCap').textContent = formatMarketCap(data.summary.market_cap);
+        document.getElementById('peRatio').textContent = formatNumber(data.summary.pe_ratio);
+        document.getElementById('nextEarnings').textContent = data.summary.next_earnings_date 
+            ? new Date(data.summary.next_earnings_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+            : 'N/A';
+        
+        // Update new financial metrics
+        document.getElementById('profitMargin').textContent = formatPercent(data.summary.profit_margin);
+        document.getElementById('operatingMargin').textContent = formatPercent(data.summary.operating_margin);
+        document.getElementById('roe').textContent = formatPercent(data.summary.roe);
+        document.getElementById('debtToEquity').textContent = formatNumber(data.summary.debt_to_equity);
+        document.getElementById('dividendYield').textContent = formatPercent(data.summary.dividend_yield);
+        document.getElementById('beta').textContent = formatNumber(data.summary.beta);
+        document.getElementById('price52wHigh').textContent = data.summary.price_52w_high 
+            ? `$${data.summary.price_52w_high.toFixed(2)}` 
+            : 'N/A';
+        document.getElementById('price52wLow').textContent = data.summary.price_52w_low 
+            ? `$${data.summary.price_52w_low.toFixed(2)}` 
+            : 'N/A';
+        
+        // Calculate and display 52-week range position
+        if (data.summary.current_price && data.summary.price_52w_high && data.summary.price_52w_low) {
+            const range = data.summary.price_52w_high - data.summary.price_52w_low;
+            const position = ((data.summary.current_price - data.summary.price_52w_low) / range) * 100;
+            document.getElementById('price52wPosition').textContent = `${position.toFixed(1)}% of 52W range`;
+        } else {
+            document.getElementById('price52wPosition').textContent = '';
+        }
+        
+        // Draw charts (reverse data for chronological order)
+        const chartData = [...data.earnings].reverse();
+        
         drawEPSChart(chartData);
         drawRevenueChart(chartData);
         drawFCFChart(chartData);
@@ -410,13 +459,4 @@ function drawPEChart(data) {
         ctx.fillText(d.fiscal_date.slice(0, 7), x, padding.top + chartHeight + 20);
     });
 }
-
-    // Helper functions
-    function formatMarketCap(value) {
-    if (!value) return 'N/A';
-    if (value >= 1e12) return `$${(value / 1e12).toFixed(2)}T`;
-    if (value >= 1e9) return `$${(value / 1e9).toFixed(2)}B`;
-    if (value >= 1e6) return `$${(value / 1e6).toFixed(2)}M`;
-        return `$${value.toLocaleString()}`;
-    }
 });

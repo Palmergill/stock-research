@@ -89,16 +89,36 @@ class MockDataClient:
             db.add(record)
             earnings.append(record)
         
-        # Create summary
+        # Create summary with additional metrics
         db.query(StockSummary).filter(StockSummary.ticker == ticker).delete()
         next_earnings = (now + timedelta(days=random.randint(15, 90))).date()
+        
+        # Generate additional financial metrics
+        profit_margin = round(random.uniform(0.10, 0.35) * 100, 2)  # 10-35%
+        operating_margin = round(profit_margin + random.uniform(2, 8), 2)  # Slightly higher than profit margin
+        roe = round(random.uniform(0.15, 0.45) * 100, 2)  # 15-45%
+        debt_to_equity = round(random.uniform(0.1, 1.5), 2)  # 0.1x to 1.5x
+        dividend_yield = round(random.uniform(0, 0.05) * 100, 2) if random.random() > 0.3 else 0  # 0-5%, 30% don't pay dividends
+        beta = round(random.uniform(0.5, 2.0), 2)  # 0.5 (stable) to 2.0 (volatile)
+        current_price = round(random.uniform(50, 800), 2)
+        price_52w_high = round(current_price * random.uniform(1.1, 1.5), 2)
+        price_52w_low = round(current_price * random.uniform(0.5, 0.9), 2)
         
         summary = StockSummary(
             ticker=ticker,
             name=name,
             market_cap=market_cap,
             pe_ratio=pe_ratio,
-            next_earnings_date=next_earnings
+            next_earnings_date=next_earnings,
+            profit_margin=profit_margin,
+            operating_margin=operating_margin,
+            roe=roe,
+            debt_to_equity=debt_to_equity,
+            dividend_yield=dividend_yield,
+            beta=beta,
+            price_52w_high=price_52w_high,
+            price_52w_low=price_52w_low,
+            current_price=current_price
         )
         db.add(summary)
         db.commit()
@@ -140,7 +160,16 @@ class MockDataClient:
                 "name": summary.name,
                 "market_cap": summary.market_cap,
                 "pe_ratio": summary.pe_ratio,
-                "next_earnings_date": summary.next_earnings_date.isoformat() if summary.next_earnings_date else None
+                "next_earnings_date": summary.next_earnings_date.isoformat() if summary.next_earnings_date else None,
+                "profit_margin": summary.profit_margin,
+                "operating_margin": summary.operating_margin,
+                "roe": summary.roe,
+                "debt_to_equity": summary.debt_to_equity,
+                "dividend_yield": summary.dividend_yield,
+                "beta": summary.beta,
+                "price_52w_high": summary.price_52w_high,
+                "price_52w_low": summary.price_52w_low,
+                "current_price": summary.current_price
             },
             "earnings": [
                 {

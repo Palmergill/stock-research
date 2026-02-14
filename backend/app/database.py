@@ -37,6 +37,16 @@ class StockSummary(Base):
     market_cap = Column(Float, nullable=True)
     pe_ratio = Column(Float, nullable=True)
     next_earnings_date = Column(Date, nullable=True)
+    # Additional metrics
+    profit_margin = Column(Float, nullable=True)
+    operating_margin = Column(Float, nullable=True)
+    roe = Column(Float, nullable=True)
+    debt_to_equity = Column(Float, nullable=True)
+    dividend_yield = Column(Float, nullable=True)
+    beta = Column(Float, nullable=True)
+    price_52w_high = Column(Float, nullable=True)
+    price_52w_low = Column(Float, nullable=True)
+    current_price = Column(Float, nullable=True)
     fetched_at = Column(DateTime, default=datetime.utcnow)
 
 def get_db():
