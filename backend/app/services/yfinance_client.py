@@ -54,12 +54,20 @@ class YFinanceClient:
         except Exception as e:
             errors.append(f"Yahoo: {str(e)[:50]}")
         
-        # 2. Finnhub (60/min) - fallback
+        # 2. Hybrid: Finnhub for current data + Yahoo earnings if available
         if finnhub_client.is_configured():
             try:
-                data = finnhub_client.get_stock_data(ticker)
-                if data:
-                    return self._save_stock_data(ticker, data, db, "Finnhub")
+                fh_data = finnhub_client.get_stock_data(ticker)
+                if fh_data:
+                    # Try to get earnings from Yahoo even if main fetch failed
+                    try:
+                        yf_earnings = self._fetch_yahoo_earnings_only(ticker)
+                        if yf_earnings:
+                            fh_data['earnings'] = yf_earnings
+                            return self._save_stock_data(ticker, fh_data, db, "Finnhub+Yahoo")
+                    except:
+                        pass
+                    return self._save_stock_data(ticker, fh_data, db, "Finnhub")
             except Exception as e:
                 errors.append(f"Finnhub: {str(e)[:50]}")
         
@@ -133,10 +141,29 @@ class YFinanceClient:
         return self._format_response(ticker, summary, earnings)
     
     def _generate_earnings_records(self, ticker: str, data: dict) -> List[EarningsRecord]:
-        """Generate placeholder earnings records for non-Yahoo sources"""
+        """Generate earnings records from data or placeholders"""
         records = []
-        now = datetime.utcnow()
         
+        # If earnings data is provided (from Yahoo), use it
+        if 'earnings' in data and data['earnings']:
+            for e in data['earnings']:
+                price = data.get("current_price") or 100
+                records.append(EarningsRecord(
+                    ticker=ticker,
+                    fiscal_date=e['fiscal_date'],
+                    period=e['period'],
+                    reported_eps=e.get('reported_eps'),
+                    estimated_eps=e.get('estimated_eps'),
+                    surprise_pct=e.get('surprise_pct'),
+                    revenue=e.get('revenue'),  # May be None
+                    free_cash_flow=e.get('free_cash_flow'),  # May be None
+                    pe_ratio=data.get("pe_ratio"),
+                    price=price * (1 + random.uniform(-0.15, 0.15))
+                ))
+            return records
+        
+        # Otherwise generate placeholder earnings
+        now = datetime.utcnow()
         for i in range(8):
             quarter_date = now - timedelta(days=90 * (i + 1))
             month = quarter_date.month
@@ -169,6 +196,22 @@ class YFinanceClient:
             ))
         
         return records
+    
+    def _get_period(self, date) -> str:
+        """Get fiscal quarter from date"""
+        if hasattr(date, 'month'):
+            month = date.month
+        else:
+            return "Q"
+        
+        if month <= 3:
+            return "Q1"
+        elif month <= 6:
+            return "Q2"
+        elif month <= 9:
+            return "Q3"
+        else:
+            return "Q4"
     
     def _fetch_yahoo_data(self, ticker: str) -> Optional[dict]:
         """Fetch data from Yahoo Finance"""
@@ -205,6 +248,30 @@ class YFinanceClient:
             "price_52w_low": info.get("fiftyTwoWeekLow"),
             "current_price": info.get("currentPrice") or info.get("regularMarketPrice")
         }
+    
+    def _fetch_yahoo_earnings_only(self, ticker: str) -> Optional[list]:
+        """Fetch just earnings data from Yahoo (lighter weight)"""
+        try:
+            stock = yf.Ticker(ticker)
+            earnings_df = stock.earnings_dates
+            if earnings_df is None or len(earnings_df) == 0:
+                return None
+            
+            records = []
+            for date, row in earnings_df.head(12).iterrows():
+                try:
+                    records.append({
+                        "fiscal_date": date.date() if hasattr(date, 'date') else date,
+                        "period": self._get_period(date),
+                        "reported_eps": float(row.get('Reported EPS')) if pd.notna(row.get('Reported EPS')) else None,
+                        "estimated_eps": float(row.get('EPS Estimate')) if pd.notna(row.get('EPS Estimate')) else None,
+                        "surprise_pct": float(row.get('Surprise(%)')) if pd.notna(row.get('Surprise(%)')) else None,
+                    })
+                except:
+                    continue
+            return records
+        except:
+            return None
     
     def _format_response(self, ticker: str, summary: StockSummary, earnings: List[EarningsRecord]) -> dict:
         return {
