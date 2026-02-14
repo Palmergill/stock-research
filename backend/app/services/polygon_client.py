@@ -45,7 +45,7 @@ class PolygonClient:
                 "ticker": ticker,
                 "market_cap": details.get("market_cap"),
                 "current_price": price_data.get("close"),
-                "pe_ratio": self._calculate_pe(details, price_data, financials),
+                "pe_ratio": self._calculate_pe(details, price_data, earnings),
                 "price_52w_high": year_high_low.get("high"),
                 "price_52w_low": year_high_low.get("low"),
                 "profit_margin": self._extract_metric(financials, "profit_margin"),
@@ -161,32 +161,16 @@ class PolygonClient:
                     if revenue:
                         break
                 
-                # Get net income with multiple possible field names
-                net_income = None
-                for ni_key in ["net_income_loss", "net_income", "net_loss"]:
-                    ni_data = income.get(ni_key)
-                    if isinstance(ni_data, dict):
-                        net_income = ni_data.get("value")
-                    elif ni_data is not None:
-                        net_income = ni_data
-                    if net_income:
-                        break
-                
-                # Get shares outstanding
-                shares = None
-                for shares_key in ["shares", "weighted_average_shares_outstanding", "common_stock_shares_outstanding"]:
-                    shares_data = balance.get(shares_key)
-                    if isinstance(shares_data, dict):
-                        shares = shares_data.get("value")
-                    elif shares_data is not None:
-                        shares = shares_data
-                    if shares:
-                        break
-                
-                # Calculate EPS
+                # Get EPS directly from income statement (Polygon provides this!)
                 eps = None
-                if net_income and shares and shares > 0:
-                    eps = net_income / shares
+                for eps_key in ["basic_earnings_per_share", "diluted_earnings_per_share", "earnings_per_share"]:
+                    eps_data = income.get(eps_key)
+                    if isinstance(eps_data, dict):
+                        eps = eps_data.get("value")
+                    elif eps_data is not None:
+                        eps = eps_data
+                    if eps:
+                        break
                 
                 # Get FCF
                 fcf = None
@@ -216,52 +200,34 @@ class PolygonClient:
         
         return earnings
     
-    def _calculate_pe(self, details: Dict, price_data: Dict, financials: List[Dict]) -> Optional[float]:
-        """Calculate P/E ratio from price and earnings (TTM)"""
+    def _calculate_pe(self, details: Dict, price_data: Dict, earnings: List[Dict]) -> Optional[float]:
+        """Calculate P/E ratio from price and TTM earnings"""
         try:
             price = price_data.get("close")
-            logger.info(f"Calculating P/E: price={price}, details_keys={list(details.keys())}")
-            
             if not price:
                 logger.warning("No price available for P/E calculation")
                 return None
             
-            # Try to get EPS from ticker details first
-            eps = details.get("eps") or details.get("earnings_per_share")
-            if eps and eps > 0:
-                logger.info(f"Using EPS from details: {eps}")
-                return round(price / eps, 2)
-            
-            # Calculate TTM EPS from financials
-            if financials and len(financials) >= 4:
+            # Calculate TTM EPS from earnings records
+            if earnings and len(earnings) >= 4:
                 total_eps = 0
                 quarters_with_eps = 0
                 
-                for i, fin in enumerate(financials[:4]):  # Last 4 quarters
-                    try:
-                        fin_data = fin.get("financials", {})
-                        income = fin_data.get("income_statement", {})
-                        balance = fin_data.get("balance_sheet", {})
-                        
-                        net_income = income.get("net_income_loss", {}).get("value")
-                        shares = balance.get("shares", {}).get("value")
-                        
-                        logger.info(f"Q{i}: net_income={net_income}, shares={shares}")
-                        
-                        if net_income and shares and shares > 0:
-                            quarterly_eps = net_income / shares
-                            total_eps += quarterly_eps
-                            quarters_with_eps += 1
-                    except Exception as e:
-                        logger.warning(f"Error calculating EPS for quarter {i}: {e}")
+                for i, e in enumerate(earnings[:4]):  # Last 4 quarters
+                    eps = e.get("reported_eps")
+                    logger.info(f"Q{i}: reported_eps={eps}")
+                    
+                    if eps and eps > 0:
+                        total_eps += eps
+                        quarters_with_eps += 1
                 
-                logger.info(f"Total TTM EPS: {total_eps} from {quarters_with_eps} quarters")
-                if quarters_with_eps > 0 and total_eps > 0:
+                logger.info(f"Total TTM EPS: {total_eps} from {quarters_with_eps} quarters, price={price}")
+                if quarters_with_eps >= 3 and total_eps > 0:  # Allow 3+ quarters for recent IPOs
                     pe = round(price / total_eps, 2)
                     logger.info(f"Calculated P/E: {pe}")
                     return pe
             else:
-                logger.warning(f"Not enough financials: {len(financials) if financials else 0}")
+                logger.warning(f"Not enough earnings: {len(earnings) if earnings else 0}")
                     
         except Exception as e:
             logger.warning(f"Could not calculate P/E: {e}")
