@@ -2,19 +2,26 @@ const API_BASE = '/api';
 
 let currentTicker = '';
 
-// DOM elements
-const searchForm = document.getElementById('searchForm');
-const tickerInput = document.getElementById('tickerInput');
-const searchBtn = document.getElementById('searchBtn');
-const loading = document.getElementById('loading');
-const error = document.getElementById('error');
-const errorMessage = document.getElementById('errorMessage');
-const retryBtn = document.getElementById('retryBtn');
-const empty = document.getElementById('empty');
-const results = document.getElementById('results');
+// Wait for DOM to be ready
+document.addEventListener('DOMContentLoaded', () => {
+    // DOM elements
+    const searchForm = document.getElementById('searchForm');
+    const tickerInput = document.getElementById('tickerInput');
+    const searchBtn = document.getElementById('searchBtn');
+    const loading = document.getElementById('loading');
+    const error = document.getElementById('error');
+    const errorMessage = document.getElementById('errorMessage');
+    const retryBtn = document.getElementById('retryBtn');
+    const empty = document.getElementById('empty');
+    const results = document.getElementById('results');
 
-// Search handler
-searchForm.addEventListener('submit', async (e) => {
+    if (!searchForm) {
+        console.error('Search form not found');
+        return;
+    }
+
+    // Search handler
+    searchForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const ticker = tickerInput.value.trim().toUpperCase();
     if (!ticker) return;
@@ -23,13 +30,13 @@ searchForm.addEventListener('submit', async (e) => {
 });
 
 // Retry handler
-retryBtn.addEventListener('click', () => {
-    if (currentTicker) {
-        loadStock(currentTicker);
-    }
-});
+    retryBtn.addEventListener('click', () => {
+        if (currentTicker) {
+            loadStock(currentTicker);
+        }
+    });
 
-async function loadStock(ticker) {
+    async function loadStock(ticker) {
     currentTicker = ticker;
     
     // Show loading
@@ -53,12 +60,12 @@ async function loadStock(ticker) {
         loading.classList.add('hidden');
         error.classList.remove('hidden');
         errorMessage.textContent = err.message;
-    } finally {
-        searchBtn.disabled = false;
+        } finally {
+            searchBtn.disabled = false;
+        }
     }
-}
 
-function displayResults(data) {
+    function displayResults(data) {
     loading.classList.add('hidden');
     results.classList.remove('hidden');
     
@@ -74,13 +81,13 @@ function displayResults(data) {
     // Draw charts (reverse data for chronological order)
     const chartData = [...data.earnings].reverse();
     
-    drawEPSChart(chartData);
-    drawRevenueChart(chartData);
-    drawFCFChart(chartData);
-    drawPEChart(chartData);
-}
+        drawEPSChart(chartData);
+        drawRevenueChart(chartData);
+        drawFCFChart(chartData);
+        drawPEChart(chartData);
+    }
 
-// Chart drawing functions
+    // Chart drawing functions
 function drawEPSChart(data) {
     const canvas = document.getElementById('epsChart');
     const ctx = canvas.getContext('2d');
@@ -404,11 +411,12 @@ function drawPEChart(data) {
     });
 }
 
-// Helper functions
-function formatMarketCap(value) {
+    // Helper functions
+    function formatMarketCap(value) {
     if (!value) return 'N/A';
     if (value >= 1e12) return `$${(value / 1e12).toFixed(2)}T`;
     if (value >= 1e9) return `$${(value / 1e9).toFixed(2)}B`;
     if (value >= 1e6) return `$${(value / 1e6).toFixed(2)}M`;
-    return `$${value.toLocaleString()}`;
-}
+        return `$${value.toLocaleString()}`;
+    }
+});
