@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List
+import os
 from app.database import get_db
 from app.services.yfinance_client import yfinance_client
 from app.services.stock_data import search_stocks
+from app.services.polygon_client import polygon_client
 
 router = APIRouter(prefix="/api/stocks", tags=["stocks"])
 
@@ -30,3 +32,28 @@ async def get_earnings(ticker: str, db: Session = Depends(get_db)):
         return {"ticker": ticker, "earnings": data["earnings"]}
     except Exception as e:
         raise HTTPException(status_code=404, detail=f"Could not fetch earnings for {ticker}: {str(e)}")
+
+@router.get("/{ticker}/debug")
+async def debug_polygon(ticker: str):
+    """Debug endpoint to see raw Polygon data"""
+    try:
+        import requests
+        api_key = os.getenv("POLYGON_API_KEY", "")
+        
+        # Get ticker details
+        details_url = f"https://api.polygon.io/v3/reference/tickers/{ticker.upper()}?apiKey={api_key}"
+        details_resp = requests.get(details_url, timeout=10)
+        details = details_resp.json() if details_resp.ok else {"error": details_resp.text}
+        
+        # Get financials
+        financials_url = f"https://api.polygon.io/vX/reference/financials?ticker={ticker.upper()}&timeframe=quarterly&limit=4&apiKey={api_key}"
+        fin_resp = requests.get(financials_url, timeout=10)
+        financials = fin_resp.json() if fin_resp.ok else {"error": fin_resp.text}
+        
+        return {
+            "ticker": ticker.upper(),
+            "details": details,
+            "financials": financials
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
