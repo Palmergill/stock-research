@@ -40,18 +40,24 @@ class PolygonClient:
             # 5. Build earnings history from financials
             earnings = self._build_earnings_from_financials(financials)
             
+            # 6. Calculate additional metrics
+            revenue_growth = self._calculate_revenue_growth(financials)
+            latest_fcf = self._get_latest_fcf(financials)
+            
             return {
                 "name": details.get("name", ticker),
                 "ticker": ticker,
                 "market_cap": details.get("market_cap"),
                 "current_price": price_data.get("close"),
                 "pe_ratio": self._calculate_pe(details, price_data, earnings),
+                "revenue_growth": revenue_growth,
+                "free_cash_flow": latest_fcf,
+                "debt_to_equity": self._extract_metric(financials, "debt_to_equity"),
+                "roe": self._extract_metric(financials, "return_on_equity"),
                 "price_52w_high": year_high_low.get("high"),
                 "price_52w_low": year_high_low.get("low"),
                 "profit_margin": self._extract_metric(financials, "profit_margin"),
                 "operating_margin": self._extract_metric(financials, "operating_margin"),
-                "roe": self._extract_metric(financials, "return_on_equity"),
-                "debt_to_equity": self._extract_metric(financials, "debt_to_equity"),
                 "dividend_yield": details.get("dividend_yield"),
                 "beta": None,  # Not directly available
                 "next_earnings_date": None,  # Not available in API
@@ -231,6 +237,47 @@ class PolygonClient:
                     
         except Exception as e:
             logger.warning(f"Could not calculate P/E: {e}")
+        return None
+    
+    def _calculate_revenue_growth(self, financials: List[Dict]) -> Optional[float]:
+        """Calculate YoY revenue growth rate (%)"""
+        try:
+            if len(financials) < 5:
+                return None
+            
+            # Get latest quarter revenue
+            latest = financials[0].get("financials", {}).get("income_statement", {}).get("revenues", {})
+            latest_rev = latest.get("value") if isinstance(latest, dict) else None
+            
+            # Get same quarter last year (4 quarters back)
+            year_ago = financials[4].get("financials", {}).get("income_statement", {}).get("revenues", {})
+            year_ago_rev = year_ago.get("value") if isinstance(year_ago, dict) else None
+            
+            if latest_rev and year_ago_rev and year_ago_rev > 0:
+                growth = ((latest_rev - year_ago_rev) / year_ago_rev) * 100
+                return round(growth, 2)
+        except Exception as e:
+            logger.warning(f"Could not calculate revenue growth: {e}")
+        return None
+    
+    def _get_latest_fcf(self, financials: List[Dict]) -> Optional[float]:
+        """Get latest quarter free cash flow"""
+        try:
+            if not financials:
+                return None
+            
+            fin = financials[0].get("financials", {})
+            cash_flow = fin.get("cash_flow_statement", {})
+            
+            # Try FCF field first, then operating cash flow
+            for key in ["free_cash_flow", "net_cash_flow_from_operating_activities"]:
+                fcf_data = cash_flow.get(key)
+                if isinstance(fcf_data, dict):
+                    return fcf_data.get("value")
+                elif fcf_data is not None:
+                    return fcf_data
+        except Exception as e:
+            logger.warning(f"Could not get FCF: {e}")
         return None
     
     def _extract_metric(self, financials: List[Dict], metric_name: str) -> Optional[float]:

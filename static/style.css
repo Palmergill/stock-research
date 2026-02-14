@@ -329,8 +329,16 @@ button:disabled {
 /* Compact Metrics Grid */
 .metrics-grid-compact {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
     gap: 16px;
+}
+
+.metrics-grid-compact .metric {
+    cursor: help;
+}
+
+.metrics-grid-compact .metric:hover .metric-label {
+    color: var(--accent-blue);
 }
 
 .metrics-overview .metric-value {

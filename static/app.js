@@ -294,6 +294,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('debtToEquity').textContent = formatNumber(data.summary.debt_to_equity);
         document.getElementById('dividendYield').textContent = formatPercent(data.summary.dividend_yield);
         document.getElementById('beta').textContent = formatNumber(data.summary.beta);
+        document.getElementById('revenueGrowth').textContent = formatPercent(data.summary.revenue_growth);
+        document.getElementById('freeCashFlow').textContent = formatMarketCap(data.summary.free_cash_flow);
         document.getElementById('price52wHigh').textContent = data.summary.price_52w_high 
             ? `$${data.summary.price_52w_high.toFixed(2)}` 
             : 'N/A';
