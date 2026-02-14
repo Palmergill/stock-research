@@ -272,30 +272,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function displayResults(data) {
         console.log('displayResults called with:', data);
+        
+        // Validate data structure
+        if (!data || !data.summary) {
+            console.error('Invalid data structure:', data);
+            loading.classList.add('hidden');
+            error.classList.remove('hidden');
+            errorMessage.textContent = 'Invalid data received from server. Please try again.';
+            return;
+        }
+        
         loading.classList.add('hidden');
         results.classList.remove('hidden');
         
+        // Safely get summary values
+        const summary = data.summary || {};
+        
         // Update basic metrics
-        document.getElementById('companyName').textContent = data.name;
-        document.getElementById('companyTicker').textContent = data.ticker;
-        document.getElementById('currentPrice').textContent = data.summary.current_price 
-            ? `$${data.summary.current_price.toFixed(2)}` 
+        document.getElementById('companyName').textContent = data.name || data.ticker || 'Unknown';
+        document.getElementById('companyTicker').textContent = data.ticker || '';
+        document.getElementById('currentPrice').textContent = summary.current_price 
+            ? `$${summary.current_price.toFixed(2)}` 
             : 'N/A';
-        document.getElementById('marketCap').textContent = formatMarketCap(data.summary.market_cap);
-        document.getElementById('peRatio').textContent = formatNumber(data.summary.pe_ratio);
-        document.getElementById('nextEarnings').textContent = data.summary.next_earnings_date 
-            ? new Date(data.summary.next_earnings_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+        document.getElementById('marketCap').textContent = formatMarketCap(summary.market_cap);
+        document.getElementById('peRatio').textContent = formatNumber(summary.pe_ratio);
+        document.getElementById('nextEarnings').textContent = summary.next_earnings_date 
+            ? new Date(summary.next_earnings_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
             : 'N/A';
         
         // Update new financial metrics
-        document.getElementById('profitMargin').textContent = formatPercent(data.summary.profit_margin);
-        document.getElementById('operatingMargin').textContent = formatPercent(data.summary.operating_margin);
-        document.getElementById('roe').textContent = formatPercent(data.summary.roe);
-        document.getElementById('debtToEquity').textContent = formatNumber(data.summary.debt_to_equity);
-        document.getElementById('dividendYield').textContent = formatPercent(data.summary.dividend_yield);
-        document.getElementById('beta').textContent = formatNumber(data.summary.beta);
-        document.getElementById('revenueGrowth').textContent = formatPercent(data.summary.revenue_growth);
-        document.getElementById('freeCashFlow').textContent = formatMarketCap(data.summary.free_cash_flow);
+        document.getElementById('profitMargin').textContent = formatPercent(summary.profit_margin);
+        document.getElementById('operatingMargin').textContent = formatPercent(summary.operating_margin);
+        document.getElementById('roe').textContent = formatPercent(summary.roe);
+        document.getElementById('debtToEquity').textContent = formatNumber(summary.debt_to_equity);
+        document.getElementById('dividendYield').textContent = formatPercent(summary.dividend_yield);
+        document.getElementById('beta').textContent = formatNumber(summary.beta);
+        document.getElementById('revenueGrowth').textContent = formatPercent(summary.revenue_growth);
+        document.getElementById('freeCashFlow').textContent = formatMarketCap(summary.free_cash_flow);
         document.getElementById('price52wHigh').textContent = data.summary.price_52w_high 
             ? `$${data.summary.price_52w_high.toFixed(2)}` 
             : 'N/A';
