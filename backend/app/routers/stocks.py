@@ -1,9 +1,17 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
+from typing import List
 from app.database import get_db
 from app.services.yfinance_client import yfinance_client
+from app.services.stock_data import search_stocks
 
 router = APIRouter(prefix="/api/stocks", tags=["stocks"])
+
+@router.get("/search")
+async def search_stocks_endpoint(q: str = Query(..., min_length=1), limit: int = 10):
+    """Search stocks by ticker or company name"""
+    results = search_stocks(q, limit)
+    return {"results": results, "query": q}
 
 @router.get("/{ticker}")
 async def get_stock(ticker: str, db: Session = Depends(get_db)):

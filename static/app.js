@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchForm = document.getElementById('searchForm');
     const tickerInput = document.getElementById('tickerInput');
     const searchBtn = document.getElementById('searchBtn');
+    const searchSuggestions = document.getElementById('searchSuggestions');
     const loading = document.getElementById('loading');
     const error = document.getElementById('error');
     const errorMessage = document.getElementById('errorMessage');
@@ -38,6 +39,114 @@ document.addEventListener('DOMContentLoaded', () => {
         console.error('Search form not found');
         return;
     }
+
+    // Autocomplete functionality
+    let searchTimeout = null;
+    let selectedSuggestionIndex = -1;
+    let currentSuggestions = [];
+
+    async function fetchSuggestions(query) {
+        if (!query || query.length < 1) {
+            searchSuggestions.classList.add('hidden');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE}/stocks/search?q=${encodeURIComponent(query)}&limit=10`);
+            if (response.ok) {
+                const data = await response.json();
+                currentSuggestions = data.results || [];
+                renderSuggestions(currentSuggestions);
+            }
+        } catch (err) {
+            console.error('Error fetching suggestions:', err);
+        }
+    }
+
+    function renderSuggestions(suggestions) {
+        if (suggestions.length === 0) {
+            searchSuggestions.classList.add('hidden');
+            return;
+        }
+
+        searchSuggestions.innerHTML = suggestions.map((item, index) => `
+            <div class="suggestion-item" data-ticker="${item.ticker}" data-index="${index}">
+                <div class="suggestion-main">
+                    <span class="suggestion-ticker">${item.ticker}</span>
+                    <span class="suggestion-name">${item.name}</span>
+                </div>
+                <span class="suggestion-sector">${item.sector}</span>
+            </div>
+        `).join('');
+
+        searchSuggestions.classList.remove('hidden');
+        selectedSuggestionIndex = -1;
+
+        // Add click handlers
+        searchSuggestions.querySelectorAll('.suggestion-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const ticker = item.dataset.ticker;
+                tickerInput.value = ticker;
+                searchSuggestions.classList.add('hidden');
+                loadStock(ticker);
+            });
+        });
+    }
+
+    // Input handling with debounce
+    tickerInput.addEventListener('input', (e) => {
+        const query = e.target.value.trim();
+        
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            fetchSuggestions(query);
+        }, 150);
+    });
+
+    // Keyboard navigation
+    tickerInput.addEventListener('keydown', (e) => {
+        if (currentSuggestions.length === 0) return;
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            selectedSuggestionIndex = Math.min(selectedSuggestionIndex + 1, currentSuggestions.length - 1);
+            updateSelection();
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            selectedSuggestionIndex = Math.max(selectedSuggestionIndex - 1, -1);
+            updateSelection();
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (selectedSuggestionIndex >= 0 && selectedSuggestionIndex < currentSuggestions.length) {
+                const ticker = currentSuggestions[selectedSuggestionIndex].ticker;
+                tickerInput.value = ticker;
+                searchSuggestions.classList.add('hidden');
+                loadStock(ticker);
+            } else {
+                const query = tickerInput.value.trim().toUpperCase();
+                if (query) {
+                    searchSuggestions.classList.add('hidden');
+                    loadStock(query);
+                }
+            }
+        } else if (e.key === 'Escape') {
+            searchSuggestions.classList.add('hidden');
+        }
+    });
+
+    function updateSelection() {
+        const items = searchSuggestions.querySelectorAll('.suggestion-item');
+        items.forEach((item, index) => {
+            item.classList.toggle('active', index === selectedSuggestionIndex);
+        });
+    }
+
+    // Hide suggestions when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!searchForm.contains(e.target)) {
+            searchSuggestions.classList.add('hidden');
+        }
+    });
 
     // Load TSLA by default on homepage
     tickerInput.value = 'TSLA';

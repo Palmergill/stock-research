@@ -11,12 +11,15 @@
         <header>
             <h1>🦞 Stock Research</h1>
             <form id="searchForm">
-                <input 
-                    type="text" 
-                    id="tickerInput" 
-                    placeholder="Enter ticker (e.g., AAPL)" 
-                    autocomplete="off"
-                >
+                <div class="search-container">
+                    <input 
+                        type="text" 
+                        id="tickerInput" 
+                        placeholder="Search ticker or company name..." 
+                        autocomplete="off"
+                    >
+                    <div id="searchSuggestions" class="suggestions hidden"></div>
+                </div>
                 <button type="submit" id="searchBtn">Search</button>
             </form>
         </header>
