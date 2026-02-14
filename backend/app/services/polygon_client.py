@@ -349,7 +349,7 @@ class PolygonClient:
                     net_income = ni_data.get("value")
                 elif ni_data is not None:
                     net_income = ni_data
-                if net_income:
+                if net_income is not None:
                     break
             
             # Get equity
@@ -360,11 +360,14 @@ class PolygonClient:
                     equity = eq_data.get("value")
                 elif eq_data is not None:
                     equity = eq_data
-                if equity:
+                if equity is not None:
                     break
             
-            if net_income and equity and equity > 0:
+            logger.info(f"ROE calc: net_income={net_income}, equity={equity}")
+            
+            if net_income is not None and equity and equity > 0:
                 roe = (net_income / equity) * 100  # Return as percentage
+                logger.info(f"Calculated ROE: {roe}")
                 return round(roe, 2)
         except Exception as e:
             logger.warning(f"Could not calculate ROE: {e}")
@@ -383,7 +386,7 @@ class PolygonClient:
                     liabilities = liab_data.get("value")
                 elif liab_data is not None:
                     liabilities = liab_data
-                if liabilities:
+                if liabilities is not None:
                     break
             
             # Get equity
@@ -394,11 +397,14 @@ class PolygonClient:
                     equity = eq_data.get("value")
                 elif eq_data is not None:
                     equity = eq_data
-                if equity:
+                if equity is not None:
                     break
             
-            if liabilities and equity and equity > 0:
+            logger.info(f"D/E calc: liabilities={liabilities}, equity={equity}")
+            
+            if liabilities is not None and equity and equity > 0:
                 dte = liabilities / equity
+                logger.info(f"Calculated D/E: {dte}")
                 return round(dte, 2)
         except Exception as e:
             logger.warning(f"Could not calculate D/E: {e}")
