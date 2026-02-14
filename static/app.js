@@ -151,15 +151,21 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load TSLA by default on homepage
     tickerInput.value = 'TSLA';
     
+    // Hide empty state immediately and show loading
+    empty.classList.add('hidden');
+    loading.classList.remove('hidden');
+    
     // Delay auto-load slightly to ensure everything is ready
-    setTimeout(() => {
-        loadStock('TSLA').catch(err => {
+    setTimeout(async () => {
+        try {
+            await loadStock('TSLA');
+        } catch (err) {
             console.error('Auto-load error:', err);
             loading.classList.add('hidden');
             error.classList.remove('hidden');
             errorMessage.textContent = `Failed to load: ${err.message}. Try searching manually.`;
-        });
-    }, 100);
+        }
+    }, 500);
 
     // Tab switching
     const tabBtns = document.querySelectorAll('.tab-btn');

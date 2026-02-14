@@ -97,9 +97,14 @@ class YFinanceClient:
         """Save fallback API data (Alpha Vantage or Finnhub) to database"""
         logger.info(f"Saving {source} data for {ticker}")
         
-        # Clear old data
-        db.query(StockSummary).filter(StockSummary.ticker == ticker).delete()
-        db.query(EarningsRecord).filter(EarningsRecord.ticker == ticker).delete()
+        # Clear old data - commit immediately to avoid conflicts
+        try:
+            db.query(StockSummary).filter(StockSummary.ticker == ticker).delete(synchronize_session=False)
+            db.query(EarningsRecord).filter(EarningsRecord.ticker == ticker).delete(synchronize_session=False)
+            db.commit()
+        except:
+            db.rollback()
+            raise
         
         # Create summary
         summary = StockSummary(
@@ -201,10 +206,11 @@ class YFinanceClient:
         records = []
         
         try:
+            # Clear old records first with explicit commit
+            db.query(EarningsRecord).filter(EarningsRecord.ticker == ticker).delete(synchronize_session=False)
+            db.commit()
+            
             if earnings_dates is not None and len(earnings_dates) > 0:
-                # Clear old records
-                db.query(EarningsRecord).filter(EarningsRecord.ticker == ticker).delete()
-                
                 for date, row in earnings_dates.head(12).iterrows():
                     try:
                         fiscal_date = date.date() if hasattr(date, 'date') else date
@@ -244,6 +250,7 @@ class YFinanceClient:
         except Exception as e:
             logger.error(f"Error parsing earnings: {e}")
             db.rollback()
+            raise
         
         # Return from DB to ensure consistency
         return db.query(EarningsRecord).filter(
@@ -295,8 +302,9 @@ class YFinanceClient:
         return None
     
     def _parse_summary(self, ticker: str, info: dict, db: Session) -> StockSummary:
-        # Delete old summary
-        db.query(StockSummary).filter(StockSummary.ticker == ticker).delete()
+        # Delete old summary first with explicit commit
+        db.query(StockSummary).filter(StockSummary.ticker == ticker).delete(synchronize_session=False)
+        db.commit()
         
         next_earnings = None
         earnings_timestamp = info.get('earningsDate')
