@@ -1,52 +1,93 @@
-# Stock Research App
+# Stock Research App v1.0.0
 
-A web app for analyzing stock earnings trends. Search any ticker, view EPS actual vs estimated, earnings surprises, and key metrics.
+A professional stock analysis web app with real-time data, interactive charts, and comprehensive financial metrics.
 
-## Stack
+**Live:** https://palmergill.com
 
-- **Backend:** FastAPI + PostgreSQL/SQLite + yfinance
-- **Frontend:** Vanilla HTML/CSS/JS
-- **Data:** Yahoo Finance (via yfinance library)
-- **Hosting:** Railway (backend) + Vercel (frontend)
+## Architecture
 
-## Setup PostgreSQL (Production)
+### Backend
+- **Framework:** FastAPI (Python)
+- **Database:** PostgreSQL (production) / SQLite (development)
+- **Primary Data Source:** Polygon.io (professional-grade stock data)
+- **Fallback:** Yahoo Finance (via yfinance)
+- **Cache:** 1-hour TTL with manual refresh
+- **Hosting:** Railway
 
-### 1. Create PostgreSQL Database in Railway
+### Frontend
+- **Stack:** Vanilla HTML5, CSS3, JavaScript (ES6+)
+- **Charts:** Canvas API (custom implementation)
+- **Hosting:** Vercel
+- **Features:** Tabbed interface, autocomplete search, responsive design
 
-1. Go to https://railway.app
-2. Click your stock-research project
-3. Click **"New"** → **"Database"** → **"Add PostgreSQL"**
-4. Railway will create the database and give you a connection URL
+## Data Flow
 
-### 2. Connect Database to Your Service
+```
+User Search → Polygon.io API → PostgreSQL Cache → Frontend Charts
+                ↓ (fallback)
+          Yahoo Finance
+```
 
-1. In your Railway project, click on your **stock-research service**
-2. Go to **"Variables"** tab
-3. Click **"New Variable"**
-4. Add: `DATABASE_URL` with the value from the PostgreSQL database
-   - Railway usually auto-injects this as `${{Postgres.DATABASE_URL}}`
-5. Remove or update `USE_MOCK_DATA` if you had it set
+1. **Primary:** Polygon.io provides real-time prices, financials, and historical data
+2. **Fallback:** Yahoo Finance if Polygon fails or rate-limited
+3. **Cache:** PostgreSQL stores data for 1 hour to reduce API calls
+4. **Refresh:** Manual refresh button bypasses cache for instant updates
 
-### 3. Deploy
+## Features
 
-Railway will auto-deploy when you push to GitHub, or click "Redeploy" manually.
+### Current v1.0.0
+- ✅ **Real-time stock data** from Polygon.io
+- ✅ **Interactive charts:** Price, EPS, Revenue, Free Cash Flow, P/E Ratio
+- ✅ **Key metrics:** Market Cap, P/E, Margins, ROE, Debt/Equity, Beta, 52-week range
+- ✅ **Tabbed interface:** Overview, Earnings, Financials, Valuation
+- ✅ **Autocomplete search** by ticker or company name
+- ✅ **Manual refresh** button for instant data updates
+- ✅ **1-hour cache** with PostgreSQL persistence
+- ✅ **Mobile-responsive** design
 
-**Benefits of PostgreSQL:**
-- ✅ No volume management needed
-- ✅ Automatic schema migrations (no data deletion)
-- ✅ Better performance
-- ✅ Production-grade database
+### Upcoming
+- [ ] User authentication & watchlists
+- [ ] Export data to CSV/PDF
+- [ ] Compare multiple stocks
+- [ ] Price alerts
+
+## Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `POLYGON_API_KEY` | **Yes** | Your Polygon.io API key |
+| `DATABASE_URL` | Auto | PostgreSQL connection string (auto-injected by Railway) |
+| `ALLOWED_ORIGINS` | No | CORS origins (default: includes palmergill.com) |
+
+### Getting Polygon.io API Key
+
+1. Sign up at https://polygon.io
+2. Choose a plan (Starter plan is $49/month, or use free tier for limited requests)
+3. Copy your API key
+4. Add to Railway: Dashboard → Your Project → Variables → `POLYGON_API_KEY`
 
 ## Local Development
 
-Uses SQLite by default (no setup needed):
-
+### Backend
 ```bash
 cd backend
 python -m venv venv
-source venv/bin/activate
+source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
+
+# Without Polygon (uses Yahoo only)
 uvicorn app.main:app --reload
+
+# With Polygon
+POLYGON_API_KEY=your_key_here uvicorn app.main:app --reload
+```
+
+### Frontend
+```bash
+cd static
+# Serve with any static file server
+python -m http.server 8080
+# Or use VS Code Live Server extension
 ```
 
 ## Deployment
@@ -55,40 +96,86 @@ Both Railway and Vercel auto-deploy on git push:
 
 ```bash
 git add .
-git commit -m "Your changes"
+git commit -m "[v1.0.1] Your description"
 git push origin main
 ```
 
-**Railway:** Auto-detects and deploys backend
-**Vercel:** Auto-detects and deploys frontend
+### Version Convention
+- Update `VERSION` file
+- Update version in `static/index.html`
+- Prefix commits: `[v1.0.1] Description`
 
-## Features
+## Database Schema
 
-- Real-time stock data from Yahoo Finance
-- Key metrics: P/E, margins, ROE, debt, beta
-- Charts: Price, EPS, Revenue, FCF, P/E
-- Tabbed interface: Overview, Earnings, Financials, Valuation
-- Autocomplete search by ticker or company name
-- 24-hour data caching
+### StockSummary
+| Column | Type | Description |
+|--------|------|-------------|
+| ticker | VARCHAR(PK) | Stock symbol |
+| name | VARCHAR | Company name |
+| market_cap | FLOAT | Market capitalization |
+| current_price | FLOAT | Current stock price |
+| pe_ratio | FLOAT | Price-to-earnings ratio |
+| profit_margin | FLOAT | Net profit margin % |
+| operating_margin | FLOAT | Operating margin % |
+| roe | FLOAT | Return on equity % |
+| debt_to_equity | FLOAT | Debt-to-equity ratio |
+| dividend_yield | FLOAT | Dividend yield % |
+| beta | FLOAT | Stock beta |
+| price_52w_high | FLOAT | 52-week high |
+| price_52w_low | FLOAT | 52-week low |
+| fetched_at | TIMESTAMP | Cache timestamp |
 
-## Environment Variables
+### EarningsRecord
+| Column | Type | Description |
+|--------|------|-------------|
+| ticker | VARCHAR | Stock symbol |
+| fiscal_date | DATE | Quarter end date |
+| period | VARCHAR | Q1, Q2, Q3, Q4 |
+| reported_eps | FLOAT | Actual EPS |
+| estimated_eps | FLOAT | Estimated EPS |
+| surprise_pct | FLOAT | % surprise |
+| revenue | FLOAT | Quarterly revenue |
+| free_cash_flow | FLOAT | Free cash flow |
+| pe_ratio | FLOAT | P/E at time |
+| price | FLOAT | Stock price |
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `DATABASE_URL` | PostgreSQL or SQLite connection string | `sqlite:///./stock_data.db` |
-| `ALLOWED_ORIGINS` | CORS origins (comma-separated) | `http://localhost:5173` |
+## API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/stocks/search?q={query}` | Search stocks by name/ticker |
+| GET | `/api/stocks/{ticker}` | Get stock data (cached) |
+| GET | `/api/stocks/{ticker}?refresh=true` | Force refresh |
+| GET | `/health` | Health check |
 
 ## Troubleshooting
 
-**Price seems wrong/old:**
-- Data is cached for 24 hours
-- Clear cache by restarting Railway service
-- Or wait for cache to expire
+### "Could not fetch data" errors
+- Check `POLYGON_API_KEY` is set in Railway
+- Check Polygon.io dashboard for rate limits
+- Click **↻ Refresh** to retry with Yahoo fallback
 
-**Charts not loading:**
-- Check browser console for errors
-- Ensure backend is responding at Railway URL
+### Stale data
+- Data is cached for 1 hour
+- Use **↻ Refresh** button for instant updates
+- Or add `?refresh=true` to API call
 
-**Database migration issues:**
-- With PostgreSQL: migrations run automatically
-- With SQLite: may need to delete volume if migration fails
+### Database errors
+- Tables are auto-created on startup
+- If issues persist, check Railway PostgreSQL logs
+
+## Tech Stack Summary
+
+| Component | Technology |
+|-----------|------------|
+| Backend API | FastAPI |
+| Database | PostgreSQL (SQLAlchemy ORM) |
+| Data Sources | Polygon.io (primary), Yahoo Finance (fallback) |
+| Frontend | Vanilla JS, Canvas API |
+| Styling | CSS3 with CSS variables |
+| Hosting | Railway (backend), Vercel (frontend) |
+| Version | v1.0.0 |
+
+## License
+
+MIT - Built with 🦞 by Larry
