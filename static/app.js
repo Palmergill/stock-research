@@ -151,15 +151,19 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load TSLA by default on homepage
     console.log('DOM ready, loading TSLA...');
     tickerInput.value = 'TSLA';
-    empty.classList.add('hidden');
-    loading.classList.remove('hidden');
     
-    loadStock('TSLA').catch(err => {
-        console.error('Failed to load TSLA:', err);
-        loading.classList.add('hidden');
-        error.classList.remove('hidden');
-        errorMessage.textContent = `Error loading TSLA: ${err.message}`;
-    });
+    // Small delay to ensure DOM is fully ready
+    setTimeout(() => {
+        empty.classList.add('hidden');
+        loading.classList.remove('hidden');
+        
+        loadStock('TSLA').catch(err => {
+            console.error('Failed to load TSLA:', err);
+            loading.classList.add('hidden');
+            error.classList.remove('hidden');
+            errorMessage.textContent = `Error: ${err.message}`;
+        });
+    }, 100);
     
     // Refresh button handler
     const refreshBtn = document.getElementById('refreshBtn');

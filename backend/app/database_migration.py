@@ -61,9 +61,12 @@ def migrate_database():
 
 def init_db_with_migration():
     """Initialize DB with auto-migration"""
+    # First create all tables if they don't exist
+    Base.metadata.create_all(bind=engine)
+    logger.info("Database tables created (if not existed)")
+    
+    # Then run migrations for existing tables
     try:
         migrate_database()
-    except:
-        pass
-    
-    Base.metadata.create_all(bind=engine)
+    except Exception as e:
+        logger.warning(f"Migration step failed (may be OK for fresh DB): {e}")
