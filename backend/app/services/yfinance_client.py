@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.database import EarningsRecord, StockSummary
 from app.services.mock_client import mock_client
 from app.services.alpha_vantage_client import alpha_vantage_client
+from app.services.finnhub_client import finnhub_client
 import logging
 import time
 import os
@@ -53,34 +54,49 @@ class YFinanceClient:
         # Try multiple data sources in order
         errors = []
         
-        # Source 1: Yahoo Finance (yfinance)
+        # Source 1: Yahoo Finance (yfinance) - best data
         try:
-            logger.info(f"[Source 1/3] Trying Yahoo Finance for {ticker}")
+            logger.info(f"[Source 1/4] Trying Yahoo Finance for {ticker}")
             return self._fetch_and_cache(ticker, db)
         except Exception as e:
             errors.append(f"Yahoo: {str(e)[:50]}")
             logger.warning(f"Yahoo Finance failed: {e}")
         
-        # Source 2: Alpha Vantage (if API key configured)
+        # Source 2: Finnhub (60 calls/min free)
+        if finnhub_client.is_configured():
+            try:
+                logger.info(f"[Source 2/4] Trying Finnhub for {ticker}")
+                fh_data = finnhub_client.get_stock_data(ticker)
+                if fh_data:
+                    return self._save_fallback_data(ticker, fh_data, db, "Finnhub")
+            except Exception as e:
+                errors.append(f"Finnhub: {str(e)[:50]}")
+                logger.warning(f"Finnhub failed: {e}")
+        else:
+            logger.info("Finnhub not configured (no API key)")
+        
+        # Source 3: Alpha Vantage (5 calls/min free)
         if alpha_vantage_client.is_configured():
             try:
-                logger.info(f"[Source 2/3] Trying Alpha Vantage for {ticker}")
+                logger.info(f"[Source 3/4] Trying Alpha Vantage for {ticker}")
                 av_data = alpha_vantage_client.get_stock_data(ticker)
                 if av_data:
-                    return self._save_alpha_vantage_data(ticker, av_data, db)
+                    return self._save_fallback_data(ticker, av_data, db, "AlphaVantage")
             except Exception as e:
                 errors.append(f"AlphaVantage: {str(e)[:50]}")
                 logger.warning(f"Alpha Vantage failed: {e}")
         else:
             logger.info("Alpha Vantage not configured (no API key)")
         
-        # Source 3: Mock data (always works)
-        logger.info(f"[Source 3/3] Using mock data for {ticker}")
+        # Source 4: Mock data (always works)
+        logger.info(f"[Source 4/4] Using mock data for {ticker}")
         logger.warning(f"All real data sources failed: {'; '.join(errors)}")
         return mock_client.get_stock_data(ticker, db)
     
-    def _save_alpha_vantage_data(self, ticker: str, data: dict, db: Session) -> dict:
-        """Save Alpha Vantage data to database"""
+    def _save_fallback_data(self, ticker: str, data: dict, db: Session, source: str) -> dict:
+        """Save fallback API data (Alpha Vantage or Finnhub) to database"""
+        logger.info(f"Saving {source} data for {ticker}")
+        
         # Clear old data
         db.query(StockSummary).filter(StockSummary.ticker == ticker).delete()
         db.query(EarningsRecord).filter(EarningsRecord.ticker == ticker).delete()
@@ -89,22 +105,22 @@ class YFinanceClient:
         summary = StockSummary(
             ticker=ticker,
             name=data["name"],
-            market_cap=data["market_cap"],
-            pe_ratio=data["pe_ratio"],
+            market_cap=data.get("market_cap"),
+            pe_ratio=data.get("pe_ratio"),
             next_earnings_date=data.get("next_earnings_date"),
-            profit_margin=data["profit_margin"],
-            operating_margin=data["operating_margin"],
-            roe=data["roe"],
-            debt_to_equity=data["debt_to_equity"],
-            dividend_yield=data["dividend_yield"],
-            beta=data["beta"],
-            price_52w_high=data["price_52w_high"],
-            price_52w_low=data["price_52w_low"],
-            current_price=data["current_price"]
+            profit_margin=data.get("profit_margin"),
+            operating_margin=data.get("operating_margin"),
+            roe=data.get("roe"),
+            debt_to_equity=data.get("debt_to_equity"),
+            dividend_yield=data.get("dividend_yield"),
+            beta=data.get("beta"),
+            price_52w_high=data.get("price_52w_high"),
+            price_52w_low=data.get("price_52w_low"),
+            current_price=data.get("current_price")
         )
         db.add(summary)
         
-        # Create placeholder earnings (Alpha Vantage free doesn't have historical earnings)
+        # Create placeholder earnings (fallback APIs don't have historical earnings in free tier)
         # Generate 8 quarters of synthetic earnings based on current data
         now = datetime.utcnow()
         for i in range(8):
@@ -112,9 +128,9 @@ class YFinanceClient:
             quarter_end = self._get_quarter_end(quarter_date)
             
             # Estimate EPS from P/E and price
-            price = data["current_price"] or 100
-            pe = data["pe_ratio"] or 20
-            estimated_eps = price / pe if pe > 0 else 1.0
+            price = data.get("current_price") or 100
+            pe = data.get("pe_ratio") or 20
+            estimated_eps = price / pe if pe and pe > 0 else 1.0
             
             # Add some variance
             variance = 1 + random.uniform(-0.2, 0.2)
@@ -129,7 +145,7 @@ class YFinanceClient:
                 surprise_pct=round((reported_eps - reported_eps*0.95)/(reported_eps*0.95)*100, 2),
                 revenue=None,  # Not available in free tier
                 free_cash_flow=None,
-                pe_ratio=data["pe_ratio"],
+                pe_ratio=data.get("pe_ratio"),
                 price=price * (1 + random.uniform(-0.15, 0.15))
             )
             db.add(record)
