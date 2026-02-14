@@ -8,15 +8,26 @@ from app.services.mock_client import mock_client
 import logging
 import time
 import os
+import random
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 CACHE_HOURS = 24
+MIN_REQUEST_INTERVAL = 2  # Minimum seconds between requests to Yahoo
 
 class YFinanceClient:
     def __init__(self):
-        pass
+        self.last_request_time = 0
+    
+    def _rate_limit(self):
+        """Ensure we don't hit Yahoo's rate limits"""
+        elapsed = time.time() - self.last_request_time
+        if elapsed < MIN_REQUEST_INTERVAL:
+            sleep_time = MIN_REQUEST_INTERVAL - elapsed + random.uniform(0.5, 1.5)
+            logger.info(f"Rate limiting: sleeping {sleep_time:.2f}s")
+            time.sleep(sleep_time)
+        self.last_request_time = time.time()
     
     def _is_cache_fresh(self, fetched_at: datetime) -> bool:
         return datetime.utcnow() - fetched_at < timedelta(hours=CACHE_HOURS)
@@ -50,6 +61,9 @@ class YFinanceClient:
     
     def _fetch_and_cache(self, ticker: str, db: Session) -> dict:
         try:
+            # Rate limit before making request
+            self._rate_limit()
+            
             stock = yf.Ticker(ticker)
             info = stock.info
             
