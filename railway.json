@@ -1,0 +1,15 @@
+{
+  "name": "stock-research",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "startCommand": "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}",
+  "env": {
+    "DATABASE_URL": "sqlite:///./stock_data.db",
+    "USE_MOCK_DATA": "true"
+  },
+  "healthcheck": {
+    "path": "/health",
+    "port": 8000
+  }
+}
