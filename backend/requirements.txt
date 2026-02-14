@@ -7,3 +7,4 @@ pandas==2.2.0
 python-multipart==0.0.6
 psycopg2-binary==2.9.9
 requests==2.31.0
+polygon-api-client==1.14.21

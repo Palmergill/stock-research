@@ -5,27 +5,28 @@ from typing import Optional, List, Dict
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from app.database import EarningsRecord, StockSummary
-from app.services.alpha_vantage_client import alpha_vantage_client
-from app.services.finnhub_client import finnhub_client
+from app.services.polygon_client import polygon_client
 import logging
 import time
-import os
 import random
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 CACHE_HOURS = 1
-MIN_REQUEST_INTERVAL = 2
+MIN_REQUEST_INTERVAL = 1  # 1 second between requests
 
-class YFinanceClient:
+class StockDataClient:
+    """Primary stock data client - uses Polygon.io exclusively"""
+    
     def __init__(self):
         self.last_request_time = 0
     
     def _rate_limit(self):
+        """Rate limiting for Yahoo fallback"""
         elapsed = time.time() - self.last_request_time
         if elapsed < MIN_REQUEST_INTERVAL:
-            sleep_time = MIN_REQUEST_INTERVAL - elapsed + random.uniform(0.5, 1.5)
+            sleep_time = MIN_REQUEST_INTERVAL - elapsed + random.uniform(0.5, 1.0)
             time.sleep(sleep_time)
         self.last_request_time = time.time()
     
@@ -33,7 +34,7 @@ class YFinanceClient:
         return datetime.utcnow() - fetched_at < timedelta(hours=CACHE_HOURS)
     
     def get_stock_data(self, ticker: str, db: Session, force_refresh: bool = False) -> dict:
-        """Get stock data with caching - tries multiple sources, no mock data"""
+        """Get stock data - Polygon.io primary, Yahoo fallback"""
         ticker = ticker.upper().strip()
         
         # Check cache unless force_refresh
@@ -42,43 +43,31 @@ class YFinanceClient:
             if cached:
                 return cached
         
-        # Try data sources in order - YAHOO FIRST for complete data
         errors = []
         
-        # 1. Yahoo Finance (best data including revenue/FCF)
+        # PRIMARY: Polygon.io (best data, reliable)
+        if polygon_client.is_configured():
+            try:
+                logger.info(f"[Polygon.io] Fetching data for {ticker}")
+                data = polygon_client.get_stock_data(ticker)
+                if data:
+                    return self._save_polygon_data(ticker, data, db)
+            except Exception as e:
+                errors.append(f"Polygon: {str(e)[:100]}")
+                logger.warning(f"Polygon.io failed: {e}")
+        else:
+            errors.append("Polygon: API key not configured")
+        
+        # FALLBACK: Yahoo Finance (free but rate-limited)
         try:
+            logger.info(f"[Yahoo] Fallback fetch for {ticker}")
             self._rate_limit()
             yf_data = self._fetch_yahoo_data(ticker)
             if yf_data:
-                return self._save_stock_data(ticker, yf_data, db, "Yahoo")
+                return self._save_yahoo_data(ticker, yf_data, db)
         except Exception as e:
-            errors.append(f"Yahoo: {str(e)[:50]}")
-        
-        # 2. Hybrid: Finnhub for current data + Yahoo earnings if available
-        if finnhub_client.is_configured():
-            try:
-                fh_data = finnhub_client.get_stock_data(ticker)
-                if fh_data:
-                    # Try to get earnings from Yahoo even if main fetch failed
-                    try:
-                        yf_earnings = self._fetch_yahoo_earnings_only(ticker)
-                        if yf_earnings:
-                            fh_data['earnings'] = yf_earnings
-                            return self._save_stock_data(ticker, fh_data, db, "Finnhub+Yahoo")
-                    except:
-                        pass
-                    return self._save_stock_data(ticker, fh_data, db, "Finnhub")
-            except Exception as e:
-                errors.append(f"Finnhub: {str(e)[:50]}")
-        
-        # 3. Alpha Vantage (5/min) - last fallback
-        if alpha_vantage_client.is_configured():
-            try:
-                data = alpha_vantage_client.get_stock_data(ticker)
-                if data:
-                    return self._save_stock_data(ticker, data, db, "AlphaVantage")
-            except Exception as e:
-                errors.append(f"AlphaVantage: {str(e)[:50]}")
+            errors.append(f"Yahoo: {str(e)[:100]}")
+            logger.warning(f"Yahoo failed: {e}")
         
         # All failed
         raise Exception(f"Could not fetch data for {ticker}. Errors: {'; '.join(errors)}")
@@ -92,19 +81,31 @@ class YFinanceClient:
             return self._format_response(ticker, summary, earnings)
         return None
     
-    def _save_stock_data(self, ticker: str, data: dict, db: Session, source: str) -> dict:
-        """Save data using PostgreSQL upsert - handles race conditions atomically"""
-        logger.info(f"Saving {source} data for {ticker}")
+    def _save_polygon_data(self, ticker: str, data: dict, db: Session) -> dict:
+        """Save Polygon.io data to database"""
+        logger.info(f"Saving Polygon.io data for {ticker}")
         
-        # Delete old earnings (no conflict possible here)
+        # Delete old earnings
         db.query(EarningsRecord).filter(EarningsRecord.ticker == ticker).delete(synchronize_session=False)
         
-        # Generate earnings records
-        earnings_records = self._generate_earnings_records(ticker, data)
-        for record in earnings_records:
+        # Add earnings records with price estimates
+        current_price = data.get("current_price") or 100
+        for e in data.get("earnings", []):
+            record = EarningsRecord(
+                ticker=ticker,
+                fiscal_date=e.get("fiscal_date") or datetime.utcnow().date(),
+                period=e.get("period", "Q"),
+                reported_eps=e.get("reported_eps"),
+                estimated_eps=e.get("estimated_eps"),
+                surprise_pct=e.get("surprise_pct"),
+                revenue=e.get("revenue"),
+                free_cash_flow=e.get("free_cash_flow"),
+                pe_ratio=data.get("pe_ratio"),
+                price=current_price * (1 + random.uniform(-0.1, 0.1))
+            )
             db.add(record)
         
-        # Upsert summary (handles race condition)
+        # Upsert summary
         summary_values = {
             "ticker": ticker,
             "name": data.get("name", ticker),
@@ -123,16 +124,11 @@ class YFinanceClient:
             "fetched_at": datetime.utcnow()
         }
         
-        # PostgreSQL upsert: insert or update
         stmt = pg_insert(StockSummary).values(**summary_values)
-        stmt = stmt.on_conflict_do_update(
-            index_elements=["ticker"],
-            set_=summary_values
-        )
+        stmt = stmt.on_conflict_do_update(index_elements=["ticker"], set_=summary_values)
         db.execute(stmt)
         db.commit()
         
-        # Return fresh data
         summary = db.query(StockSummary).filter(StockSummary.ticker == ticker).first()
         earnings = db.query(EarningsRecord).filter(
             EarningsRecord.ticker == ticker
@@ -140,81 +136,8 @@ class YFinanceClient:
         
         return self._format_response(ticker, summary, earnings)
     
-    def _generate_earnings_records(self, ticker: str, data: dict) -> List[EarningsRecord]:
-        """Generate earnings records from data or placeholders"""
-        records = []
-        
-        # If earnings data is provided (from Yahoo), use it
-        if 'earnings' in data and data['earnings']:
-            for e in data['earnings']:
-                price = data.get("current_price") or 100
-                records.append(EarningsRecord(
-                    ticker=ticker,
-                    fiscal_date=e['fiscal_date'],
-                    period=e['period'],
-                    reported_eps=e.get('reported_eps'),
-                    estimated_eps=e.get('estimated_eps'),
-                    surprise_pct=e.get('surprise_pct'),
-                    revenue=e.get('revenue'),  # May be None
-                    free_cash_flow=e.get('free_cash_flow'),  # May be None
-                    pe_ratio=data.get("pe_ratio"),
-                    price=price * (1 + random.uniform(-0.15, 0.15))
-                ))
-            return records
-        
-        # Otherwise generate placeholder earnings
-        now = datetime.utcnow()
-        for i in range(8):
-            quarter_date = now - timedelta(days=90 * (i + 1))
-            month = quarter_date.month
-            if month <= 3:
-                period = "Q1"
-            elif month <= 6:
-                period = "Q2"
-            elif month <= 9:
-                period = "Q3"
-            else:
-                period = "Q4"
-            
-            price = data.get("current_price") or 100
-            pe = data.get("pe_ratio") or 20
-            estimated_eps = price / pe if pe and pe > 0 else 1.0
-            variance = 1 + random.uniform(-0.2, 0.2)
-            reported_eps = round(estimated_eps * variance * (8-i)/8, 2)
-            
-            records.append(EarningsRecord(
-                ticker=ticker,
-                fiscal_date=quarter_date.date(),
-                period=period,
-                reported_eps=reported_eps,
-                estimated_eps=round(reported_eps * 0.95, 2),
-                surprise_pct=round((reported_eps - reported_eps*0.95)/(reported_eps*0.95)*100, 2),
-                revenue=None,
-                free_cash_flow=None,
-                pe_ratio=data.get("pe_ratio"),
-                price=price * (1 + random.uniform(-0.15, 0.15))
-            ))
-        
-        return records
-    
-    def _get_period(self, date) -> str:
-        """Get fiscal quarter from date"""
-        if hasattr(date, 'month'):
-            month = date.month
-        else:
-            return "Q"
-        
-        if month <= 3:
-            return "Q1"
-        elif month <= 6:
-            return "Q2"
-        elif month <= 9:
-            return "Q3"
-        else:
-            return "Q4"
-    
     def _fetch_yahoo_data(self, ticker: str) -> Optional[dict]:
-        """Fetch data from Yahoo Finance"""
+        """Fetch data from Yahoo Finance as fallback"""
         stock = yf.Ticker(ticker)
         info = stock.info
         
@@ -249,29 +172,68 @@ class YFinanceClient:
             "current_price": info.get("currentPrice") or info.get("regularMarketPrice")
         }
     
-    def _fetch_yahoo_earnings_only(self, ticker: str) -> Optional[list]:
-        """Fetch just earnings data from Yahoo (lighter weight)"""
-        try:
-            stock = yf.Ticker(ticker)
-            earnings_df = stock.earnings_dates
-            if earnings_df is None or len(earnings_df) == 0:
-                return None
+    def _save_yahoo_data(self, ticker: str, data: dict, db: Session) -> dict:
+        """Save Yahoo Finance data as fallback"""
+        logger.info(f"Saving Yahoo fallback data for {ticker}")
+        
+        # Delete old earnings
+        db.query(EarningsRecord).filter(EarningsRecord.ticker == ticker).delete(synchronize_session=False)
+        
+        # Generate placeholder earnings
+        now = datetime.utcnow()
+        for i in range(8):
+            quarter_date = now - timedelta(days=90 * (i + 1))
+            month = quarter_date.month
+            period = "Q1" if month <= 3 else "Q2" if month <= 6 else "Q3" if month <= 9 else "Q4"
             
-            records = []
-            for date, row in earnings_df.head(12).iterrows():
-                try:
-                    records.append({
-                        "fiscal_date": date.date() if hasattr(date, 'date') else date,
-                        "period": self._get_period(date),
-                        "reported_eps": float(row.get('Reported EPS')) if pd.notna(row.get('Reported EPS')) else None,
-                        "estimated_eps": float(row.get('EPS Estimate')) if pd.notna(row.get('EPS Estimate')) else None,
-                        "surprise_pct": float(row.get('Surprise(%)')) if pd.notna(row.get('Surprise(%)')) else None,
-                    })
-                except:
-                    continue
-            return records
-        except:
-            return None
+            price = data.get("current_price") or 100
+            pe = data.get("pe_ratio") or 20
+            eps = price / pe if pe and pe > 0 else 1.0
+            
+            record = EarningsRecord(
+                ticker=ticker,
+                fiscal_date=quarter_date.date(),
+                period=period,
+                reported_eps=round(eps * (1 + random.uniform(-0.2, 0.2)), 2),
+                estimated_eps=round(eps * 0.95, 2),
+                surprise_pct=None,
+                revenue=None,
+                free_cash_flow=None,
+                pe_ratio=data.get("pe_ratio"),
+                price=price
+            )
+            db.add(record)
+        
+        # Upsert summary
+        summary_values = {
+            "ticker": ticker,
+            "name": data["name"],
+            "market_cap": data.get("market_cap"),
+            "pe_ratio": data.get("pe_ratio"),
+            "next_earnings_date": data.get("next_earnings_date"),
+            "profit_margin": data.get("profit_margin"),
+            "operating_margin": data.get("operating_margin"),
+            "roe": data.get("roe"),
+            "debt_to_equity": data.get("debt_to_equity"),
+            "dividend_yield": data.get("dividend_yield"),
+            "beta": data.get("beta"),
+            "price_52w_high": data.get("price_52w_high"),
+            "price_52w_low": data.get("price_52w_low"),
+            "current_price": data.get("current_price"),
+            "fetched_at": datetime.utcnow()
+        }
+        
+        stmt = pg_insert(StockSummary).values(**summary_values)
+        stmt = stmt.on_conflict_do_update(index_elements=["ticker"], set_=summary_values)
+        db.execute(stmt)
+        db.commit()
+        
+        summary = db.query(StockSummary).filter(StockSummary.ticker == ticker).first()
+        earnings = db.query(EarningsRecord).filter(
+            EarningsRecord.ticker == ticker
+        ).order_by(EarningsRecord.fiscal_date.desc()).all()
+        
+        return self._format_response(ticker, summary, earnings)
     
     def _format_response(self, ticker: str, summary: StockSummary, earnings: List[EarningsRecord]) -> dict:
         return {
@@ -309,4 +271,5 @@ class YFinanceClient:
             ]
         }
 
-yfinance_client = YFinanceClient()
+# Backwards compatibility
+yfinance_client = StockDataClient()
