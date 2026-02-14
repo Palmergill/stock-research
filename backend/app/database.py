@@ -4,12 +4,25 @@ from sqlalchemy.orm import sessionmaker
 from datetime import datetime
 
 import os
+
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./stock_data.db")
 
-engine = create_engine(
-    DATABASE_URL, 
-    connect_args={"check_same_thread": False}
-)
+# Check if using PostgreSQL
+is_postgres = DATABASE_URL.startswith("postgres://") or DATABASE_URL.startswith("postgresql://")
+
+if is_postgres:
+    # PostgreSQL config - no special connect args needed
+    engine = create_engine(
+        DATABASE_URL,
+        pool_pre_ping=True,  # Verify connections before using
+        pool_recycle=300,    # Recycle connections after 5 minutes
+    )
+else:
+    # SQLite config for local dev
+    engine = create_engine(
+        DATABASE_URL, 
+        connect_args={"check_same_thread": False}
+    )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
