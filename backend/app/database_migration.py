@@ -21,9 +21,11 @@ def migrate_database():
                     logger.info(f"Adding column {col_name} to stock_summaries")
                     try:
                         col_type = "FLOAT"
-                        if col_name in ['ticker', 'name', 'period']:
+                        if col_name in ['ticker', 'name']:
                             col_type = "VARCHAR"
-                        elif col_name in ['fiscal_date', 'next_earnings_date', 'fetched_at']:
+                        elif col_name in ['next_earnings_date']:
+                            col_type = "DATE"
+                        elif col_name in ['fetched_at']:
                             col_type = "TIMESTAMP" if is_postgres else "DATETIME"
                         
                         with engine.connect() as conn:
