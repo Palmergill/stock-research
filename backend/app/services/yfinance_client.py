@@ -51,21 +51,13 @@ class YFinanceClient:
             
             return self._format_response(ticker, cached_summary, cached_earnings)
         
-        # Try multiple data sources in order
+        # Try multiple data sources in order - FINNHUB IS PRIMARY
         errors = []
         
-        # Source 1: Yahoo Finance (yfinance) - best data
-        try:
-            logger.info(f"[Source 1/4] Trying Yahoo Finance for {ticker}")
-            return self._fetch_and_cache(ticker, db)
-        except Exception as e:
-            errors.append(f"Yahoo: {str(e)[:50]}")
-            logger.warning(f"Yahoo Finance failed: {e}")
-        
-        # Source 2: Finnhub (60 calls/min free)
+        # Source 1: Finnhub (60 calls/min free) - PRIMARY
         if finnhub_client.is_configured():
             try:
-                logger.info(f"[Source 2/4] Trying Finnhub for {ticker}")
+                logger.info(f"[Source 1/4] Trying Finnhub (primary) for {ticker}")
                 fh_data = finnhub_client.get_stock_data(ticker)
                 if fh_data:
                     return self._save_fallback_data(ticker, fh_data, db, "Finnhub")
@@ -74,6 +66,14 @@ class YFinanceClient:
                 logger.warning(f"Finnhub failed: {e}")
         else:
             logger.info("Finnhub not configured (no API key)")
+        
+        # Source 2: Yahoo Finance (yfinance) - fallback
+        try:
+            logger.info(f"[Source 2/4] Trying Yahoo Finance for {ticker}")
+            return self._fetch_and_cache(ticker, db)
+        except Exception as e:
+            errors.append(f"Yahoo: {str(e)[:50]}")
+            logger.warning(f"Yahoo Finance failed: {e}")
         
         # Source 3: Alpha Vantage (5 calls/min free)
         if alpha_vantage_client.is_configured():
