@@ -200,14 +200,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Search handler
     searchForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const ticker = tickerInput.value.trim().toUpperCase();
-    if (!ticker) return;
-    
-    await loadStock(ticker);
-});
+        e.preventDefault();
+        const ticker = tickerInput.value.trim().toUpperCase();
+        if (!ticker) return;
+        
+        await loadStock(ticker);
+    });
 
-// Retry handler
+    // Retry handler
     retryBtn.addEventListener('click', () => {
         if (currentTicker) {
             loadStock(currentTicker);
