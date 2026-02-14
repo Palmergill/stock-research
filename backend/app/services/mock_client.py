@@ -75,6 +75,11 @@ class MockDataClient:
             fcf_margin = random.uniform(0.15, 0.30)
             fcf = round(base_revenue * growth_factor * fcf_margin, 0)
             
+            # Generate historical stock price (random walk around base price)
+            base_price = random.uniform(50, 500)
+            price_variance = random.uniform(0.7, 1.3)  # 30% variance
+            historical_price = round(base_price * price_variance * growth_factor, 2)
+            
             record = EarningsRecord(
                 ticker=ticker,
                 fiscal_date=quarter_end.date(),
@@ -84,7 +89,8 @@ class MockDataClient:
                 surprise_pct=surprise,
                 revenue=round(base_revenue * growth_factor, 0),
                 free_cash_flow=fcf,
-                pe_ratio=historical_pe
+                pe_ratio=historical_pe,
+                price=historical_price
             )
             db.add(record)
             earnings.append(record)
@@ -180,7 +186,8 @@ class MockDataClient:
                     "surprise_pct": e.surprise_pct,
                     "revenue": e.revenue,
                     "free_cash_flow": e.free_cash_flow,
-                    "pe_ratio": e.pe_ratio
+                    "pe_ratio": e.pe_ratio,
+                    "price": e.price
                 }
                 for e in sorted(earnings, key=lambda x: x.fiscal_date, reverse=True)
             ]

@@ -11,6 +11,7 @@ class EarningsData(BaseModel):
     revenue: Optional[float]
     free_cash_flow: Optional[float]
     pe_ratio: Optional[float]
+    price: Optional[float]
 
 class StockSummaryData(BaseModel):
     ticker: str

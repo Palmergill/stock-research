@@ -134,6 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
         drawRevenueChart(chartData);
         drawFCFChart(chartData);
         drawPEChart(chartData);
+        drawPriceChart(chartData);
     }
 
     // Chart drawing functions
@@ -458,5 +459,128 @@ function drawPEChart(data) {
         ctx.textAlign = 'center';
         ctx.fillText(d.fiscal_date.slice(0, 7), x, padding.top + chartHeight + 20);
     });
+}
+
+function drawPriceChart(data) {
+    const canvas = document.getElementById('priceChart');
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    
+    canvas.width = 800 * dpr;
+    canvas.height = 300 * dpr;
+    ctx.scale(dpr, dpr);
+    canvas.style.width = '100%';
+    canvas.style.height = 'auto';
+    
+    const padding = { top: 40, right: 40, bottom: 60, left: 70 };
+    const chartWidth = 800 - padding.left - padding.right;
+    const chartHeight = 300 - padding.top - padding.bottom;
+    
+    ctx.clearRect(0, 0, 800, 300);
+    
+    const prices = data.map(d => d.price).filter(v => v != null);
+    const maxPrice = Math.max(...prices) * 1.05;
+    const minPrice = Math.min(...prices) * 0.95;
+    const priceRange = maxPrice - minPrice;
+    
+    // Grid
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 5]);
+    
+    for (let i = 0; i <= 5; i++) {
+        const y = padding.top + (chartHeight * i / 5);
+        ctx.beginPath();
+        ctx.moveTo(padding.left, y);
+        ctx.lineTo(padding.left + chartWidth, y);
+        ctx.stroke();
+        
+        const val = maxPrice - priceRange * i / 5;
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '12px sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText(`$${val.toFixed(0)}`, padding.left - 10, y + 4);
+    }
+    
+    ctx.setLineDash([]);
+    
+    // Area under line
+    const spacing = chartWidth / (data.length - 1);
+    
+    ctx.beginPath();
+    ctx.moveTo(padding.left, padding.top + chartHeight);
+    
+    data.forEach((d, i) => {
+        const x = padding.left + spacing * i;
+        const y = padding.top + chartHeight - ((d.price - minPrice) / priceRange) * chartHeight;
+        ctx.lineTo(x, y);
+    });
+    
+    ctx.lineTo(padding.left + chartWidth, padding.top + chartHeight);
+    ctx.closePath();
+    
+    ctx.fillStyle = 'rgba(16, 185, 129, 0.15)';  // Green with opacity
+    ctx.fill();
+    
+    // Price line
+    ctx.strokeStyle = '#10b981';  // Green
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    
+    data.forEach((d, i) => {
+        const x = padding.left + spacing * i;
+        const y = padding.top + chartHeight - ((d.price - minPrice) / priceRange) * chartHeight;
+        
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    
+    // Data points
+    data.forEach((d, i) => {
+        const x = padding.left + spacing * i;
+        const y = padding.top + chartHeight - ((d.price - minPrice) / priceRange) * chartHeight;
+        
+        ctx.fillStyle = '#10b981';
+        ctx.beginPath();
+        ctx.arc(x, y, 5, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // White border on dots
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    });
+    
+    // X labels
+    data.forEach((d, i) => {
+        const x = padding.left + spacing * i;
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(d.fiscal_date.slice(0, 7), x, padding.top + chartHeight + 20);
+    });
+    
+    // Legend
+    ctx.fillStyle = '#10b981';
+    ctx.fillRect(padding.left, 15, 15, 15);
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('Stock Price', padding.left + 20, 27);
+    
+    // Calculate and show change
+    const firstPrice = data[0]?.price;
+    const lastPrice = data[data.length - 1]?.price;
+    if (firstPrice && lastPrice) {
+        const change = ((lastPrice - firstPrice) / firstPrice) * 100;
+        const changeColor = change >= 0 ? '#22c55e' : '#ef4444';
+        const changeSymbol = change >= 0 ? '+' : '';
+        
+        ctx.fillStyle = changeColor;
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(`${changeSymbol}${change.toFixed(1)}% (8Q)`, padding.left + 110, 27);
+    }
 }
 });

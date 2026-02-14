@@ -26,6 +26,7 @@ class EarningsRecord(Base):
     revenue = Column(Float, nullable=True)
     free_cash_flow = Column(Float, nullable=True)
     pe_ratio = Column(Float, nullable=True)  # Historical P/E at time of earnings
+    price = Column(Float, nullable=True)  # Stock price at time of earnings
     fetched_at = Column(DateTime, default=datetime.utcnow)
 
 class StockSummary(Base):
