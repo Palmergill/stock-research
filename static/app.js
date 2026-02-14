@@ -43,6 +43,39 @@ document.addEventListener('DOMContentLoaded', () => {
     tickerInput.value = 'TSLA';
     loadStock('TSLA');
 
+    // Tab switching
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+    
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tabId = btn.dataset.tab;
+            
+            // Update active states
+            tabBtns.forEach(b => b.classList.remove('active'));
+            tabContents.forEach(c => c.classList.remove('active'));
+            
+            btn.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+            
+            // Redraw charts in the active tab (they might not render properly when hidden)
+            if (window.lastChartData) {
+                setTimeout(() => {
+                    if (tabId === 'overview') {
+                        drawPriceChart(window.lastChartData);
+                    } else if (tabId === 'earnings') {
+                        drawEPSChart(window.lastChartData);
+                    } else if (tabId === 'financials') {
+                        drawRevenueChart(window.lastChartData);
+                        drawFCFChart(window.lastChartData);
+                    } else if (tabId === 'valuation') {
+                        drawPEChart(window.lastChartData);
+                    }
+                }, 10);
+            }
+        });
+    });
+
     // Search handler
     searchForm.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -129,12 +162,23 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Draw charts (reverse data for chronological order)
         const chartData = [...data.earnings].reverse();
+        window.lastChartData = chartData;  // Store for tab switching
         
-        drawEPSChart(chartData);
-        drawRevenueChart(chartData);
-        drawFCFChart(chartData);
-        drawPEChart(chartData);
-        drawPriceChart(chartData);
+        // Draw charts for currently active tab
+        const activeTab = document.querySelector('.tab-content.active').id;
+        if (activeTab === 'overview' || activeTab === 'earnings') {
+            drawPriceChart(chartData);
+        }
+        if (activeTab === 'overview' || activeTab === 'earnings') {
+            drawEPSChart(chartData);
+        }
+        if (activeTab === 'financials') {
+            drawRevenueChart(chartData);
+            drawFCFChart(chartData);
+        }
+        if (activeTab === 'valuation') {
+            drawPEChart(chartData);
+        }
     }
 
     // Chart drawing functions
