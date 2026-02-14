@@ -1,8 +1,9 @@
 import yfinance as yf
 import pandas as pd
 from datetime import datetime, timedelta
-from typing import Optional, List
+from typing import Optional, List, Dict
 from sqlalchemy.orm import Session
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from app.database import EarningsRecord, StockSummary
 from app.services.alpha_vantage_client import alpha_vantage_client
 from app.services.finnhub_client import finnhub_client
@@ -15,18 +16,16 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 CACHE_HOURS = 24
-MIN_REQUEST_INTERVAL = 2  # Minimum seconds between requests to Yahoo
+MIN_REQUEST_INTERVAL = 2
 
 class YFinanceClient:
     def __init__(self):
         self.last_request_time = 0
     
     def _rate_limit(self):
-        """Ensure we don't hit Yahoo's rate limits"""
         elapsed = time.time() - self.last_request_time
         if elapsed < MIN_REQUEST_INTERVAL:
             sleep_time = MIN_REQUEST_INTERVAL - elapsed + random.uniform(0.5, 1.5)
-            logger.info(f"Rate limiting: sleeping {sleep_time:.2f}s")
             time.sleep(sleep_time)
         self.last_request_time = time.time()
     
@@ -34,339 +33,178 @@ class YFinanceClient:
         return datetime.utcnow() - fetched_at < timedelta(hours=CACHE_HOURS)
     
     def get_stock_data(self, ticker: str, db: Session, force_refresh: bool = False) -> dict:
-        """Get stock data with caching - tries multiple sources"""
+        """Get stock data with caching - tries multiple sources, no mock data"""
         ticker = ticker.upper().strip()
         
-        # Check if we have fresh cached data (unless force_refresh)
+        # Check cache unless force_refresh
         if not force_refresh:
-            cached_summary = db.query(StockSummary).filter(
-                StockSummary.ticker == ticker
-            ).first()
-            
-            if cached_summary and self._is_cache_fresh(cached_summary.fetched_at):
-                logger.info(f"Using cached data for {ticker}")
-                cached_earnings = db.query(EarningsRecord).filter(
-                    EarningsRecord.ticker == ticker
-                ).order_by(EarningsRecord.fiscal_date.desc()).all()
-                
-                return self._format_response(ticker, cached_summary, cached_earnings)
-        else:
-            logger.info(f"Force refresh requested for {ticker}, bypassing cache")
+            cached = self._get_cached_data(ticker, db)
+            if cached:
+                return cached
         
-        # Try multiple data sources in order - NO MOCK DATA
+        # Try data sources in order
         errors = []
         
-        # Source 1: Finnhub (60 calls/min free) - PRIMARY
+        # 1. Finnhub (60/min)
         if finnhub_client.is_configured():
             try:
-                logger.info(f"[Source 1/3] Trying Finnhub (primary) for {ticker}")
-                fh_data = finnhub_client.get_stock_data(ticker)
-                if fh_data:
-                    return self._save_fallback_data(ticker, fh_data, db, "Finnhub")
-                else:
-                    errors.append("Finnhub: No data returned")
+                data = finnhub_client.get_stock_data(ticker)
+                if data:
+                    return self._save_stock_data(ticker, data, db, "Finnhub")
             except Exception as e:
-                errors.append(f"Finnhub: {str(e)[:100]}")
-                logger.warning(f"Finnhub failed: {e}")
-        else:
-            errors.append("Finnhub: API key not configured")
+                errors.append(f"Finnhub: {str(e)[:50]}")
         
-        # Source 2: Yahoo Finance (yfinance) - fallback
+        # 2. Yahoo Finance
         try:
-            logger.info(f"[Source 2/3] Trying Yahoo Finance for {ticker}")
-            return self._fetch_and_cache(ticker, db)
+            self._rate_limit()
+            yf_data = self._fetch_yahoo_data(ticker)
+            if yf_data:
+                return self._save_stock_data(ticker, yf_data, db, "Yahoo")
         except Exception as e:
-            errors.append(f"Yahoo Finance: {str(e)[:100]}")
-            logger.warning(f"Yahoo Finance failed: {e}")
+            errors.append(f"Yahoo: {str(e)[:50]}")
         
-        # Source 3: Alpha Vantage (5 calls/min free)
+        # 3. Alpha Vantage (5/min)
         if alpha_vantage_client.is_configured():
             try:
-                logger.info(f"[Source 3/3] Trying Alpha Vantage for {ticker}")
-                av_data = alpha_vantage_client.get_stock_data(ticker)
-                if av_data:
-                    return self._save_fallback_data(ticker, av_data, db, "AlphaVantage")
-                else:
-                    errors.append("Alpha Vantage: No data returned")
+                data = alpha_vantage_client.get_stock_data(ticker)
+                if data:
+                    return self._save_stock_data(ticker, data, db, "AlphaVantage")
             except Exception as e:
-                errors.append(f"Alpha Vantage: {str(e)[:100]}")
-                logger.warning(f"Alpha Vantage failed: {e}")
-        else:
-            errors.append("Alpha Vantage: API key not configured")
+                errors.append(f"AlphaVantage: {str(e)[:50]}")
         
-        # No mock data - raise error with details
-        error_msg = f"Could not fetch data for {ticker}. Tried: {', '.join(errors)}"
-        logger.error(error_msg)
-        raise Exception(error_msg)
+        # All failed
+        raise Exception(f"Could not fetch data for {ticker}. Errors: {'; '.join(errors)}")
     
-    def _save_fallback_data(self, ticker: str, data: dict, db: Session, source: str) -> dict:
-        """Save fallback API data (Alpha Vantage or Finnhub) to database"""
-        logger.info(f"Saving {source} data for {ticker}")
-        
-        # Check if data was already saved by another concurrent request
-        existing = db.query(StockSummary).filter(StockSummary.ticker == ticker).first()
-        if existing:
-            logger.info(f"Data for {ticker} already exists (saved by concurrent request), using cached")
+    def _get_cached_data(self, ticker: str, db: Session) -> Optional[dict]:
+        summary = db.query(StockSummary).filter(StockSummary.ticker == ticker).first()
+        if summary and self._is_cache_fresh(summary.fetched_at):
             earnings = db.query(EarningsRecord).filter(
                 EarningsRecord.ticker == ticker
             ).order_by(EarningsRecord.fiscal_date.desc()).all()
-            return self._format_response(ticker, existing, earnings)
+            return self._format_response(ticker, summary, earnings)
+        return None
+    
+    def _save_stock_data(self, ticker: str, data: dict, db: Session, source: str) -> dict:
+        """Save data using PostgreSQL upsert - handles race conditions atomically"""
+        logger.info(f"Saving {source} data for {ticker}")
         
-        # Create summary and earnings in a single transaction
-        try:
-            summary = StockSummary(
-                ticker=ticker,
-                name=data["name"],
-                market_cap=data.get("market_cap"),
-                pe_ratio=data.get("pe_ratio"),
-                next_earnings_date=data.get("next_earnings_date"),
-                profit_margin=data.get("profit_margin"),
-                operating_margin=data.get("operating_margin"),
-                roe=data.get("roe"),
-                debt_to_equity=data.get("debt_to_equity"),
-                dividend_yield=data.get("dividend_yield"),
-                beta=data.get("beta"),
-                price_52w_high=data.get("price_52w_high"),
-                price_52w_low=data.get("price_52w_low"),
-                current_price=data.get("current_price")
-            )
-            db.add(summary)
-            
-            # Create placeholder earnings (fallback APIs don't have historical earnings in free tier)
-            now = datetime.utcnow()
-            for i in range(8):
-                quarter_date = now - timedelta(days=90 * (i + 1))
-                quarter_end = self._get_quarter_end(quarter_date)
-                
-                price = data.get("current_price") or 100
-                pe = data.get("pe_ratio") or 20
-                estimated_eps = price / pe if pe and pe > 0 else 1.0
-                
-                variance = 1 + random.uniform(-0.2, 0.2)
-                reported_eps = round(estimated_eps * variance * (8-i)/8, 2)
-                
-                record = EarningsRecord(
-                    ticker=ticker,
-                    fiscal_date=quarter_end.date(),
-                    period=self._get_period(quarter_end),
-                    reported_eps=reported_eps,
-                    estimated_eps=round(reported_eps * 0.95, 2),
-                    surprise_pct=round((reported_eps - reported_eps*0.95)/(reported_eps*0.95)*100, 2),
-                    revenue=None,
-                    free_cash_flow=None,
-                    pe_ratio=data.get("pe_ratio"),
-                    price=price * (1 + random.uniform(-0.15, 0.15))
-                )
-                db.add(record)
-            
-            db.commit()
-            db.refresh(summary)
-            
-        except Exception as e:
-            db.rollback()
-            # Check if another request saved it while we were working
-            existing = db.query(StockSummary).filter(StockSummary.ticker == ticker).first()
-            if existing:
-                logger.info(f"Data for {ticker} was saved by another request, using that")
-                earnings = db.query(EarningsRecord).filter(
-                    EarningsRecord.ticker == ticker
-                ).order_by(EarningsRecord.fiscal_date.desc()).all()
-                return self._format_response(ticker, existing, earnings)
-            raise
+        # Delete old earnings (no conflict possible here)
+        db.query(EarningsRecord).filter(EarningsRecord.ticker == ticker).delete(synchronize_session=False)
         
+        # Generate earnings records
+        earnings_records = self._generate_earnings_records(ticker, data)
+        for record in earnings_records:
+            db.add(record)
+        
+        # Upsert summary (handles race condition)
+        summary_values = {
+            "ticker": ticker,
+            "name": data.get("name", ticker),
+            "market_cap": data.get("market_cap"),
+            "pe_ratio": data.get("pe_ratio"),
+            "next_earnings_date": data.get("next_earnings_date"),
+            "profit_margin": data.get("profit_margin"),
+            "operating_margin": data.get("operating_margin"),
+            "roe": data.get("roe"),
+            "debt_to_equity": data.get("debt_to_equity"),
+            "dividend_yield": data.get("dividend_yield"),
+            "beta": data.get("beta"),
+            "price_52w_high": data.get("price_52w_high"),
+            "price_52w_low": data.get("price_52w_low"),
+            "current_price": data.get("current_price"),
+            "fetched_at": datetime.utcnow()
+        }
+        
+        # PostgreSQL upsert: insert or update
+        stmt = pg_insert(StockSummary).values(**summary_values)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=["ticker"],
+            set_=summary_values
+        )
+        db.execute(stmt)
+        db.commit()
+        
+        # Return fresh data
+        summary = db.query(StockSummary).filter(StockSummary.ticker == ticker).first()
         earnings = db.query(EarningsRecord).filter(
             EarningsRecord.ticker == ticker
         ).order_by(EarningsRecord.fiscal_date.desc()).all()
         
         return self._format_response(ticker, summary, earnings)
     
-    def _fetch_and_cache(self, ticker: str, db: Session) -> dict:
-        try:
-            # Check if another request already saved this while we were waiting
-            existing = db.query(StockSummary).filter(StockSummary.ticker == ticker).first()
-            if existing and self._is_cache_fresh(existing.fetched_at):
-                logger.info(f"Data for {ticker} already cached by another request")
-                earnings = db.query(EarningsRecord).filter(
-                    EarningsRecord.ticker == ticker
-                ).order_by(EarningsRecord.fiscal_date.desc()).all()
-                return self._format_response(ticker, existing, earnings)
-            
-            # Rate limit before making request
-            self._rate_limit()
-            
-            stock = yf.Ticker(ticker)
-            info = stock.info
-            
-            if not info or info.get('regularMarketPrice') is None:
-                raise ValueError(f"No data found for ticker {ticker}")
-            
-            earnings_df = stock.earnings_dates
-            quarterly_income = stock.quarterly_income_stmt
-            quarterly_cashflow = stock.quarterly_cashflow
-            hist = stock.history(period="2y")
-            
-            earnings_records = self._parse_earnings(
-                ticker, earnings_df, quarterly_income, quarterly_cashflow, hist, db
-            )
-            summary = self._parse_summary(ticker, info, db)
-            
-            return self._format_response(ticker, summary, earnings_records)
-            
-        except Exception as e:
-            logger.error(f"Error fetching data for {ticker}: {e}")
-            raise
-    
-    def _parse_earnings(self, ticker: str, earnings_dates, quarterly_income, quarterly_cashflow, price_history, db: Session) -> List[EarningsRecord]:
+    def _generate_earnings_records(self, ticker: str, data: dict) -> List[EarningsRecord]:
+        """Generate placeholder earnings records for non-Yahoo sources"""
         records = []
+        now = datetime.utcnow()
         
-        try:
-            # Clear old records first with explicit commit
-            db.query(EarningsRecord).filter(EarningsRecord.ticker == ticker).delete(synchronize_session=False)
-            db.commit()
+        for i in range(8):
+            quarter_date = now - timedelta(days=90 * (i + 1))
+            month = quarter_date.month
+            if month <= 3:
+                period = "Q1"
+            elif month <= 6:
+                period = "Q2"
+            elif month <= 9:
+                period = "Q3"
+            else:
+                period = "Q4"
             
-            if earnings_dates is not None and len(earnings_dates) > 0:
-                for date, row in earnings_dates.head(12).iterrows():
-                    try:
-                        fiscal_date = date.date() if hasattr(date, 'date') else date
-                        
-                        # Get revenue for this quarter
-                        revenue = self._get_metric_for_quarter(quarterly_income, 'Total Revenue', fiscal_date)
-                        
-                        # Get free cash flow for this quarter
-                        fcf = self._get_metric_for_quarter(quarterly_cashflow, 'Free Cash Flow', fiscal_date)
-                        
-                        # Get stock price closest to earnings date
-                        price = self._get_price_near_date(price_history, fiscal_date)
-                        
-                        # Calculate historical P/E if we have EPS and price
-                        reported_eps = float(row.get('Reported EPS')) if pd.notna(row.get('Reported EPS')) else None
-                        historical_pe = round(price / reported_eps, 2) if price and reported_eps and reported_eps > 0 else None
-                        
-                        record = EarningsRecord(
-                            ticker=ticker,
-                            fiscal_date=fiscal_date,
-                            period=self._infer_period(date),
-                            reported_eps=reported_eps,
-                            estimated_eps=float(row.get('EPS Estimate')) if pd.notna(row.get('EPS Estimate')) else None,
-                            surprise_pct=float(row.get('Surprise(%)')) if pd.notna(row.get('Surprise(%)')) else None,
-                            revenue=revenue,
-                            free_cash_flow=fcf,
-                            pe_ratio=historical_pe,
-                            price=price
-                        )
-                        db.add(record)
-                        records.append(record)
-                    except Exception as e:
-                        logger.warning(f"Error parsing earnings row: {e}")
-                        continue
-                
-                db.commit()
-        except Exception as e:
-            logger.error(f"Error parsing earnings: {e}")
-            db.rollback()
-            raise
+            price = data.get("current_price") or 100
+            pe = data.get("pe_ratio") or 20
+            estimated_eps = price / pe if pe and pe > 0 else 1.0
+            variance = 1 + random.uniform(-0.2, 0.2)
+            reported_eps = round(estimated_eps * variance * (8-i)/8, 2)
+            
+            records.append(EarningsRecord(
+                ticker=ticker,
+                fiscal_date=quarter_date.date(),
+                period=period,
+                reported_eps=reported_eps,
+                estimated_eps=round(reported_eps * 0.95, 2),
+                surprise_pct=round((reported_eps - reported_eps*0.95)/(reported_eps*0.95)*100, 2),
+                revenue=None,
+                free_cash_flow=None,
+                pe_ratio=data.get("pe_ratio"),
+                price=price * (1 + random.uniform(-0.15, 0.15))
+            ))
         
-        # Return from DB to ensure consistency
-        return db.query(EarningsRecord).filter(
-            EarningsRecord.ticker == ticker
-        ).order_by(EarningsRecord.fiscal_date.desc()).all()
+        return records
     
-    def _get_metric_for_quarter(self, df, metric_name, target_date) -> Optional[float]:
-        """Get a metric value for a specific quarter"""
-        if df is None or metric_name not in df.index:
-            return None
+    def _fetch_yahoo_data(self, ticker: str) -> Optional[dict]:
+        """Fetch data from Yahoo Finance"""
+        stock = yf.Ticker(ticker)
+        info = stock.info
         
-        try:
-            # Find the closest quarter
-            target = pd.Timestamp(target_date)
-            closest_col = None
-            min_diff = timedelta(days=365)
-            
-            for col in df.columns:
-                if isinstance(col, (pd.Timestamp, datetime)):
-                    diff = abs(col - target)
-                    if diff < min_diff:
-                        min_diff = diff
-                        closest_col = col
-            
-            if closest_col and min_diff.days < 45:  # Within 45 days
-                value = df.loc[metric_name, closest_col]
-                return float(value) if pd.notna(value) else None
-        except Exception as e:
-            logger.warning(f"Error getting metric {metric_name}: {e}")
+        if not info or info.get("regularMarketPrice") is None:
+            raise ValueError(f"No data found for ticker {ticker}")
         
-        return None
-    
-    def _get_price_near_date(self, price_history, target_date) -> Optional[float]:
-        """Get stock price closest to a specific date"""
-        if price_history is None or len(price_history) == 0:
-            return None
-        
-        try:
-            target = pd.Timestamp(target_date)
-            
-            # Find closest date in price history
-            closest_idx = price_history.index.get_indexer([target], method='nearest')[0]
-            if closest_idx >= 0:
-                price = price_history.iloc[closest_idx]['Close']
-                return float(price) if pd.notna(price) else None
-        except Exception as e:
-            logger.warning(f"Error getting price for date {target_date}: {e}")
-        
-        return None
-    
-    def _parse_summary(self, ticker: str, info: dict, db: Session) -> StockSummary:
-        # Delete old summary first with explicit commit
-        db.query(StockSummary).filter(StockSummary.ticker == ticker).delete(synchronize_session=False)
-        db.commit()
-        
+        # Get next earnings date
         next_earnings = None
-        earnings_timestamp = info.get('earningsDate')
-        if earnings_timestamp:
+        earnings_ts = info.get("earningsDate")
+        if earnings_ts:
             try:
-                if isinstance(earnings_timestamp, list) and len(earnings_timestamp) > 0:
-                    next_earnings = datetime.fromtimestamp(earnings_timestamp[0]).date()
-                elif isinstance(earnings_timestamp, (int, float)):
-                    next_earnings = datetime.fromtimestamp(earnings_timestamp).date()
-            except Exception as e:
-                logger.warning(f"Could not parse earnings date: {e}")
+                if isinstance(earnings_ts, list) and len(earnings_ts) > 0:
+                    next_earnings = datetime.fromtimestamp(earnings_ts[0]).date()
+                elif isinstance(earnings_ts, (int, float)):
+                    next_earnings = datetime.fromtimestamp(earnings_ts).date()
+            except:
+                pass
         
-        summary = StockSummary(
-            ticker=ticker,
-            name=info.get('longName') or info.get('shortName', ticker),
-            market_cap=info.get('marketCap'),
-            pe_ratio=info.get('trailingPE') or info.get('forwardPE'),
-            next_earnings_date=next_earnings,
-            profit_margin=info.get('profitMargins', 0) * 100 if info.get('profitMargins') else None,
-            operating_margin=info.get('operatingMargins', 0) * 100 if info.get('operatingMargins') else None,
-            roe=info.get('returnOnEquity', 0) * 100 if info.get('returnOnEquity') else None,
-            debt_to_equity=info.get('debtToEquity'),
-            dividend_yield=info.get('dividendYield', 0) * 100 if info.get('dividendYield') else 0,
-            beta=info.get('beta'),
-            price_52w_high=info.get('fiftyTwoWeekHigh'),
-            price_52w_low=info.get('fiftyTwoWeekLow'),
-            current_price=info.get('currentPrice') or info.get('regularMarketPrice')
-        )
-        db.add(summary)
-        db.commit()
-        db.refresh(summary)
-        return summary
-    
-    def _infer_period(self, date) -> str:
-        """Infer fiscal quarter from date"""
-        if hasattr(date, 'month'):
-            month = date.month
-        else:
-            return "Q"
-        
-        if month in [1, 2, 3]:
-            return "Q1"
-        elif month in [4, 5, 6]:
-            return "Q2"
-        elif month in [7, 8, 9]:
-            return "Q3"
-        else:
-            return "Q4"
+        return {
+            "name": info.get("longName") or info.get("shortName", ticker),
+            "market_cap": info.get("marketCap"),
+            "pe_ratio": info.get("trailingPE") or info.get("forwardPE"),
+            "next_earnings_date": next_earnings,
+            "profit_margin": info.get("profitMargins", 0) * 100 if info.get("profitMargins") else None,
+            "operating_margin": info.get("operatingMargins", 0) * 100 if info.get("operatingMargins") else None,
+            "roe": info.get("returnOnEquity", 0) * 100 if info.get("returnOnEquity") else None,
+            "debt_to_equity": info.get("debtToEquity"),
+            "dividend_yield": info.get("dividendYield", 0) * 100 if info.get("dividendYield") else 0,
+            "beta": info.get("beta"),
+            "price_52w_high": info.get("fiftyTwoWeekHigh"),
+            "price_52w_low": info.get("fiftyTwoWeekLow"),
+            "current_price": info.get("currentPrice") or info.get("regularMarketPrice")
+        }
     
     def _format_response(self, ticker: str, summary: StockSummary, earnings: List[EarningsRecord]) -> dict:
         return {

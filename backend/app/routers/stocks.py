@@ -22,15 +22,6 @@ async def get_stock(ticker: str, refresh: bool = False, db: Session = Depends(ge
     except Exception as e:
         raise HTTPException(status_code=404, detail=f"Could not fetch data for {ticker}: {str(e)}")
 
-@router.post("/{ticker}/refresh")
-async def refresh_stock(ticker: str, db: Session = Depends(get_db)):
-    """Force refresh stock data (bypass cache)"""
-    try:
-        data = yfinance_client.get_stock_data(ticker, db, force_refresh=True)
-        return {"success": True, "message": f"Refreshed data for {ticker}", "data": data}
-    except Exception as e:
-        raise HTTPException(status_code=404, detail=f"Could not refresh data for {ticker}: {str(e)}")
-
 @router.get("/{ticker}/earnings")
 async def get_earnings(ticker: str, db: Session = Depends(get_db)):
     """Get earnings data for a ticker"""
