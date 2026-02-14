@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from app.database import init_db
+from app.database_migration import init_db_with_migration
 from app.routers import stocks
 import os
 
@@ -21,7 +21,7 @@ app.add_middleware(
 
 @app.on_event("startup")
 async def startup():
-    init_db()
+    init_db_with_migration()
 
 app.include_router(stocks.router)
 

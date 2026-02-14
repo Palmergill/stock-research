@@ -150,7 +150,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Load TSLA by default on homepage
     tickerInput.value = 'TSLA';
-    loadStock('TSLA');
+    
+    // Delay auto-load slightly to ensure everything is ready
+    setTimeout(() => {
+        loadStock('TSLA').catch(err => {
+            console.error('Auto-load error:', err);
+            loading.classList.add('hidden');
+            error.classList.remove('hidden');
+            errorMessage.textContent = `Failed to load: ${err.message}. Try searching manually.`;
+        });
+    }, 100);
 
     // Tab switching
     const tabBtns = document.querySelectorAll('.tab-btn');
@@ -202,29 +211,32 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     async function loadStock(ticker) {
-    currentTicker = ticker;
-    
-    // Show loading
-    loading.classList.remove('hidden');
-    error.classList.add('hidden');
-    empty.classList.add('hidden');
-    results.classList.add('hidden');
-    searchBtn.disabled = true;
-    
-    try {
-        const response = await fetch(`${API_BASE}/stocks/${ticker}`);
+        currentTicker = ticker;
         
-        if (!response.ok) {
-            throw new Error(`Could not load data for ${ticker}`);
-        }
+        // Show loading
+        loading.classList.remove('hidden');
+        error.classList.add('hidden');
+        empty.classList.add('hidden');
+        results.classList.add('hidden');
+        searchBtn.disabled = true;
         
-        const data = await response.json();
-        displayResults(data);
-        
-    } catch (err) {
-        loading.classList.add('hidden');
-        error.classList.remove('hidden');
-        errorMessage.textContent = err.message;
+        try {
+            const response = await fetch(`${API_BASE}/stocks/${ticker}`);
+            
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                const errorDetail = errorData.detail || `HTTP ${response.status}: ${response.statusText}`;
+                throw new Error(errorDetail);
+            }
+            
+            const data = await response.json();
+            displayResults(data);
+            
+        } catch (err) {
+            loading.classList.add('hidden');
+            error.classList.remove('hidden');
+            errorMessage.textContent = `${err.message}`;
+            console.error('Load error:', err);
         } finally {
             searchBtn.disabled = false;
         }
