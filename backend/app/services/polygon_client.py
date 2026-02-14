@@ -140,31 +140,75 @@ class PolygonClient:
         
         for i, fin in enumerate(financials[:8]):  # Last 8 quarters
             try:
-                fiscal_date = fin.get("filing_date") or fin.get("period_of_report_date")
+                fiscal_date = fin.get("filing_date") or fin.get("period_of_report_date") or fin.get("end_date")
                 if not fiscal_date:
                     continue
                 
-                # Extract financial data
+                # Extract financial data with multiple field name possibilities
                 financials_data = fin.get("financials", {})
-                income = financials_data.get("income_statement", {})
-                balance = financials_data.get("balance_sheet", {})
-                cash_flow = financials_data.get("cash_flow_statement", {})
+                income = financials_data.get("income_statement", {}) or {}
+                balance = financials_data.get("balance_sheet", {}) or {}
+                cash_flow = financials_data.get("cash_flow_statement", {}) or {}
                 
-                # Calculate EPS if available
-                net_income = income.get("net_income_loss", {}).get("value")
-                shares = balance.get("shares", {}).get("value")
-                eps = net_income / shares if net_income and shares else None
+                # Get revenue with multiple possible field names
+                revenue = None
+                for rev_key in ["revenues", "total_revenue", "revenue"]:
+                    rev_data = income.get(rev_key)
+                    if isinstance(rev_data, dict):
+                        revenue = rev_data.get("value")
+                    elif rev_data is not None:
+                        revenue = rev_data
+                    if revenue:
+                        break
+                
+                # Get net income with multiple possible field names
+                net_income = None
+                for ni_key in ["net_income_loss", "net_income", "net_loss"]:
+                    ni_data = income.get(ni_key)
+                    if isinstance(ni_data, dict):
+                        net_income = ni_data.get("value")
+                    elif ni_data is not None:
+                        net_income = ni_data
+                    if net_income:
+                        break
+                
+                # Get shares outstanding
+                shares = None
+                for shares_key in ["shares", "weighted_average_shares_outstanding", "common_stock_shares_outstanding"]:
+                    shares_data = balance.get(shares_key)
+                    if isinstance(shares_data, dict):
+                        shares = shares_data.get("value")
+                    elif shares_data is not None:
+                        shares = shares_data
+                    if shares:
+                        break
+                
+                # Calculate EPS
+                eps = None
+                if net_income and shares and shares > 0:
+                    eps = net_income / shares
+                
+                # Get FCF
+                fcf = None
+                for fcf_key in ["net_cash_flow_from_operating_activities", "operating_cash_flow", "free_cash_flow"]:
+                    fcf_data = cash_flow.get(fcf_key)
+                    if isinstance(fcf_data, dict):
+                        fcf = fcf_data.get("value")
+                    elif fcf_data is not None:
+                        fcf = fcf_data
+                    if fcf:
+                        break
                 
                 earnings.append({
                     "fiscal_date": fiscal_date,
                     "period": self._get_quarter_from_date(fiscal_date),
                     "reported_eps": eps,
-                    "estimated_eps": None,  # Not available in Polygon
-                    "surprise_pct": None,  # Not available in Polygon
-                    "revenue": income.get("revenues", {}).get("value"),
-                    "free_cash_flow": cash_flow.get("net_cash_flow_from_operating_activities", {}).get("value"),
-                    "pe_ratio": None,  # Will be calculated later
-                    "price": None  # Will be filled in later
+                    "estimated_eps": None,
+                    "surprise_pct": None,
+                    "revenue": revenue,
+                    "free_cash_flow": fcf,
+                    "pe_ratio": None,
+                    "price": None
                 })
             except Exception as e:
                 logger.warning(f"Error processing financial {i}: {e}")
@@ -232,19 +276,42 @@ class PolygonClient:
             fin = financials[0]
             financials_data = fin.get("financials", {})
             
+            # Try different possible field names based on Polygon's schema
             metric_map = {
-                "profit_margin": ("income_statement", "net_profit_margin"),
-                "operating_margin": ("income_statement", "operating_income_margin"),
-                "return_on_equity": ("financial_metrics", "return_on_equity"),
-                "debt_to_equity": ("financial_metrics", "debt_to_equity_ratio")
+                "profit_margin": [
+                    ("income_statement", "net_profit_margin"),
+                    ("income_statement", "profit_margin"),
+                ],
+                "operating_margin": [
+                    ("income_statement", "operating_income_margin"),
+                    ("income_statement", "operating_margin"),
+                ],
+                "return_on_equity": [
+                    ("financial_metrics", "return_on_equity"),
+                    ("financial_metrics", "roe"),
+                ],
+                "debt_to_equity": [
+                    ("financial_metrics", "debt_to_equity_ratio"),
+                    ("financial_metrics", "debt_equity_ratio"),
+                ]
             }
             
             if metric_name in metric_map:
-                section, key = metric_map[metric_name]
-                value = financials_data.get(section, {}).get(key, {}).get("value")
-                return value
-        except:
-            pass
+                for section, key in metric_map[metric_name]:
+                    try:
+                        section_data = financials_data.get(section, {})
+                        if isinstance(section_data, dict):
+                            value_data = section_data.get(key)
+                            if isinstance(value_data, dict):
+                                value = value_data.get("value")
+                            else:
+                                value = value_data
+                            if value is not None:
+                                return float(value)
+                    except:
+                        continue
+        except Exception as e:
+            logger.warning(f"Error extracting metric {metric_name}: {e}")
         
         return None
     
