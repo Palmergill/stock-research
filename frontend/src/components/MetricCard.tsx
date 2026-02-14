@@ -1,8 +1,9 @@
-import React from 'react';
-import { StockSummaryData } from '../types/stock';
+import React, { useMemo } from 'react';
+import { StockSummaryData, EarningsData } from '../types/stock';
 
 interface MetricCardProps {
   summary: StockSummaryData;
+  earnings: EarningsData[];
 }
 
 const formatMarketCap = (value: number | null): string => {
@@ -13,72 +14,77 @@ const formatMarketCap = (value: number | null): string => {
   return `$${value.toLocaleString()}`;
 };
 
-export const MetricCard: React.FC<MetricCardProps> = ({ summary }) => {
+const calculateYoYGrowth = (earnings: EarningsData[]): { revenue: number | null; eps: number | null } => {
+  if (earnings.length < 4) return { revenue: null, eps: null };
+  
+  const latest = earnings[0];
+  const yearAgo = earnings.find(e => {
+    const latestDate = new Date(latest.fiscal_date);
+    const eDate = new Date(e.fiscal_date);
+    return eDate.getFullYear() === latestDate.getFullYear() - 1 && 
+           Math.abs(eDate.getMonth() - latestDate.getMonth()) <= 1;
+  });
+  
+  if (!yearAgo || !latest.revenue || !yearAgo.revenue || !latest.reported_eps || !yearAgo.reported_eps) {
+    return { revenue: null, eps: null };
+  }
+  
+  const revenueGrowth = ((latest.revenue - yearAgo.revenue) / yearAgo.revenue) * 100;
+  const epsGrowth = ((latest.reported_eps - yearAgo.reported_eps) / Math.abs(yearAgo.reported_eps)) * 100;
+  
+  return { revenue: revenueGrowth, eps: epsGrowth };
+};
+
+const GrowthBadge: React.FC<{ value: number | null; label: string }> = ({ value, label }) => {
+  if (value === null) return null;
+  
+  const isPositive = value >= 0;
+  const arrow = isPositive ? '↑' : '↓';
+  
   return (
-    <div style={styles.container}>
-      <h2 style={styles.name}>{summary.name}</h2>
-      <p style={styles.ticker}>{summary.ticker}</p>
-      
-      <div style={styles.grid}>
-        <div style={styles.metric}>
-          <span style={styles.label}>Market Cap</span>
-          <span style={styles.value}>{formatMarketCap(summary.market_cap)}</span>
-        </div>
-        <div style={styles.metric}>
-          <span style={styles.label}>P/E Ratio</span>
-          <span style={styles.value}>{summary.pe_ratio?.toFixed(2) || 'N/A'}</span>
-        </div>
-        <div style={styles.metric}>
-          <span style={styles.label}>Next Earnings</span>
-          <span style={styles.value}>
-            {summary.next_earnings_date 
-              ? new Date(summary.next_earnings_date).toLocaleDateString()
-              : 'N/A'}
-          </span>
-        </div>
-      </div>
+    <div className="metric-item">
+      <span className="metric-label">{label} (YoY)</span>
+      <span className={`growth-badge ${isPositive ? 'positive' : 'negative'}`}>
+        {arrow} {Math.abs(value).toFixed(1)}%
+      </span>
     </div>
   );
 };
 
-const styles: Record<string, React.CSSProperties> = {
-  container: {
-    background: '#1e293b',
-    borderRadius: '12px',
-    padding: '24px',
-    marginBottom: '24px',
-  },
-  name: {
-    fontSize: '24px',
-    fontWeight: 700,
-    color: '#e2e8f0',
-    marginBottom: '4px',
-  },
-  ticker: {
-    fontSize: '14px',
-    color: '#94a3b8',
-    marginBottom: '20px',
-    textTransform: 'uppercase',
-  },
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-    gap: '20px',
-  },
-  metric: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '4px',
-  },
-  label: {
-    fontSize: '12px',
-    color: '#94a3b8',
-    textTransform: 'uppercase',
-    letterSpacing: '0.5px',
-  },
-  value: {
-    fontSize: '20px',
-    fontWeight: 600,
-    color: '#e2e8f0',
-  },
+export const MetricCard: React.FC<MetricCardProps> = ({ summary, earnings }) => {
+  const growth = useMemo(() => calculateYoYGrowth(earnings), [earnings]);
+
+  return (
+    <div className="metric-card">
+      <div className="metric-header">
+        <h2 className="metric-name">{summary.name}</h2>
+        <span className="metric-ticker">{summary.ticker}</span>
+      </div>
+      
+      <div className="metric-grid">
+        <div className="metric-item">
+          <span className="metric-label">Market Cap</span>
+          <span className="metric-value">{formatMarketCap(summary.market_cap)}</span>
+        </div>
+        <div className="metric-item">
+          <span className="metric-label">P/E Ratio</span>
+          <span className="metric-value">{summary.pe_ratio?.toFixed(2) || 'N/A'}</span>
+        </div>
+        <div className="metric-item">
+          <span className="metric-label">Next Earnings</span>
+          <span className="metric-value">
+            {summary.next_earnings_date 
+              ? new Date(summary.next_earnings_date).toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric'
+                })
+              : 'N/A'}
+          </span>
+        </div>
+        <GrowthBadge value={growth.revenue} label="Revenue" />
+        <GrowthBadge value={growth.eps} label="EPS" />
+      </div>
+    </div>
+  );
 };

@@ -27,9 +27,16 @@ export const FreeCashFlowChart: React.FC<FreeCashFlowChartProps> = ({ earnings }
       : 0,
   }));
 
+  const avgMargin = chartData.reduce((sum, d) => sum + d.fcfMargin, 0) / chartData.length;
+
   return (
-    <div style={styles.container}>
-      <h3 style={styles.title}>Free Cash Flow</h3>
+    <div className="chart-container">
+      <div className="chart-header">
+        <h3 className="chart-title">Free Cash Flow</h3>
+        <span className="chart-subtitle">
+          Avg Margin: {avgMargin.toFixed(1)}%
+        </span>
+      </div>
       <ResponsiveContainer width="100%" height={300}>
         <ComposedChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
@@ -63,7 +70,7 @@ export const FreeCashFlowChart: React.FC<FreeCashFlowChartProps> = ({ earnings }
               return [`$${value.toFixed(2)}B`, name];
             }}
           />
-          <Legend />
+          <Legend wrapperStyle={{ paddingTop: '10px' }} />
           <Bar 
             yAxisId="left"
             dataKey="fcf" 
@@ -84,19 +91,4 @@ export const FreeCashFlowChart: React.FC<FreeCashFlowChartProps> = ({ earnings }
       </ResponsiveContainer>
     </div>
   );
-};
-
-const styles: Record<string, React.CSSProperties> = {
-  container: {
-    background: '#1e293b',
-    borderRadius: '12px',
-    padding: '24px',
-    marginBottom: '24px',
-  },
-  title: {
-    marginBottom: '16px',
-    fontSize: '18px',
-    fontWeight: 600,
-    color: '#e2e8f0',
-  },
 };
