@@ -323,9 +323,85 @@ class PolygonClient:
                                 return float(value)
                     except:
                         continue
+            
+            # Calculate ROE and Debt-to-Equity from balance sheet if not found
+            if metric_name == "return_on_equity":
+                return self._calculate_roe(financials_data)
+            elif metric_name == "debt_to_equity":
+                return self._calculate_debt_to_equity(financials_data)
+                
         except Exception as e:
             logger.warning(f"Error extracting metric {metric_name}: {e}")
         
+        return None
+    
+    def _calculate_roe(self, financials_data: Dict) -> Optional[float]:
+        """Calculate ROE = Net Income / Shareholder Equity"""
+        try:
+            income = financials_data.get("income_statement", {})
+            balance = financials_data.get("balance_sheet", {})
+            
+            # Get net income
+            net_income = None
+            for key in ["net_income_loss", "net_income", "net_income_loss_attributable_to_parent"]:
+                ni_data = income.get(key)
+                if isinstance(ni_data, dict):
+                    net_income = ni_data.get("value")
+                elif ni_data is not None:
+                    net_income = ni_data
+                if net_income:
+                    break
+            
+            # Get equity
+            equity = None
+            for key in ["equity", "equity_attributable_to_parent", "stockholders_equity"]:
+                eq_data = balance.get(key)
+                if isinstance(eq_data, dict):
+                    equity = eq_data.get("value")
+                elif eq_data is not None:
+                    equity = eq_data
+                if equity:
+                    break
+            
+            if net_income and equity and equity > 0:
+                roe = (net_income / equity) * 100  # Return as percentage
+                return round(roe, 2)
+        except Exception as e:
+            logger.warning(f"Could not calculate ROE: {e}")
+        return None
+    
+    def _calculate_debt_to_equity(self, financials_data: Dict) -> Optional[float]:
+        """Calculate Debt-to-Equity = Total Liabilities / Shareholder Equity"""
+        try:
+            balance = financials_data.get("balance_sheet", {})
+            
+            # Get total liabilities
+            liabilities = None
+            for key in ["liabilities", "total_liabilities"]:
+                liab_data = balance.get(key)
+                if isinstance(liab_data, dict):
+                    liabilities = liab_data.get("value")
+                elif liab_data is not None:
+                    liabilities = liab_data
+                if liabilities:
+                    break
+            
+            # Get equity
+            equity = None
+            for key in ["equity", "equity_attributable_to_parent", "stockholders_equity"]:
+                eq_data = balance.get(key)
+                if isinstance(eq_data, dict):
+                    equity = eq_data.get("value")
+                elif eq_data is not None:
+                    equity = eq_data
+                if equity:
+                    break
+            
+            if liabilities and equity and equity > 0:
+                dte = liabilities / equity
+                return round(dte, 2)
+        except Exception as e:
+            logger.warning(f"Could not calculate D/E: {e}")
         return None
     
     def _get_quarter_from_date(self, date_str: str) -> str:
