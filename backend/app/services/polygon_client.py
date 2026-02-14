@@ -176,12 +176,16 @@ class PolygonClient:
         """Calculate P/E ratio from price and earnings (TTM)"""
         try:
             price = price_data.get("close")
+            logger.info(f"Calculating P/E: price={price}, details_keys={list(details.keys())}")
+            
             if not price:
+                logger.warning("No price available for P/E calculation")
                 return None
             
             # Try to get EPS from ticker details first
             eps = details.get("eps") or details.get("earnings_per_share")
             if eps and eps > 0:
+                logger.info(f"Using EPS from details: {eps}")
                 return round(price / eps, 2)
             
             # Calculate TTM EPS from financials
@@ -189,21 +193,31 @@ class PolygonClient:
                 total_eps = 0
                 quarters_with_eps = 0
                 
-                for fin in financials[:4]:  # Last 4 quarters
-                    fin_data = fin.get("financials", {})
-                    income = fin_data.get("income_statement", {})
-                    balance = fin_data.get("balance_sheet", {})
-                    
-                    net_income = income.get("net_income_loss", {}).get("value")
-                    shares = balance.get("shares", {}).get("value")
-                    
-                    if net_income and shares and shares > 0:
-                        quarterly_eps = net_income / shares
-                        total_eps += quarterly_eps
-                        quarters_with_eps += 1
+                for i, fin in enumerate(financials[:4]):  # Last 4 quarters
+                    try:
+                        fin_data = fin.get("financials", {})
+                        income = fin_data.get("income_statement", {})
+                        balance = fin_data.get("balance_sheet", {})
+                        
+                        net_income = income.get("net_income_loss", {}).get("value")
+                        shares = balance.get("shares", {}).get("value")
+                        
+                        logger.info(f"Q{i}: net_income={net_income}, shares={shares}")
+                        
+                        if net_income and shares and shares > 0:
+                            quarterly_eps = net_income / shares
+                            total_eps += quarterly_eps
+                            quarters_with_eps += 1
+                    except Exception as e:
+                        logger.warning(f"Error calculating EPS for quarter {i}: {e}")
                 
+                logger.info(f"Total TTM EPS: {total_eps} from {quarters_with_eps} quarters")
                 if quarters_with_eps > 0 and total_eps > 0:
-                    return round(price / total_eps, 2)
+                    pe = round(price / total_eps, 2)
+                    logger.info(f"Calculated P/E: {pe}")
+                    return pe
+            else:
+                logger.warning(f"Not enough financials: {len(financials) if financials else 0}")
                     
         except Exception as e:
             logger.warning(f"Could not calculate P/E: {e}")
