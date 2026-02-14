@@ -228,12 +228,10 @@ document.addEventListener('DOMContentLoaded', () => {
         results.classList.add('hidden');
         searchBtn.disabled = true;
         
-        const url = forceRefresh 
-            ? `${API_BASE}/stocks/${ticker}/refresh`
-            : `${API_BASE}/stocks/${ticker}`;
+        const url = `${API_BASE}/stocks/${ticker}?refresh=${forceRefresh}`;
         
         try {
-            const response = await fetch(url, forceRefresh ? {method: 'POST'} : {});
+            const response = await fetch(url);
             
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
@@ -247,12 +245,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(errorDetail);
             }
             
-            let data = await response.json();
-            
-            // Handle refresh endpoint response (wrapped in success object)
-            if (data.success && data.data) {
-                data = data.data;
-            }
+            const data = await response.json();
             
             // Validate data
             if (!data.summary || !data.summary.current_price) {
