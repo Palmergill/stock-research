@@ -149,8 +149,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Load TSLA by default on homepage
+    console.log('DOM ready, loading TSLA...');
     tickerInput.value = 'TSLA';
-    loadStock('TSLA');
+    empty.classList.add('hidden');
+    loading.classList.remove('hidden');
+    
+    loadStock('TSLA').catch(err => {
+        console.error('Failed to load TSLA:', err);
+        loading.classList.add('hidden');
+        error.classList.remove('hidden');
+        errorMessage.textContent = `Error loading TSLA: ${err.message}`;
+    });
     
     // Refresh button handler
     const refreshBtn = document.getElementById('refreshBtn');
@@ -246,10 +255,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             const data = await response.json();
+            console.log('Received data:', data);
             
             // Validate data
-            if (!data.summary || !data.summary.current_price) {
-                throw new Error('Invalid data received from server');
+            if (!data || !data.summary) {
+                throw new Error('Invalid data structure received from server');
             }
             
             displayResults(data);
@@ -274,6 +284,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function displayResults(data) {
+        console.log('displayResults called with:', data);
         loading.classList.add('hidden');
         results.classList.remove('hidden');
         
