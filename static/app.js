@@ -817,4 +817,5 @@ function drawPriceChart(data) {
         ctx.textAlign = 'left';
         ctx.fillText(`${changeSymbol}${change.toFixed(1)}% (8Q)`, padding.left + 110, 27);
     }
+}
 });
