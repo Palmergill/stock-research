@@ -48,12 +48,25 @@
    - Real-time prices
    - Historical financials
    - Quarterly data
+   - Company fundamentals
    - Requires API key
 
 2. **Yahoo Finance** (Fallback)
    - Free tier
    - Rate limited
    - Used when Polygon fails
+
+## Calculated Metrics
+
+Some metrics are calculated from raw financial data:
+
+| Metric | Calculation | Source Fields |
+|--------|-------------|---------------|
+| **P/E Ratio** | Price / TTM EPS | `close` / sum of 4Q `basic_earnings_per_share` |
+| **Revenue Growth** | (Current Q - YoY Q) / YoY Q | `revenues` current vs 4 quarters prior |
+| **ROE** | Net Income / Equity × 100 | `net_income_loss` / `equity` |
+| **Debt-to-Equity** | Total Liabilities / Equity | `liabilities` / `equity` |
+| **Free Cash Flow** | Latest quarter FCF | `net_cash_flow_from_operating_activities` |
 
 ## Frontend Structure
 

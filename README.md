@@ -1,8 +1,16 @@
-# Stock Research App v1.0.0
+# Stock Research App v1.0.2
 
 A professional stock analysis web app with real-time data, interactive charts, and comprehensive financial metrics.
 
 **Live:** https://palmergill.com
+
+## What's New in v1.0.2
+
+- **5 Key Metrics Overview** — P/E Ratio, Revenue Growth (YoY), Free Cash Flow, Debt-to-Equity, ROE
+- **Calculated Financial Metrics** — ROE and Debt-to-Equity computed from balance sheet data
+- **Revenue Growth Tracking** — Year-over-year comparison using quarterly financials
+- **Improved P/E Calculation** — TTM EPS from reported earnings per share
+- **Better Error Handling** — Defensive API response validation
 
 ## Architecture
 
@@ -35,10 +43,11 @@ User Search → Polygon.io API → PostgreSQL Cache → Frontend Charts
 
 ## Features
 
-### Current v1.0.0
-- ✅ **Real-time stock data** from Polygon.io
+### Current v1.0.2
+- ✅ **5 Key Metrics Overview** — P/E Ratio, Revenue Growth (YoY), Free Cash Flow, Debt-to-Equity, ROE
+- ✅ **Real-time stock data** from Polygon.io with Yahoo Finance fallback
 - ✅ **Interactive charts:** Price, EPS, Revenue, Free Cash Flow, P/E Ratio
-- ✅ **Key metrics:** Market Cap, P/E, Margins, ROE, Debt/Equity, Beta, 52-week range
+- ✅ **Detailed metrics:** Market Cap, Margins, Beta, 52-week range
 - ✅ **Tabbed interface:** Overview, Earnings, Financials, Valuation
 - ✅ **Autocomplete search** by ticker or company name
 - ✅ **Manual refresh** button for instant data updates
@@ -103,7 +112,7 @@ git push origin main
 ### Version Convention
 - Update `VERSION` file
 - Update version in `static/index.html`
-- Prefix commits: `[v1.0.1] Description`
+- Prefix commits: `[v1.0.2] Description`
 
 ## Database Schema
 
@@ -115,6 +124,8 @@ git push origin main
 | market_cap | FLOAT | Market capitalization |
 | current_price | FLOAT | Current stock price |
 | pe_ratio | FLOAT | Price-to-earnings ratio |
+| revenue_growth | FLOAT | YoY revenue growth % |
+| free_cash_flow | FLOAT | Latest quarter FCF |
 | profit_margin | FLOAT | Net profit margin % |
 | operating_margin | FLOAT | Operating margin % |
 | roe | FLOAT | Return on equity % |
@@ -174,7 +185,7 @@ git push origin main
 | Frontend | Vanilla JS, Canvas API |
 | Styling | CSS3 with CSS variables |
 | Hosting | Railway (backend), Vercel (frontend) |
-| Version | v1.0.0 |
+| Version | v1.0.2 |
 
 ## License
 
