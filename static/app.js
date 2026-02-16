@@ -185,7 +185,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 setTimeout(() => {
                     if (tabId === 'overview') {
                         drawPriceChart(window.lastChartData);
+                        drawEPSChart(window.lastChartData);
                     } else if (tabId === 'earnings') {
+                        drawPriceChart(window.lastChartData);
                         drawEPSChart(window.lastChartData);
                     } else if (tabId === 'financials') {
                         drawRevenueChart(window.lastChartData);
@@ -331,17 +333,24 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Draw charts for currently active tab
         const activeTab = document.querySelector('.tab-content.active').id;
-        if (activeTab === 'overview' || activeTab === 'earnings') {
+        
+        // Overview tab: Price and EPS charts
+        if (activeTab === 'overview') {
             drawPriceChart(chartData);
-        }
-        if (activeTab === 'overview' || activeTab === 'earnings') {
             drawEPSChart(chartData);
         }
-        if (activeTab === 'financials') {
+        // Earnings tab: EPS chart
+        else if (activeTab === 'earnings') {
+            drawPriceChart(chartData);
+            drawEPSChart(chartData);
+        }
+        // Financials tab: Revenue and FCF charts
+        else if (activeTab === 'financials') {
             drawRevenueChart(chartData);
             drawFCFChart(chartData);
         }
-        if (activeTab === 'valuation') {
+        // Valuation tab: P/E chart
+        else if (activeTab === 'valuation') {
             drawPEChart(chartData);
         }
     }
@@ -375,6 +384,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Chart drawing functions
 function drawEPSChart(data) {
     const canvas = document.getElementById('epsChart');
+    if (!canvas) return;
+    
     const ctx = canvas.getContext('2d');
     const dpr = window.devicePixelRatio || 1;
     
@@ -392,8 +403,16 @@ function drawEPSChart(data) {
     // Clear
     ctx.clearRect(0, 0, 800, 300);
     
-    // Get data ranges
+    // Check if we have data
     const allValues = [...data.map(d => d.reported_eps), ...data.map(d => d.estimated_eps)].filter(v => v != null);
+    if (allValues.length === 0) {
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '14px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('No EPS data available', 400, 150);
+        return;
+    }
+    
     const maxVal = Math.max(...allValues) * 1.1;
     const minVal = Math.min(...allValues) * 0.9;
     
@@ -488,6 +507,7 @@ function drawEPSChart(data) {
 
 function drawRevenueChart(data) {
     const canvas = document.getElementById('revenueChart');
+    if (!canvas) return;
     const ctx = canvas.getContext('2d');
     const dpr = window.devicePixelRatio || 1;
     
@@ -504,6 +524,14 @@ function drawRevenueChart(data) {
     ctx.clearRect(0, 0, 800, 250);
     
     const revenues = data.map(d => d.revenue / 1e9).filter(v => v > 0);
+    if (revenues.length === 0) {
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '14px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('No revenue data available', 400, 125);
+        return;
+    }
+    
     const maxRev = Math.max(...revenues) * 1.1;
     
     // Grid
@@ -548,6 +576,8 @@ function drawRevenueChart(data) {
 
 function drawFCFChart(data) {
     const canvas = document.getElementById('fcfChart');
+    if (!canvas) return;
+    
     const ctx = canvas.getContext('2d');
     const dpr = window.devicePixelRatio || 1;
     
@@ -564,6 +594,14 @@ function drawFCFChart(data) {
     ctx.clearRect(0, 0, 800, 250);
     
     const fcfs = data.map(d => d.free_cash_flow / 1e9).filter(v => v > 0);
+    if (fcfs.length === 0) {
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '14px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('No free cash flow data available', 400, 125);
+        return;
+    }
+    
     const maxFCF = Math.max(...fcfs) * 1.1;
     
     // Grid
@@ -615,6 +653,8 @@ function drawFCFChart(data) {
 
 function drawPEChart(data) {
     const canvas = document.getElementById('peChart');
+    if (!canvas) return;
+    
     const ctx = canvas.getContext('2d');
     const dpr = window.devicePixelRatio || 1;
     
@@ -631,6 +671,14 @@ function drawPEChart(data) {
     ctx.clearRect(0, 0, 800, 250);
     
     const pes = data.map(d => d.pe_ratio).filter(v => v != null);
+    if (pes.length === 0) {
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '14px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('No P/E data available', 400, 125);
+        return;
+    }
+    
     const maxPE = Math.max(...pes) * 1.1;
     const minPE = Math.min(...pes) * 0.9;
     
@@ -698,6 +746,8 @@ function drawPEChart(data) {
 
 function drawPriceChart(data) {
     const canvas = document.getElementById('priceChart');
+    if (!canvas) return;
+    
     const ctx = canvas.getContext('2d');
     const dpr = window.devicePixelRatio || 1;
     
@@ -714,6 +764,14 @@ function drawPriceChart(data) {
     ctx.clearRect(0, 0, 800, 300);
     
     const prices = data.map(d => d.price).filter(v => v != null);
+    if (prices.length === 0) {
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '14px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('No price data available', 400, 150);
+        return;
+    }
+    
     const maxPrice = Math.max(...prices) * 1.05;
     const minPrice = Math.min(...prices) * 0.95;
     const priceRange = maxPrice - minPrice;
