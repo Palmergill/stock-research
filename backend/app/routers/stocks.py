@@ -16,6 +16,23 @@ async def search_stocks_endpoint(q: str = Query(..., min_length=1), limit: int =
     results = search_stocks(q, limit)
     return {"results": results, "query": q}
 
+@router.get("/{ticker}/debug/finnhub")
+async def debug_finnhub(ticker: str):
+    """Debug endpoint to see raw Finnhub earnings data"""
+    try:
+        if not finnhub_estimates_client.is_configured():
+            return {"error": "Finnhub API key not configured"}
+        
+        estimates = finnhub_estimates_client.get_earnings_estimates(ticker)
+        return {
+            "ticker": ticker.upper(),
+            "finnhub_configured": True,
+            "count": len(estimates) if estimates else 0,
+            "estimates": estimates
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.get("/{ticker}/debug")
 async def debug_polygon(ticker: str):
     """Debug endpoint to see raw Polygon data"""
@@ -37,23 +54,6 @@ async def debug_polygon(ticker: str):
             "ticker": ticker.upper(),
             "details": details,
             "financials": financials
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.get("/{ticker}/debug/finnhub")
-async def debug_finnhub(ticker: str):
-    """Debug endpoint to see raw Finnhub earnings data"""
-    try:
-        if not finnhub_estimates_client.is_configured():
-            return {"error": "Finnhub API key not configured"}
-        
-        estimates = finnhub_estimates_client.get_earnings_estimates(ticker)
-        return {
-            "ticker": ticker.upper(),
-            "finnhub_configured": True,
-            "count": len(estimates) if estimates else 0,
-            "estimates": estimates
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
