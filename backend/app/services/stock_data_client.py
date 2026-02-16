@@ -36,11 +36,11 @@ class StockDataClient:
         return self._polygon_client
     
     @property
-    def yahoo(self):
-        """Lazy import of Yahoo Finance client for estimates."""
+    def finnhub(self):
+        """Lazy import of Finnhub client for estimates."""
         if self._yfinance_client is None:
-            from app.services.yfinance_client import yfinance_estimates_client
-            self._yfinance_client = yfinance_estimates_client
+            from app.services.finnhub_client import finnhub_estimates_client
+            self._yfinance_client = finnhub_estimates_client
         return self._yfinance_client
     
     def _is_cache_fresh(self, fetched_at: datetime, data_type: str = "price") -> bool:
@@ -74,18 +74,21 @@ class StockDataClient:
             logger.info(f"[{ticker}] Fetching from Polygon.io")
             data = self.polygon.get_stock_data(ticker)
             
-            # Fetch Yahoo earnings estimates and merge
+            # Fetch Finnhub earnings estimates and merge
             try:
-                logger.info(f"[{ticker}] Fetching earnings estimates from Yahoo Finance")
-                yahoo_estimates = self.yahoo.get_earnings_estimates(ticker)
-                if yahoo_estimates:
-                    data["earnings"] = self.yahoo.merge_with_polygon(
-                        data.get("earnings", []), 
-                        yahoo_estimates
-                    )
-                    logger.info(f"[{ticker}] Merged Yahoo estimates into earnings data")
+                if self.finnhub.is_configured():
+                    logger.info(f"[{ticker}] Fetching earnings estimates from Finnhub")
+                    finnhub_estimates = self.finnhub.get_earnings_estimates(ticker)
+                    if finnhub_estimates:
+                        data["earnings"] = self.finnhub.merge_with_polygon(
+                            data.get("earnings", []), 
+                            finnhub_estimates
+                        )
+                        logger.info(f"[{ticker}] Merged Finnhub estimates into earnings data")
+                else:
+                    logger.debug(f"[{ticker}] Finnhub not configured, skipping estimates")
             except Exception as e:
-                logger.warning(f"[{ticker}] Could not fetch Yahoo estimates: {e}")
+                logger.warning(f"[{ticker}] Could not fetch Finnhub estimates: {e}")
                 # Continue without estimates - not critical
             
             return self._save_polygon_data(ticker, data, db)
