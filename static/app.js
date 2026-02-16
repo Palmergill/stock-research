@@ -331,7 +331,7 @@ document.addEventListener('DOMContentLoaded', () => {
             drawFCFChart(chartData);
         }
         if (activeTab === 'valuation') {
-            drawPEChart(chartData);
+            drawPEChart(chartData, window.lastPriceHistory);
         }
     }
 
@@ -361,6 +361,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }, 100);
 
+    // Store price history for P/E calculation
+    window.lastPriceHistory = null;
+    
     // Fetch price history separately to avoid rate limits
     async function fetchPriceHistory(ticker) {
         try {
@@ -375,8 +378,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
             if (data.prices && data.prices.length > 0) {
                 console.log(`Received ${data.prices.length} price points`);
+                window.lastPriceHistory = data.prices;
                 // Redraw price chart with real historical data
                 drawPriceChart(data.prices);
+                // Also redraw P/E chart if we have earnings data
+                if (window.lastChartData) {
+                    const chartData = [...window.lastChartData].reverse();
+                    drawPEChart(chartData, data.prices);
+                }
             }
         } catch (err) {
             console.log('Could not fetch price history:', err.message);
@@ -656,7 +665,7 @@ function drawFCFChart(data) {
     ctx.fillText('Free Cash Flow', padding.left + 20, 22);
 }
 
-function drawPEChart(data) {
+function drawPEChart(data, priceHistory = null) {
     const canvas = document.getElementById('peChart');
     if (!canvas) return;
     
@@ -675,7 +684,62 @@ function drawPEChart(data) {
     
     ctx.clearRect(0, 0, 800, 250);
     
-    const pes = data.map(d => d.pe_ratio).filter(v => v != null);
+    // Calculate P/E from price history if available
+    let peData = data.map(d => ({ ...d }));
+    
+    if (priceHistory && priceHistory.length > 0) {
+        // Create price lookup by date
+        const priceByDate = {};
+        priceHistory.forEach(p => {
+            priceByDate[p.date] = p.close;
+        });
+        
+        // Calculate P/E for each quarter
+        peData = peData.map((d, i) => {
+            const entry = { ...d };
+            
+            // Calculate TTM EPS (sum of this + 3 previous quarters)
+            let ttmEps = 0;
+            let quarters = 0;
+            for (let j = i; j < Math.min(i + 4, peData.length); j++) {
+                if (peData[j].reported_eps > 0) {
+                    ttmEps += peData[j].reported_eps;
+                    quarters++;
+                }
+            }
+            
+            // Find price on or near earnings date
+            if (quarters >= 3 && ttmEps > 0) {
+                const fiscalDate = d.fiscal_date;
+                let price = priceByDate[fiscalDate];
+                
+                // Try nearby dates if exact match not found
+                if (!price) {
+                    const date = new Date(fiscalDate);
+                    for (let offset = 1; offset <= 5 && !price; offset++) {
+                        const fwd = new Date(date);
+                        fwd.setDate(fwd.getDate() + offset);
+                        price = priceByDate[fwd.toISOString().split('T')[0]];
+                        
+                        if (!price) {
+                            const back = new Date(date);
+                            back.setDate(back.getDate() - offset);
+                            price = priceByDate[back.toISOString().split('T')[0]];
+                        }
+                    }
+                }
+                
+                if (price) {
+                    entry.pe_ratio = price / ttmEps;
+                    entry.price = price;
+                }
+            }
+            
+            return entry;
+        });
+    }
+    
+    const pes = peData.map(d => d.pe_ratio).filter(v => v != null && !isNaN(v));
     if (pes.length === 0) {
         ctx.fillStyle = '#94a3b8';
         ctx.font = '14px sans-serif';
@@ -708,15 +772,17 @@ function drawPEChart(data) {
     ctx.setLineDash([]);
     
     // Area chart (simplified as line with fill)
-    const spacing = chartWidth / (data.length - 1);
+    const spacing = chartWidth / (peData.length - 1);
     
     ctx.beginPath();
     ctx.moveTo(padding.left, padding.top + chartHeight);
     
-    data.forEach((d, i) => {
-        const x = padding.left + spacing * i;
-        const y = padding.top + chartHeight - ((d.pe_ratio - minPE) / (maxPE - minPE)) * chartHeight;
-        ctx.lineTo(x, y);
+    peData.forEach((d, i) => {
+        if (d.pe_ratio != null && !isNaN(d.pe_ratio)) {
+            const x = padding.left + spacing * i;
+            const y = padding.top + chartHeight - ((d.pe_ratio - minPE) / (maxPE - minPE)) * chartHeight;
+            ctx.lineTo(x, y);
+        }
     });
     
     ctx.lineTo(padding.left + chartWidth, padding.top + chartHeight);
@@ -730,17 +796,24 @@ function drawPEChart(data) {
     ctx.lineWidth = 3;
     ctx.beginPath();
     
-    data.forEach((d, i) => {
-        const x = padding.left + spacing * i;
-        const y = padding.top + chartHeight - ((d.pe_ratio - minPE) / (maxPE - minPE)) * chartHeight;
-        
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
+    let started = false;
+    peData.forEach((d, i) => {
+        if (d.pe_ratio != null && !isNaN(d.pe_ratio)) {
+            const x = padding.left + spacing * i;
+            const y = padding.top + chartHeight - ((d.pe_ratio - minPE) / (maxPE - minPE)) * chartHeight;
+            
+            if (!started) {
+                ctx.moveTo(x, y);
+                started = true;
+            } else {
+                ctx.lineTo(x, y);
+            }
+        }
     });
     ctx.stroke();
     
     // X labels
-    data.forEach((d, i) => {
+    peData.forEach((d, i) => {
         const x = padding.left + spacing * i;
         ctx.fillStyle = '#94a3b8';
         ctx.font = '11px sans-serif';

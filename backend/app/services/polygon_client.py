@@ -37,11 +37,8 @@ class PolygonClient:
             # 4. Get historical price for 52-week range
             year_high_low = self._get_52_week_range(ticker)
             
-            # 5. Get 1-year daily price history (needed for historical P/E)
-            price_history = self._get_price_history(ticker, days=365)
-            
-            # 6. Build earnings history from financials with historical P/E
-            earnings = self._build_earnings_from_financials(financials, price_history)
+            # 5. Build earnings history from financials (without historical P/E initially)
+            earnings = self._build_earnings_from_financials(financials, [])
             
             # 7. Calculate additional metrics
             revenue_growth = self._calculate_revenue_growth(financials)
@@ -248,8 +245,8 @@ class PolygonClient:
                 logger.warning(f"Error processing financial {i}: {e}")
                 continue
         
-        # Calculate historical TTM P/E for each quarter
-        earnings = self._calculate_historical_pe(earnings, price_history)
+        # Note: Historical P/E calculation requires price data which is fetched separately
+        # to avoid rate limits. The frontend can calculate P/E using the /prices endpoint.
         
         return earnings
     
