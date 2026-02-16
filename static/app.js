@@ -741,9 +741,14 @@ function drawPEChart(data) {
 }
 
 function drawPriceChart(data) {
+    console.log('drawPriceChart called with', data.length, 'data points');
     const canvas = document.getElementById('priceChart');
-    if (!canvas) return;
+    if (!canvas) {
+        console.log('priceChart canvas not found');
+        return;
+    }
     
+    console.log('Found priceChart canvas, drawing...');
     const ctx = canvas.getContext('2d');
     const dpr = window.devicePixelRatio || 1;
     
@@ -760,13 +765,16 @@ function drawPriceChart(data) {
     ctx.clearRect(0, 0, 800, 300);
     
     const prices = data.map(d => d.price).filter(v => v != null);
+    console.log('Prices:', prices);
     if (prices.length === 0) {
+        console.log('No price data');
         ctx.fillStyle = '#94a3b8';
         ctx.font = '14px sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText('No price data available', 400, 150);
         return;
     }
+    console.log('Drawing', prices.length, 'price points');
     
     const maxPrice = Math.max(...prices) * 1.05;
     const minPrice = Math.min(...prices) * 0.95;
@@ -871,5 +879,6 @@ function drawPriceChart(data) {
         ctx.textAlign = 'left';
         ctx.fillText(`${changeSymbol}${change.toFixed(1)}% (8Q)`, padding.left + 110, 27);
     }
+    console.log('Price chart drawn successfully');
 }
 });
