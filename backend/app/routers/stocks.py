@@ -15,15 +15,6 @@ async def search_stocks_endpoint(q: str = Query(..., min_length=1), limit: int =
     results = search_stocks(q, limit)
     return {"results": results, "query": q}
 
-@router.get("/{ticker}")
-async def get_stock(ticker: str, refresh: bool = False, db: Session = Depends(get_db)):
-    """Get stock data including earnings and summary"""
-    try:
-        data = stock_data_client.get_stock_data(ticker, db, force_refresh=refresh)
-        return data
-    except Exception as e:
-        raise HTTPException(status_code=404, detail=f"Could not fetch data for {ticker}: {str(e)}")
-
 @router.get("/{ticker}/debug")
 async def debug_polygon(ticker: str):
     """Debug endpoint to see raw Polygon data"""
@@ -74,3 +65,12 @@ async def get_price_history(ticker: str, days: int = 365):
         }
     except Exception as e:
         raise HTTPException(status_code=429, detail=f"Rate limit or error: {str(e)}")
+
+@router.get("/{ticker}")
+async def get_stock(ticker: str, refresh: bool = False, db: Session = Depends(get_db)):
+    """Get stock data including earnings and summary"""
+    try:
+        data = stock_data_client.get_stock_data(ticker, db, force_refresh=refresh)
+        return data
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=f"Could not fetch data for {ticker}: {str(e)}")
