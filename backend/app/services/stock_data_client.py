@@ -1,8 +1,9 @@
 """
-Stock Data Client - Polygon.io Exclusive
+Stock Data Client - Polygon.io Primary + Yahoo Finance Estimates
 
-This module provides unified access to stock data from Polygon.io.
-No fallback data sources - Polygon is the single source of truth.
+This module provides unified access to stock data.
+- Polygon.io: Primary source for financials, prices, company info
+- Yahoo Finance: Supplement for analyst earnings estimates only
 """
 
 from datetime import datetime, timedelta
@@ -20,10 +21,11 @@ CACHE_TTL = {
 
 
 class StockDataClient:
-    """Primary stock data client - Polygon.io exclusive."""
+    """Primary stock data client - Polygon.io primary, Yahoo for estimates."""
     
     def __init__(self):
         self._polygon_client = None
+        self._yfinance_client = None
     
     @property
     def polygon(self):
@@ -32,6 +34,14 @@ class StockDataClient:
             from app.services.polygon_client import polygon_client
             self._polygon_client = polygon_client
         return self._polygon_client
+    
+    @property
+    def yahoo(self):
+        """Lazy import of Yahoo Finance client for estimates."""
+        if self._yfinance_client is None:
+            from app.services.yfinance_client import yfinance_estimates_client
+            self._yfinance_client = yfinance_estimates_client
+        return self._yfinance_client
     
     def _is_cache_fresh(self, fetched_at: datetime, data_type: str = "price") -> bool:
         """Check if cached data is still fresh based on data type."""
@@ -63,6 +73,21 @@ class StockDataClient:
         try:
             logger.info(f"[{ticker}] Fetching from Polygon.io")
             data = self.polygon.get_stock_data(ticker)
+            
+            # Fetch Yahoo earnings estimates and merge
+            try:
+                logger.info(f"[{ticker}] Fetching earnings estimates from Yahoo Finance")
+                yahoo_estimates = self.yahoo.get_earnings_estimates(ticker)
+                if yahoo_estimates:
+                    data["earnings"] = self.yahoo.merge_with_polygon(
+                        data.get("earnings", []), 
+                        yahoo_estimates
+                    )
+                    logger.info(f"[{ticker}] Merged Yahoo estimates into earnings data")
+            except Exception as e:
+                logger.warning(f"[{ticker}] Could not fetch Yahoo estimates: {e}")
+                # Continue without estimates - not critical
+            
             return self._save_polygon_data(ticker, data, db)
         except Exception as e:
             error_msg = str(e)
