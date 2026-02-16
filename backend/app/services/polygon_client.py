@@ -37,7 +37,10 @@ class PolygonClient:
             # 4. Get historical price for 52-week range
             year_high_low = self._get_52_week_range(ticker)
             
-            # 5. Build earnings history from financials
+            # 5. Get 1-year daily price history for chart
+            price_history = self._get_price_history(ticker, days=365)
+            
+            # 6. Build earnings history from financials
             earnings = self._build_earnings_from_financials(financials)
             
             # 6. Calculate additional metrics
@@ -66,6 +69,7 @@ class PolygonClient:
                 "beta": details.get("beta"),  # May be available in some tickers
                 "next_earnings_date": None,  # Requires different endpoint
                 "earnings": earnings,
+                "price_history": price_history,  # 1-year daily prices
                 "source": "Polygon.io"
             }
             
@@ -143,6 +147,42 @@ class PolygonClient:
                 "low": min(lows) if lows else None
             }
         return {}
+    
+    def _get_price_history(self, ticker: str, days: int = 365) -> List[Dict]:
+        """Get daily price history for the specified number of days"""
+        try:
+            end_date = datetime.now()
+            start_date = end_date - timedelta(days=days)
+            
+            url = f"{self.BASE_URL}/v2/aggs/ticker/{ticker}/range/1/day/{start_date.strftime('%Y-%m-%d')}/{end_date.strftime('%Y-%m-%d')}"
+            params = {
+                "adjusted": "true",
+                "sort": "asc",
+                "apiKey": self.api_key
+            }
+            
+            response = requests.get(url, params=params, timeout=15)
+            response.raise_for_status()
+            data = response.json()
+            
+            if data.get("results"):
+                # Return simplified price data
+                return [
+                    {
+                        "date": datetime.fromtimestamp(r["t"] / 1000).strftime("%Y-%m-%d"),
+                        "open": r.get("o"),
+                        "high": r.get("h"),
+                        "low": r.get("l"),
+                        "close": r.get("c"),
+                        "volume": r.get("v")
+                    }
+                    for r in data["results"]
+                    if r.get("c")  # Only include if we have a close price
+                ]
+            return []
+        except Exception as e:
+            logger.warning(f"Could not fetch price history for {ticker}: {e}")
+            return []
     
     def _build_earnings_from_financials(self, financials: List[Dict]) -> List[Dict]:
         """Build earnings records from financial statements"""

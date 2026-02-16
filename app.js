@@ -331,6 +331,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const chartData = [...data.earnings].reverse();
         window.lastChartData = chartData;  // Store for tab switching
         
+        // Use price history if available, otherwise fall back to earnings data
+        const priceHistory = data.price_history || [];
+        
         // Get active tab safely
         const activeTabEl = document.querySelector('.tab-content.active');
         const activeTab = activeTabEl ? activeTabEl.id : 'overview';
@@ -338,7 +341,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log(`Drawing charts for active tab: ${activeTab}`);
         
         // Always draw charts for Overview on load
-        drawPriceChart(chartData);
+        drawPriceChart(priceHistory.length > 0 ? priceHistory : chartData);
         drawEPSChart(chartData);
         
         // Draw other charts if their tabs are active
@@ -759,7 +762,8 @@ function drawPriceChart(data) {
     
     ctx.clearRect(0, 0, 800, 300);
     
-    const prices = data.map(d => d.price).filter(v => v != null);
+    // Handle both formats: price_history (close) and earnings (price)
+    const prices = data.map(d => d.close || d.price).filter(v => v != null);
     if (prices.length === 0) {
         ctx.fillStyle = '#94a3b8';
         ctx.font = '14px sans-serif';
@@ -800,8 +804,9 @@ function drawPriceChart(data) {
     ctx.moveTo(padding.left, padding.top + chartHeight);
     
     data.forEach((d, i) => {
+        const price = d.close || d.price;
         const x = padding.left + spacing * i;
-        const y = padding.top + chartHeight - ((d.price - minPrice) / priceRange) * chartHeight;
+        const y = padding.top + chartHeight - ((price - minPrice) / priceRange) * chartHeight;
         ctx.lineTo(x, y);
     });
     
@@ -817,22 +822,25 @@ function drawPriceChart(data) {
     ctx.beginPath();
     
     data.forEach((d, i) => {
+        const price = d.close || d.price;
         const x = padding.left + spacing * i;
-        const y = padding.top + chartHeight - ((d.price - minPrice) / priceRange) * chartHeight;
+        const y = padding.top + chartHeight - ((price - minPrice) / priceRange) * chartHeight;
         
         if (i === 0) ctx.moveTo(x, y);
         else ctx.lineTo(x, y);
     });
     ctx.stroke();
     
-    // Data points
+    // Data points (only show every ~20th point to avoid clutter)
     data.forEach((d, i) => {
+        if (i % 20 !== 0) return;  // Show every 20th point
+        const price = d.close || d.price;
         const x = padding.left + spacing * i;
-        const y = padding.top + chartHeight - ((d.price - minPrice) / priceRange) * chartHeight;
+        const y = padding.top + chartHeight - ((price - minPrice) / priceRange) * chartHeight;
         
         ctx.fillStyle = '#10b981';
         ctx.beginPath();
-        ctx.arc(x, y, 5, 0, Math.PI * 2);
+        ctx.arc(x, y, 4, 0, Math.PI * 2);
         ctx.fill();
         
         // White border on dots
@@ -841,13 +849,19 @@ function drawPriceChart(data) {
         ctx.stroke();
     });
     
-    // X labels
+    // X labels (show monthly labels)
+    let lastMonth = '';
     data.forEach((d, i) => {
+        const dateStr = d.date || d.fiscal_date;
+        const month = dateStr.slice(0, 7);  // YYYY-MM
+        if (month === lastMonth) return;  // Skip if same month
+        lastMonth = month;
+        
         const x = padding.left + spacing * i;
         ctx.fillStyle = '#94a3b8';
-        ctx.font = '11px sans-serif';
+        ctx.font = '10px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(d.fiscal_date.slice(0, 7), x, padding.top + chartHeight + 20);
+        ctx.fillText(month, x, padding.top + chartHeight + 20);
     });
     
     // Legend
@@ -859,17 +873,18 @@ function drawPriceChart(data) {
     ctx.fillText('Stock Price', padding.left + 20, 27);
     
     // Calculate and show change
-    const firstPrice = data[0]?.price;
-    const lastPrice = data[data.length - 1]?.price;
+    const firstPrice = data[0]?.close || data[0]?.price;
+    const lastPrice = data[data.length - 1]?.close || data[data.length - 1]?.price;
     if (firstPrice && lastPrice) {
         const change = ((lastPrice - firstPrice) / firstPrice) * 100;
         const changeColor = change >= 0 ? '#22c55e' : '#ef4444';
         const changeSymbol = change >= 0 ? '+' : '';
+        const periodLabel = data.length > 100 ? '1Y' : '8Q';  // Show 1Y for daily data
         
         ctx.fillStyle = changeColor;
         ctx.font = 'bold 12px sans-serif';
         ctx.textAlign = 'left';
-        ctx.fillText(`${changeSymbol}${change.toFixed(1)}% (8Q)`, padding.left + 110, 27);
+        ctx.fillText(`${changeSymbol}${change.toFixed(1)}% (${periodLabel})`, padding.left + 110, 27);
     }
 }
 });
