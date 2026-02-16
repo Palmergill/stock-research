@@ -8,12 +8,26 @@ Used as a supplement to Polygon.io (which doesn't provide estimates).
 import yfinance as yf
 from typing import Optional, Dict, List
 import logging
+import time
+from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
 
 
 class YFinanceEstimatesClient:
     """Yahoo Finance client - fetches only earnings estimates."""
+    
+    def __init__(self):
+        self._cache = {}
+        self._last_request = 0
+        self._min_delay = 2  # Seconds between requests to avoid rate limits
+    
+    def _rate_limit(self):
+        """Enforce minimum delay between requests."""
+        elapsed = time.time() - self._last_request
+        if elapsed < self._min_delay:
+            time.sleep(self._min_delay - elapsed)
+        self._last_request = time.time()
     
     def get_earnings_estimates(self, ticker: str) -> Optional[List[Dict]]:
         """
@@ -25,8 +39,22 @@ class YFinanceEstimatesClient:
         - estimated_eps (analyst consensus)
         - surprise_pct (beat/miss percentage)
         """
+        ticker = ticker.upper()
+        
+        # Check cache (Yahoo data changes slowly - cache for 6 hours)
+        cache_key = f"estimates_{ticker}"
+        cached = self._cache.get(cache_key)
+        if cached:
+            age = datetime.utcnow() - cached["timestamp"]
+            if age < timedelta(hours=6):
+                logger.info(f"[Yahoo] Using cached estimates for {ticker}")
+                return cached["data"]
+        
         try:
             logger.info(f"[Yahoo] Fetching earnings estimates for {ticker}")
+            
+            # Rate limit to avoid 429 errors
+            self._rate_limit()
             
             stock = yf.Ticker(ticker)
             
@@ -96,6 +124,11 @@ class YFinanceEstimatesClient:
             
             if earnings_data:
                 logger.info(f"[Yahoo] Retrieved {len(earnings_data)} earnings records for {ticker}")
+                # Cache the result
+                self._cache[cache_key] = {
+                    "data": earnings_data,
+                    "timestamp": datetime.utcnow()
+                }
                 return earnings_data
             
             logger.warning(f"[Yahoo] No earnings estimates found for {ticker}")
