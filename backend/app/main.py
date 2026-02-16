@@ -6,7 +6,7 @@ from app.database_migration import init_db_with_migration
 from app.routers import stocks
 import os
 
-app = FastAPI(title="Stock Research API", version="0.2.0-p4")
+app = FastAPI(title="Stock Research API", version="0.2.0-p5")
 
 # CORS - allow frontend to call backend
 # Allow all origins for development (restrict in production)
