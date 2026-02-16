@@ -7,73 +7,50 @@ No fallback data sources - Polygon is the single source of truth.
 
 from datetime import datetime, timedelta
 from typing import Optional, List
-from sqlalchemy.orm import Session
-from sqlalchemy.dialects.postgresql import insert as pg_insert
-from app.database import EarningsRecord, StockSummary
-from app.services.polygon_client import polygon_client
 import logging
 
 logger = logging.getLogger(__name__)
 
 # Cache TTLs optimized for data type
 CACHE_TTL = {
-    "price": timedelta(minutes=1),        # Prices change frequently
-    "financials": timedelta(hours=24),    # Financials change quarterly
-    "company_info": timedelta(hours=24),  # Company info rarely changes
+    "price": timedelta(minutes=1),
+    "financials": timedelta(hours=24),
+    "company_info": timedelta(hours=24),
 }
 
 
 class StockDataClient:
-    """
-    Primary stock data client - Polygon.io exclusive.
-    
-    Design principles:
-    - Single source of truth: Polygon.io
-    - Smart caching: Different TTL per data type
-    - Graceful degradation: Serve stale cache if API fails
-    - Clear errors: Specific messages for different failure modes
-    """
+    """Primary stock data client - Polygon.io exclusive."""
     
     def __init__(self):
-        if not polygon_client.is_configured():
-            logger.warning("Polygon API key not configured. Client will not function.")
+        self._polygon_client = None
+    
+    @property
+    def polygon(self):
+        """Lazy import of polygon client to avoid circular imports."""
+        if self._polygon_client is None:
+            from app.services.polygon_client import polygon_client
+            self._polygon_client = polygon_client
+        return self._polygon_client
     
     def _is_cache_fresh(self, fetched_at: datetime, data_type: str = "price") -> bool:
-        """
-        Check if cached data is still fresh based on data type.
-        
-        Args:
-            fetched_at: When the data was fetched
-            data_type: Type of data (affects TTL) - price, financials, company_info
-        """
+        """Check if cached data is still fresh based on data type."""
         ttl = CACHE_TTL.get(data_type, timedelta(hours=1))
         return datetime.utcnow() - fetched_at < ttl
     
-    def get_stock_data(self, ticker: str, db: Session, force_refresh: bool = False) -> dict:
-        """
-        Get comprehensive stock data for a ticker.
+    def get_stock_data(self, ticker: str, db, force_refresh: bool = False) -> dict:
+        """Get comprehensive stock data for a ticker."""
+        from app.database import EarningsRecord, StockSummary
         
-        Args:
-            ticker: Stock symbol (e.g., "TSLA")
-            db: Database session
-            force_refresh: If True, bypass cache and fetch fresh data
-        
-        Returns:
-            dict with ticker, name, summary, and earnings
-        
-        Raises:
-            Exception: If Polygon API fails and no cache available
-        """
         ticker = ticker.upper().strip()
         
         # Validate API is configured
-        if not polygon_client.is_configured():
-            # Try to serve from cache even if API is down
+        if not self.polygon.is_configured():
             cached = self._get_cached_data(ticker, db, accept_stale=True)
             if cached:
                 cached["_warning"] = "Using cached data - API key not configured"
                 return cached
-            raise Exception("Polygon API key not configured and no cached data available")
+            raise Exception("Polygon API key not configured")
         
         # Check cache unless force_refresh
         if not force_refresh:
@@ -85,44 +62,37 @@ class StockDataClient:
         # Fetch fresh data from Polygon
         try:
             logger.info(f"[{ticker}] Fetching from Polygon.io")
-            data = polygon_client.get_stock_data(ticker)
+            data = self.polygon.get_stock_data(ticker)
             return self._save_polygon_data(ticker, data, db)
         except Exception as e:
             error_msg = str(e)
             logger.error(f"[{ticker}] Polygon API error: {error_msg}")
             
-            # Try to serve stale cache as fallback
+            # Try to serve stale cache
             stale_data = self._get_cached_data(ticker, db, accept_stale=True)
             if stale_data:
                 hours_old = self._get_cache_age_hours(stale_data.get("_fetched_at"))
-                stale_data["_warning"] = f"Using {hours_old} hour old data - API temporarily unavailable"
-                logger.warning(f"[{ticker}] Serving stale cache ({hours_old}h old)")
+                stale_data["_warning"] = f"Using {hours_old}h old data - API error"
                 return stale_data
             
-            # No cache available - raise specific error
+            # Raise specific error
             if "429" in error_msg or "rate limit" in error_msg.lower():
-                raise Exception(f"Rate limit exceeded for {ticker}. Please try again in a minute.")
+                raise Exception(f"Rate limit exceeded. Try again in a minute.")
             elif "404" in error_msg or "not found" in error_msg.lower():
-                raise Exception(f"Ticker '{ticker}' not found. Please check the symbol.")
-            elif "401" in error_msg or "unauthorized" in error_msg.lower():
-                raise Exception("API authentication failed. Please check your Polygon API key.")
+                raise Exception(f"Ticker '{ticker}' not found.")
+            elif "401" in error_msg:
+                raise Exception("API authentication failed. Check your Polygon API key.")
             else:
-                raise Exception(f"Could not fetch data for {ticker}: {error_msg}")
+                raise Exception(f"Could not fetch data: {error_msg}")
     
-    def _get_cached_data(self, ticker: str, db: Session, accept_stale: bool = False) -> Optional[dict]:
-        """
-        Retrieve cached data from database.
+    def _get_cached_data(self, ticker: str, db, accept_stale: bool = False):
+        """Retrieve cached data from database."""
+        from app.database import EarningsRecord, StockSummary
         
-        Args:
-            ticker: Stock symbol
-            db: Database session
-            accept_stale: If True, return data even if cache is expired
-        """
         summary = db.query(StockSummary).filter(StockSummary.ticker == ticker).first()
         if not summary:
             return None
         
-        # Check if cache is fresh (or if we accept stale)
         cache_age = datetime.utcnow() - summary.fetched_at
         max_ttl = max(CACHE_TTL.values())
         
@@ -140,7 +110,7 @@ class StockDataClient:
         return result
     
     def _get_cache_age_hours(self, fetched_at_iso: Optional[str]) -> float:
-        """Calculate how old the cache is in hours."""
+        """Calculate cache age in hours."""
         if not fetched_at_iso:
             return 0
         try:
@@ -150,18 +120,14 @@ class StockDataClient:
         except:
             return 0
     
-    def _save_polygon_data(self, ticker: str, data: dict, db: Session) -> dict:
-        """
-        Save Polygon.io data to database.
+    def _save_polygon_data(self, ticker: str, data: dict, db) -> dict:
+        """Save Polygon.io data to database."""
+        from app.database import EarningsRecord, StockSummary
+        from sqlalchemy.dialects.postgresql import insert as pg_insert
         
-        Args:
-            ticker: Stock symbol
-            data: Raw data from Polygon API
-            db: Database session
-        """
         logger.info(f"[{ticker}] Saving data to database")
         
-        # Delete old earnings records
+        # Delete old earnings
         db.query(EarningsRecord).filter(EarningsRecord.ticker == ticker).delete(
             synchronize_session=False
         )
@@ -179,11 +145,11 @@ class StockDataClient:
                 revenue=e.get("revenue"),
                 free_cash_flow=e.get("free_cash_flow"),
                 pe_ratio=data.get("pe_ratio"),
-                price=current_price  # Use actual price, not random
+                price=current_price
             )
             db.add(record)
         
-        # Upsert summary with all metrics
+        # Upsert summary
         summary_values = {
             "ticker": ticker,
             "name": data.get("name", ticker),
@@ -212,7 +178,6 @@ class StockDataClient:
         db.execute(stmt)
         db.commit()
         
-        # Return formatted response
         summary = db.query(StockSummary).filter(StockSummary.ticker == ticker).first()
         earnings = db.query(EarningsRecord).filter(
             EarningsRecord.ticker == ticker
@@ -220,15 +185,8 @@ class StockDataClient:
         
         return self._format_response(ticker, summary, earnings)
     
-    def _format_response(self, ticker: str, summary: StockSummary, earnings: List[EarningsRecord]) -> dict:
-        """
-        Format database records into API response.
-        
-        Args:
-            ticker: Stock symbol
-            summary: StockSummary record
-            earnings: List of EarningsRecord records
-        """
+    def _format_response(self, ticker: str, summary, earnings: List) -> dict:
+        """Format database records into API response."""
         return {
             "ticker": ticker,
             "name": summary.name,
@@ -269,5 +227,6 @@ class StockDataClient:
         }
 
 
-# Singleton instance for backwards compatibility
-yfinance_client = StockDataClient()
+# Singleton instance
+stock_data_client = StockDataClient()
+yfinance_client = stock_data_client  # Backwards compatibility
