@@ -126,23 +126,44 @@ class FinnhubEstimatesClient:
         Strategy:
         - Use Polygon for actual reported EPS (more accurate)
         - Use Finnhub for estimated EPS and surprise %
-        - Match by fiscal_date when possible
+        - Match by fiscal year+quarter since dates differ
+          (Polygon uses announcement dates, Finnhub uses fiscal period ends)
         """
         if not finnhub_estimates:
             return polygon_earnings
         
-        # Create lookup by date from Finnhub data
-        finnhub_by_date = {}
+        # Create lookup by year-quarter from Finnhub data
+        finnhub_by_quarter = {}
         for e in finnhub_estimates:
-            date_key = e.get("fiscal_date")
-            if date_key:
-                finnhub_by_date[date_key] = e
+            date_key = e.get("fiscal_date", "")
+            if date_key and len(date_key) >= 7:  # "2025-12-31"
+                year_month = date_key[:7]  # "2025-12"
+                # Determine quarter from month
+                month = int(date_key[5:7])
+                quarter = (month - 1) // 3 + 1  # 1, 2, 3, 4
+                year_q = f"{date_key[:4]}-Q{quarter}"
+                finnhub_by_quarter[year_q] = e
         
         # Merge into Polygon data
         merged = []
         for poly in polygon_earnings:
-            date_key = poly.get("fiscal_date")
-            finnhub = finnhub_by_date.get(date_key) if date_key else None
+            date_key = poly.get("fiscal_date", "")
+            period = poly.get("period", "")
+            
+            # Try to determine year-quarter for this Polygon record
+            year_q = None
+            if date_key and len(date_key) >= 4:
+                year = date_key[:4]
+                if period and period.startswith("Q"):
+                    # Use the period directly
+                    year_q = f"{year}-{period}"
+                elif date_key and len(date_key) >= 7:
+                    # Infer from month
+                    month = int(date_key[5:7])
+                    quarter = (month - 1) // 3 + 1
+                    year_q = f"{year}-Q{quarter}"
+            
+            finnhub = finnhub_by_quarter.get(year_q) if year_q else None
             
             merged_record = poly.copy()
             
