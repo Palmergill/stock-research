@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🦞 Stock Research</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <h1>🦞 Stock Research</h1>
+                <span id="version" class="version">v2.0.0-beta1</span>
+            </div>
+            <form id="searchForm">
+                <div class="search-container">
+                    <input 
+                        type="text" 
+                        id="tickerInput" 
+                        placeholder="Search ticker or company name..." 
+                        autocomplete="off"
+                    >
+                    <div id="searchSuggestions" class="suggestions hidden"></div>
+                </div>
+                <button type="submit" id="searchBtn">Search</button>
+            </form>
+        </header>
+
+        <main id="main">
+            <div id="loading" class="loading hidden">
+                <div class="spinner"></div>
+                <p>Loading...</p>
+            </div>
+
+            <div id="error" class="error hidden">
+                <p id="errorMessage"></p>
+                <button id="retryBtn" class="retry-btn">Try Again</button>
+            </div>
+
+            <div id="empty" class="empty">
+                <p>Search for a stock to see real-time data and charts.</p>
+                <p class="examples">Try: AAPL, TSLA, MSFT, AMZN, NVDA</p>
+                <p style="margin-top: 20px; font-size: 13px; color: #64748b;">Data provided by Finnhub, Yahoo Finance, and Alpha Vantage</p>
+            </div>
+
+            <div id="results" class="hidden">
+                <!-- Header with company name and refresh -->
+                <div class="card company-header">
+                    <div class="company-header-content">
+                        <div>
+                            <h2 id="companyName"></h2>
+                            <span id="companyTicker" class="ticker"></span>
+                        </div>
+                        <button id="refreshBtn" class="refresh-btn" title="Refresh data">
+                            ↻ Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tab Navigation -->
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="overview">Overview</button>
+                    <button class="tab-btn" data-tab="earnings">Earnings</button>
+                    <button class="tab-btn" data-tab="financials">Financials</button>
+                    <button class="tab-btn" data-tab="valuation">Valuation</button>
+                </div>
+
+                <!-- Tab Content: Overview -->
+                <div id="overview" class="tab-content active">
+                    <!-- Price & Market Cap -->
+                    <div class="card metrics-overview">
+                        <div class="metrics-grid-compact">
+                            <div class="metric">
+                                <span class="metric-label">Current Price</span>
+                                <span id="currentPrice" class="metric-value"></span>
+                            </div>
+                            <div class="metric">
+                                <span class="metric-label">Market Cap</span>
+                                <span id="marketCap" class="metric-value"></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Key Metrics Grid -->
+                    <div class="card metrics-overview">
+                        <h3>Key Metrics</h3>
+                        <div class="metrics-grid-compact">
+                            <div class="metric" title="What you're paying for each dollar of earnings. Compare to industry peers and historical averages to gauge if the stock is cheap or expensive.">
+                                <span class="metric-label">P/E Ratio</span>
+                                <span id="peRatio" class="metric-value"></span>
+                            </div>
+                            <div class="metric" title="Year-over-year growth in revenue. Shows whether the business is expanding. Top-line growth is harder to fake than earnings.">
+                                <span class="metric-label">Revenue Growth (YoY)</span>
+                                <span id="revenueGrowth" class="metric-value"></span>
+                            </div>
+                            <div class="metric" title="Cash left after running the business and capital expenditures. Available for dividends, buybacks, debt reduction, or reinvestment. More reliable than net income.">
+                                <span class="metric-label">Free Cash Flow</span>
+                                <span id="freeCashFlow" class="metric-value"></span>
+                            </div>
+                            <div class="metric" title="How leveraged the company is. High debt amplifies returns in good times but can be fatal in downturns. Shows financial risk and flexibility.">
+                                <span class="metric-label">Debt-to-Equity</span>
+                                <span id="debtToEquity" class="metric-value"></span>
+                            </div>
+                            <div class="metric" title="How effectively management converts shareholder capital into profits. Consistently high ROE (15%+) often signals a durable competitive advantage.">
+                                <span class="metric-label">Return on Equity</span>
+                                <span id="roe" class="metric-value"></span>
+                            </div>
+                            <div class="metric" title="Net income as a percentage of revenue. Shows how much profit the company keeps from each dollar of sales.">
+                                <span class="metric-label">Profit Margin</span>
+                                <span id="profitMargin" class="metric-value"></span>
+                            </div>
+                            <div class="metric" title="Operating income as a percentage of revenue. Measures efficiency of core business operations.">
+                                <span class="metric-label">Operating Margin</span>
+                                <span id="operatingMargin" class="metric-value"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Price Chart -->
+                    <div class="card">
+                        <h3>Stock Price History</h3>
+                        <canvas id="priceChart" width="800" height="300"></canvas>
+                    </div>
+
+                    <!-- All Metrics Detail -->
+                    <div class="card">
+                        <h4>Detailed Metrics</h4>
+                        <div class="metrics-sections">
+                            <div class="metrics-row">
+                                <div class="metric-item">
+                                    <span class="metric-label">52W High</span>
+                                    <span id="price52wHigh" class="metric-value"></span>
+                                </div>
+                                <div class="metric-item">
+                                    <span class="metric-label">52W Low</span>
+                                    <span id="price52wLow" class="metric-value"></span>
+                                </div>
+                                <div class="metric-item">
+                                    <span class="metric-label">Position</span>
+                                    <span id="price52wPosition" class="metric-value"></span>
+                                </div>
+                                <div class="metric-item">
+                                    <span class="metric-label">Next Earnings</span>
+                                    <span id="nextEarnings" class="metric-value"></span>
+                                </div>
+                            </div>
+                            <div class="metrics-row">
+                                <div class="metric-item">
+                                    <span class="metric-label">Profit Margin</span>
+                                    <span id="profitMargin" class="metric-value"></span>
+                                </div>
+                                <div class="metric-item">
+                                    <span class="metric-label">Operating Margin</span>
+                                    <span id="operatingMargin" class="metric-value"></span>
+                                </div>
+                                <div class="metric-item">
+                                    <span class="metric-label">Dividend Yield</span>
+                                    <span id="dividendYield" class="metric-value"></span>
+                                </div>
+                            </div>
+                            <div class="metrics-row">
+                                <div class="metric-item">
+                                    <span class="metric-label">Beta</span>
+                                    <span id="beta" class="metric-value"></span>
+                                </div>
+                                <div class="metric-item">
+                                    <span class="metric-label">Debt/Equity</span>
+                                    <span id="debtToEquity" class="metric-value"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab Content: Earnings -->
+                <div id="earnings" class="tab-content">
+                    <div class="card">
+                        <h3>EPS: Actual vs Estimated</h3>
+                        <canvas id="epsChart" width="800" height="350"></canvas>
+                    </div>
+                </div>
+
+                <!-- Tab Content: Financials -->
+                <div id="financials" class="tab-content">
+                    <div class="card">
+                        <h3>Revenue by Quarter</h3>
+                        <canvas id="revenueChart" width="800" height="300"></canvas>
+                    </div>
+                    <div class="card">
+                        <h3>Free Cash Flow</h3>
+                        <canvas id="fcfChart" width="800" height="300"></canvas>
+                    </div>
+                </div>
+
+                <!-- Tab Content: Valuation -->
+                <div id="valuation" class="tab-content">
+                    <div class="card">
+                        <h3>P/E Ratio Over Time</h3>
+                        <canvas id="peChart" width="800" height="350"></canvas>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
