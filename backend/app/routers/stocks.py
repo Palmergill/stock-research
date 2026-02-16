@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 import os
 from app.database import get_db
-from app.services.yfinance_client import yfinance_client
+from app.services.stock_data_client import stock_data_client
 from app.services.stock_data import search_stocks
 from app.services.polygon_client import polygon_client
 
@@ -19,7 +19,7 @@ async def search_stocks_endpoint(q: str = Query(..., min_length=1), limit: int =
 async def get_stock(ticker: str, refresh: bool = False, db: Session = Depends(get_db)):
     """Get stock data including earnings and summary"""
     try:
-        data = yfinance_client.get_stock_data(ticker, db, force_refresh=refresh)
+        data = stock_data_client.get_stock_data(ticker, db, force_refresh=refresh)
         return data
     except Exception as e:
         raise HTTPException(status_code=404, detail=f"Could not fetch data for {ticker}: {str(e)}")
@@ -53,29 +53,7 @@ async def debug_polygon(ticker: str):
 async def get_earnings(ticker: str, db: Session = Depends(get_db)):
     """Get earnings data for a ticker"""
     try:
-        data = yfinance_client.get_stock_data(ticker, db)
+        data = stock_data_client.get_stock_data(ticker, db)
         return {"ticker": ticker, "earnings": data["earnings"]}
     except Exception as e:
         raise HTTPException(status_code=404, detail=f"Could not fetch earnings for {ticker}: {str(e)}")
-    """Debug endpoint to see raw Polygon data"""
-    try:
-        import requests
-        api_key = os.getenv("POLYGON_API_KEY", "")
-        
-        # Get ticker details
-        details_url = f"https://api.polygon.io/v3/reference/tickers/{ticker.upper()}?apiKey={api_key}"
-        details_resp = requests.get(details_url, timeout=10)
-        details = details_resp.json() if details_resp.ok else {"error": details_resp.text}
-        
-        # Get financials
-        financials_url = f"https://api.polygon.io/vX/reference/financials?ticker={ticker.upper()}&timeframe=quarterly&limit=4&apiKey={api_key}"
-        fin_resp = requests.get(financials_url, timeout=10)
-        financials = fin_resp.json() if fin_resp.ok else {"error": fin_resp.text}
-        
-        return {
-            "ticker": ticker.upper(),
-            "details": details,
-            "financials": financials
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))

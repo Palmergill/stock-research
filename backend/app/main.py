@@ -6,7 +6,7 @@ from app.database_migration import init_db_with_migration
 from app.routers import stocks
 import os
 
-app = FastAPI(title="Stock Research API", version="0.1.2")
+app = FastAPI(title="Stock Research API", version="0.2.0")
 
 # CORS - allow frontend to call backend
 allowed_origins_str = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000,https://palmergill.com")
