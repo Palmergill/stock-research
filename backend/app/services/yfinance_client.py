@@ -20,7 +20,7 @@ class YFinanceEstimatesClient:
     def __init__(self):
         self._cache = {}
         self._last_request = 0
-        self._min_delay = 2  # Seconds between requests to avoid rate limits
+        self._min_delay = 3  # Seconds between requests to avoid rate limits
     
     def _rate_limit(self):
         """Enforce minimum delay between requests."""
@@ -28,6 +28,56 @@ class YFinanceEstimatesClient:
         if elapsed < self._min_delay:
             time.sleep(self._min_delay - elapsed)
         self._last_request = time.time()
+    
+    def _fetch_with_retry(self, ticker: str, max_retries: int = 3) -> Optional[List[Dict]]:
+        """Fetch earnings with exponential backoff on rate limits."""
+        for attempt in range(max_retries):
+            try:
+                self._rate_limit()
+                stock = yf.Ticker(ticker)
+                
+                # Try earnings_dates first (most reliable for estimates)
+                try:
+                    earnings_dates = stock.earnings_dates
+                    if earnings_dates is not None and not earnings_dates.empty:
+                        logger.info(f"[Yahoo] Found earnings_dates for {ticker}")
+                        earnings_data = []
+                        for idx, row in earnings_dates.iterrows():
+                            fiscal_date = idx.date() if hasattr(idx, 'date') else None
+                            
+                            reported = row.get("Reported EPS") if "Reported EPS" in row else None
+                            estimated = row.get("EPS Estimate") if "EPS Estimate" in row else None
+                            surprise = row.get("Surprise(%)") if "Surprise(%)" in row else None
+                            
+                            earnings_data.append({
+                                "fiscal_date": fiscal_date.isoformat() if fiscal_date else None,
+                                "reported_eps": float(reported) if reported is not None and not pd.isna(reported) else None,
+                                "estimated_eps": float(estimated) if estimated is not None and not pd.isna(estimated) else None,
+                                "surprise_pct": float(surprise) if surprise is not None and not pd.isna(surprise) else None,
+                            })
+                        return earnings_data
+                except Exception as e:
+                    if "429" in str(e) or "Too Many Requests" in str(e):
+                        wait_time = (attempt + 1) * 5  # 5s, 10s, 15s
+                        logger.warning(f"[Yahoo] Rate limit on attempt {attempt + 1}, waiting {wait_time}s...")
+                        time.sleep(wait_time)
+                        continue
+                    logger.debug(f"[Yahoo] earnings_dates failed: {e}")
+                
+                # If we get here, either no data or non-rate-limit error
+                return None
+                
+            except Exception as e:
+                if "429" in str(e) or "Too Many Requests" in str(e):
+                    wait_time = (attempt + 1) * 5
+                    logger.warning(f"[Yahoo] Rate limit on attempt {attempt + 1}, waiting {wait_time}s...")
+                    time.sleep(wait_time)
+                    continue
+                logger.error(f"[Yahoo] Error on attempt {attempt + 1}: {e}")
+                return None
+        
+        logger.error(f"[Yahoo] Failed after {max_retries} attempts")
+        return None
     
     def get_earnings_estimates(self, ticker: str) -> Optional[List[Dict]]:
         """
@@ -50,93 +100,22 @@ class YFinanceEstimatesClient:
                 logger.info(f"[Yahoo] Using cached estimates for {ticker}")
                 return cached["data"]
         
-        try:
-            logger.info(f"[Yahoo] Fetching earnings estimates for {ticker}")
-            
-            # Rate limit to avoid 429 errors
-            self._rate_limit()
-            
-            stock = yf.Ticker(ticker)
-            
-            # Try to get earnings calendar/history with estimates
-            # yfinance has different methods depending on version
-            earnings_data = []
-            
-            # Method 1: Try quarterly_earnings (has estimates in newer versions)
-            try:
-                q_earnings = stock.quarterly_earnings
-                if q_earnings is not None and not q_earnings.empty:
-                    logger.info(f"[Yahoo] Found quarterly_earnings for {ticker}")
-                    for idx, row in q_earnings.iterrows():
-                        # Parse date from index
-                        fiscal_date = None
-                        if isinstance(idx, str):
-                            try:
-                                from datetime import datetime
-                                fiscal_date = datetime.strptime(idx, "%Y-%m-%d").date()
-                            except:
-                                pass
-                        
-                        earnings_data.append({
-                            "fiscal_date": fiscal_date.isoformat() if fiscal_date else None,
-                            "reported_eps": float(row.get("Reported EPS")) if pd.notna(row.get("Reported EPS")) else None,
-                            "estimated_eps": float(row.get("Surprise(%)")) if pd.notna(row.get("Surprise(%)")) else None,  # May be surprise%
-                        })
-            except Exception as e:
-                logger.debug(f"[Yahoo] quarterly_earnings failed: {e}")
-            
-            # Method 2: Try calendar for upcoming estimates
-            try:
-                calendar = stock.calendar
-                if calendar is not None and not calendar.empty:
-                    logger.info(f"[Yahoo] Found calendar for {ticker}")
-                    # Calendar usually has next earnings date and estimates
-                    for idx, row in calendar.iterrows():
-                        if "Earnings" in str(idx) or "EPS" in str(idx):
-                            earnings_data.append({
-                                "fiscal_date": None,  # Upcoming
-                                "estimated_eps": float(row.get("Value")) if pd.notna(row.get("Value")) else None,
-                            })
-            except Exception as e:
-                logger.debug(f"[Yahoo] calendar failed: {e}")
-            
-            # Method 3: Try earnings_dates (newer yfinance versions)
-            try:
-                earnings_dates = stock.earnings_dates
-                if earnings_dates is not None and not earnings_dates.empty:
-                    logger.info(f"[Yahoo] Found earnings_dates for {ticker}")
-                    for idx, row in earnings_dates.iterrows():
-                        fiscal_date = idx.date() if hasattr(idx, 'date') else None
-                        
-                        # These columns vary by yfinance version
-                        reported = row.get("Reported EPS") if "Reported EPS" in row else None
-                        estimated = row.get("EPS Estimate") if "EPS Estimate" in row else None
-                        surprise = row.get("Surprise(%)") if "Surprise(%)" in row else None
-                        
-                        earnings_data.append({
-                            "fiscal_date": fiscal_date.isoformat() if fiscal_date else None,
-                            "reported_eps": float(reported) if reported is not None and not pd.isna(reported) else None,
-                            "estimated_eps": float(estimated) if estimated is not None and not pd.isna(estimated) else None,
-                            "surprise_pct": float(surprise) if surprise is not None and not pd.isna(surprise) else None,
-                        })
-            except Exception as e:
-                logger.debug(f"[Yahoo] earnings_dates failed: {e}")
-            
-            if earnings_data:
-                logger.info(f"[Yahoo] Retrieved {len(earnings_data)} earnings records for {ticker}")
-                # Cache the result
-                self._cache[cache_key] = {
-                    "data": earnings_data,
-                    "timestamp": datetime.utcnow()
-                }
-                return earnings_data
-            
-            logger.warning(f"[Yahoo] No earnings estimates found for {ticker}")
-            return None
-            
-        except Exception as e:
-            logger.error(f"[Yahoo] Error fetching estimates for {ticker}: {e}")
-            return None
+        logger.info(f"[Yahoo] Fetching earnings estimates for {ticker}")
+        
+        # Fetch with retry logic for rate limits
+        earnings_data = self._fetch_with_retry(ticker)
+        
+        if earnings_data:
+            # Cache the result
+            self._cache[cache_key] = {
+                "data": earnings_data,
+                "timestamp": datetime.utcnow()
+            }
+            logger.info(f"[Yahoo] Retrieved {len(earnings_data)} earnings records for {ticker}")
+            return earnings_data
+        
+        logger.warning(f"[Yahoo] No earnings estimates found for {ticker}")
+        return None
     
     def merge_with_polygon(self, polygon_earnings: List[Dict], yahoo_estimates: Optional[List[Dict]]) -> List[Dict]:
         """
