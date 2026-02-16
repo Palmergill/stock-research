@@ -37,14 +37,13 @@ class PolygonClient:
             # 4. Get historical price for 52-week range
             year_high_low = self._get_52_week_range(ticker)
             
-            # 5. Build earnings history from financials
-            earnings = self._build_earnings_from_financials(financials)
+            # 5. Get 1-year daily price history (needed for historical P/E)
+            price_history = self._get_price_history(ticker, days=365)
             
-            # 6. Get 1-year daily price history for chart (may be rate limited)
-            # Note: Price history is fetched separately to avoid rate limits
-            price_history = []  # Will be populated on demand or cached separately
+            # 6. Build earnings history from financials with historical P/E
+            earnings = self._build_earnings_from_financials(financials, price_history)
             
-            # 6. Calculate additional metrics
+            # 7. Calculate additional metrics
             revenue_growth = self._calculate_revenue_growth(financials)
             latest_fcf = self._get_latest_fcf(financials)
             
@@ -185,7 +184,7 @@ class PolygonClient:
             logger.warning(f"Could not fetch price history for {ticker}: {e}")
             return []
     
-    def _build_earnings_from_financials(self, financials: List[Dict]) -> List[Dict]:
+    def _build_earnings_from_financials(self, financials: List[Dict], price_history: List[Dict] = None) -> List[Dict]:
         """Build earnings records from financial statements"""
         earnings = []
         
@@ -242,14 +241,85 @@ class PolygonClient:
                     "surprise_pct": None,
                     "revenue": revenue,
                     "free_cash_flow": fcf,
-                    "pe_ratio": None,
+                    "pe_ratio": None,  # Will be calculated after we have all earnings
                     "price": None
                 })
             except Exception as e:
                 logger.warning(f"Error processing financial {i}: {e}")
                 continue
         
+        # Calculate historical TTM P/E for each quarter
+        earnings = self._calculate_historical_pe(earnings, price_history)
+        
         return earnings
+    
+    def _calculate_historical_pe(self, earnings: List[Dict], price_history: List[Dict] = None) -> List[Dict]:
+        """Calculate historical TTM P/E for each earnings quarter using actual prices."""
+        if not earnings or len(earnings) < 4:
+            return earnings
+        
+        # Create price lookup by date
+        price_by_date = {}
+        if price_history:
+            for p in price_history:
+                price_by_date[p.get("date", "")] = p.get("close")
+        
+        # Process earnings from oldest to newest for TTM calculation
+        processed = []
+        for i in range(len(earnings)):
+            e = earnings[i].copy()
+            
+            # Calculate TTM EPS (sum of this quarter + 3 previous quarters)
+            ttm_eps = 0
+            quarters_in_ttm = 0
+            
+            for j in range(i, min(i + 4, len(earnings))):
+                eps = earnings[j].get("reported_eps")
+                if eps and eps > 0:
+                    ttm_eps += eps
+                    quarters_in_ttm += 1
+            
+            # Calculate P/E if we have TTM EPS and price data
+            if quarters_in_ttm >= 3 and ttm_eps > 0 and price_history:
+                fiscal_date = e.get("fiscal_date", "")
+                # Try to find price on or near the earnings date
+                price = None
+                
+                # Try exact date first
+                if fiscal_date in price_by_date:
+                    price = price_by_date[fiscal_date]
+                else:
+                    # Find closest date within 5 days
+                    from datetime import datetime, timedelta
+                    try:
+                        earnings_date = datetime.strptime(fiscal_date, "%Y-%m-%d")
+                        for days_offset in range(1, 6):
+                            # Try forward
+                            check_date = (earnings_date + timedelta(days=days_offset)).strftime("%Y-%m-%d")
+                            if check_date in price_by_date:
+                                price = price_by_date[check_date]
+                                break
+                            # Try backward
+                            check_date = (earnings_date - timedelta(days=days_offset)).strftime("%Y-%m-%d")
+                            if check_date in price_by_date:
+                                price = price_by_date[check_date]
+                                break
+                    except:
+                        pass
+                
+                if price:
+                    e["pe_ratio"] = round(price / ttm_eps, 2)
+                    e["price"] = price
+                else:
+                    e["pe_ratio"] = None
+                    e["price"] = None
+            else:
+                e["pe_ratio"] = None
+                e["price"] = None
+            
+            processed.append(e)
+        
+        return processed
     
     def _calculate_pe(self, details: Dict, price_data: Dict, earnings: List[Dict]) -> Optional[float]:
         """Calculate P/E ratio from price and TTM earnings"""
