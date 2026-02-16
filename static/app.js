@@ -298,34 +298,14 @@ document.addEventListener('DOMContentLoaded', () => {
             : 'N/A';
         document.getElementById('marketCap').textContent = formatMarketCap(summary.market_cap);
         document.getElementById('peRatio').textContent = formatNumber(summary.pe_ratio);
-        document.getElementById('nextEarnings').textContent = summary.next_earnings_date 
-            ? new Date(summary.next_earnings_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-            : 'N/A';
         
-        // Update new financial metrics
-        document.getElementById('profitMargin').textContent = formatPercent(summary.profit_margin);
-        document.getElementById('operatingMargin').textContent = formatPercent(summary.operating_margin);
-        document.getElementById('roe').textContent = formatPercent(summary.roe);
-        document.getElementById('debtToEquity').textContent = formatNumber(summary.debt_to_equity);
-        document.getElementById('dividendYield').textContent = formatPercent(summary.dividend_yield);
-        document.getElementById('beta').textContent = formatNumber(summary.beta);
+        // Update key financial metrics
         document.getElementById('revenueGrowth').textContent = formatPercent(summary.revenue_growth);
         document.getElementById('freeCashFlow').textContent = formatMarketCap(summary.free_cash_flow);
-        document.getElementById('price52wHigh').textContent = data.summary.price_52w_high 
-            ? `$${data.summary.price_52w_high.toFixed(2)}` 
-            : 'N/A';
-        document.getElementById('price52wLow').textContent = data.summary.price_52w_low 
-            ? `$${data.summary.price_52w_low.toFixed(2)}` 
-            : 'N/A';
-        
-        // Calculate and display 52-week range position
-        if (data.summary.current_price && data.summary.price_52w_high && data.summary.price_52w_low) {
-            const range = data.summary.price_52w_high - data.summary.price_52w_low;
-            const position = ((data.summary.current_price - data.summary.price_52w_low) / range) * 100;
-            document.getElementById('price52wPosition').textContent = `${position.toFixed(1)}% of 52W range`;
-        } else {
-            document.getElementById('price52wPosition').textContent = '';
-        }
+        document.getElementById('debtToEquity').textContent = formatNumber(summary.debt_to_equity);
+        document.getElementById('roe').textContent = formatPercent(summary.roe);
+        document.getElementById('profitMargin').textContent = formatPercent(summary.profit_margin);
+        document.getElementById('operatingMargin').textContent = formatPercent(summary.operating_margin);
         
         // Draw charts (reverse data for chronological order)
         const chartData = [...data.earnings].reverse();
