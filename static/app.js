@@ -331,26 +331,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const chartData = [...data.earnings].reverse();
         window.lastChartData = chartData;  // Store for tab switching
         
-        // Draw charts for currently active tab
-        const activeTab = document.querySelector('.tab-content.active').id;
+        // Get active tab safely
+        const activeTabEl = document.querySelector('.tab-content.active');
+        const activeTab = activeTabEl ? activeTabEl.id : 'overview';
         
-        // Overview tab: Price and EPS charts
-        if (activeTab === 'overview') {
-            drawPriceChart(chartData);
-            drawEPSChart(chartData);
-        }
-        // Earnings tab: EPS chart
-        else if (activeTab === 'earnings') {
-            drawPriceChart(chartData);
-            drawEPSChart(chartData);
-        }
-        // Financials tab: Revenue and FCF charts
-        else if (activeTab === 'financials') {
+        console.log(`Drawing charts for active tab: ${activeTab}`);
+        
+        // Always draw charts for Overview on load
+        drawPriceChart(chartData);
+        drawEPSChart(chartData);
+        
+        // Draw other charts if their tabs are active
+        if (activeTab === 'financials') {
             drawRevenueChart(chartData);
             drawFCFChart(chartData);
         }
-        // Valuation tab: P/E chart
-        else if (activeTab === 'valuation') {
+        if (activeTab === 'valuation') {
             drawPEChart(chartData);
         }
     }
