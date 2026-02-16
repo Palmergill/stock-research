@@ -44,6 +44,10 @@ class PolygonClient:
             revenue_growth = self._calculate_revenue_growth(financials)
             latest_fcf = self._get_latest_fcf(financials)
             
+            # Calculate margins from financial data
+            profit_margin = self._calculate_profit_margin(financials)
+            operating_margin = self._calculate_operating_margin(financials)
+            
             return {
                 "name": details.get("name", ticker),
                 "ticker": ticker,
@@ -56,11 +60,11 @@ class PolygonClient:
                 "roe": self._extract_metric(financials, "return_on_equity"),
                 "price_52w_high": year_high_low.get("high"),
                 "price_52w_low": year_high_low.get("low"),
-                "profit_margin": self._extract_metric(financials, "profit_margin"),
-                "operating_margin": self._extract_metric(financials, "operating_margin"),
+                "profit_margin": profit_margin,
+                "operating_margin": operating_margin,
                 "dividend_yield": details.get("dividend_yield"),
-                "beta": None,  # Not directly available
-                "next_earnings_date": None,  # Not available in API
+                "beta": details.get("beta"),  # May be available in some tickers
+                "next_earnings_date": None,  # Requires different endpoint
                 "earnings": earnings,
                 "source": "Polygon.io"
             }
@@ -408,6 +412,82 @@ class PolygonClient:
                 return round(dte, 2)
         except Exception as e:
             logger.warning(f"Could not calculate D/E: {e}")
+        return None
+    
+    def _calculate_profit_margin(self, financials: List[Dict]) -> Optional[float]:
+        """Calculate profit margin from latest financial: Net Income / Revenue * 100"""
+        try:
+            if not financials:
+                return None
+            
+            fin = financials[0].get("financials", {})
+            income = fin.get("income_statement", {})
+            
+            # Get net income
+            net_income = None
+            for key in ["net_income_loss", "net_income", "net_income_loss_attributable_to_parent"]:
+                ni_data = income.get(key)
+                if isinstance(ni_data, dict):
+                    net_income = ni_data.get("value")
+                elif ni_data is not None:
+                    net_income = ni_data
+                if net_income is not None:
+                    break
+            
+            # Get revenue
+            revenue = None
+            for key in ["revenues", "total_revenue", "revenue"]:
+                rev_data = income.get(key)
+                if isinstance(rev_data, dict):
+                    revenue = rev_data.get("value")
+                elif rev_data is not None:
+                    revenue = rev_data
+                if revenue:
+                    break
+            
+            if net_income is not None and revenue and revenue > 0:
+                margin = (net_income / revenue) * 100
+                return round(margin, 2)
+        except Exception as e:
+            logger.warning(f"Could not calculate profit margin: {e}")
+        return None
+    
+    def _calculate_operating_margin(self, financials: List[Dict]) -> Optional[float]:
+        """Calculate operating margin: Operating Income / Revenue * 100"""
+        try:
+            if not financials:
+                return None
+            
+            fin = financials[0].get("financials", {})
+            income = fin.get("income_statement", {})
+            
+            # Get operating income
+            op_income = None
+            for key in ["operating_income_loss", "operating_income"]:
+                op_data = income.get(key)
+                if isinstance(op_data, dict):
+                    op_income = op_data.get("value")
+                elif op_data is not None:
+                    op_income = op_data
+                if op_income is not None:
+                    break
+            
+            # Get revenue
+            revenue = None
+            for key in ["revenues", "total_revenue", "revenue"]:
+                rev_data = income.get(key)
+                if isinstance(rev_data, dict):
+                    revenue = rev_data.get("value")
+                elif rev_data is not None:
+                    revenue = rev_data
+                if revenue:
+                    break
+            
+            if op_income is not None and revenue and revenue > 0:
+                margin = (op_income / revenue) * 100
+                return round(margin, 2)
+        except Exception as e:
+            logger.warning(f"Could not calculate operating margin: {e}")
         return None
     
     def _get_quarter_from_date(self, date_str: str) -> str:
