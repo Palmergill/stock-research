@@ -6,6 +6,7 @@ from app.database import get_db
 from app.services.stock_data_client import stock_data_client
 from app.services.stock_data import search_stocks
 from app.services.polygon_client import polygon_client
+from app.services.finnhub_client import finnhub_estimates_client
 
 router = APIRouter(prefix="/api/stocks", tags=["stocks"])
 
@@ -36,6 +37,23 @@ async def debug_polygon(ticker: str):
             "ticker": ticker.upper(),
             "details": details,
             "financials": financials
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/{ticker}/debug/finnhub")
+async def debug_finnhub(ticker: str):
+    """Debug endpoint to see raw Finnhub earnings data"""
+    try:
+        if not finnhub_estimates_client.is_configured():
+            return {"error": "Finnhub API key not configured"}
+        
+        estimates = finnhub_estimates_client.get_earnings_estimates(ticker)
+        return {
+            "ticker": ticker.upper(),
+            "finnhub_configured": True,
+            "count": len(estimates) if estimates else 0,
+            "estimates": estimates
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
