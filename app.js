@@ -388,6 +388,9 @@ function drawEPSChart(data) {
     const canvas = document.getElementById('epsChart');
     if (!canvas) return;
     
+    // Show only last 4 quarters for cleaner chart
+    const chartData = data.slice(-4);
+    
     const ctx = canvas.getContext('2d');
     const dpr = window.devicePixelRatio || 1;
     
@@ -406,7 +409,7 @@ function drawEPSChart(data) {
     ctx.clearRect(0, 0, 800, 300);
     
     // Check if we have data
-    const allValues = [...data.map(d => d.reported_eps), ...data.map(d => d.estimated_eps)].filter(v => v != null);
+    const allValues = [...chartData.map(d => d.reported_eps), ...chartData.map(d => d.estimated_eps)].filter(v => v != null);
     if (allValues.length === 0) {
         ctx.fillStyle = '#94a3b8';
         ctx.font = '14px sans-serif';
@@ -441,10 +444,10 @@ function drawEPSChart(data) {
     ctx.setLineDash([]);
     
     // Draw bars (actual EPS)
-    const barWidth = chartWidth / data.length * 0.6;
-    const spacing = chartWidth / data.length;
+    const barWidth = chartWidth / chartData.length * 0.6;
+    const spacing = chartWidth / chartData.length;
     
-    data.forEach((d, i) => {
+    chartData.forEach((d, i) => {
         const x = padding.left + spacing * i + (spacing - barWidth) / 2;
         const barHeight = ((d.reported_eps - minVal) / (maxVal - minVal)) * chartHeight;
         const y = padding.top + chartHeight - barHeight;
@@ -465,7 +468,7 @@ function drawEPSChart(data) {
     ctx.lineWidth = 3;
     ctx.beginPath();
     
-    data.forEach((d, i) => {
+    chartData.forEach((d, i) => {
         const x = padding.left + spacing * i + spacing / 2;
         const y = padding.top + chartHeight - ((d.estimated_eps - minVal) / (maxVal - minVal)) * chartHeight;
         
@@ -475,7 +478,7 @@ function drawEPSChart(data) {
     ctx.stroke();
     
     // Draw dots for estimates
-    data.forEach((d, i) => {
+    chartData.forEach((d, i) => {
         const x = padding.left + spacing * i + spacing / 2;
         const y = padding.top + chartHeight - ((d.estimated_eps - minVal) / (maxVal - minVal)) * chartHeight;
         
