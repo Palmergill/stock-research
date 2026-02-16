@@ -687,12 +687,16 @@ function drawPEChart(data, priceHistory = null) {
     // Calculate P/E from price history if available
     let peData = data.map(d => ({ ...d }));
     
+    console.log('drawPEChart called with', data.length, 'earnings and', priceHistory ? priceHistory.length : 0, 'prices');
+    
     if (priceHistory && priceHistory.length > 0) {
         // Create price lookup by date
         const priceByDate = {};
         priceHistory.forEach(p => {
             priceByDate[p.date] = p.close;
         });
+        
+        console.log('Price history date range:', priceHistory[0].date, 'to', priceHistory[priceHistory.length-1].date);
         
         // Calculate P/E for each quarter
         peData = peData.map((d, i) => {
@@ -708,10 +712,14 @@ function drawPEChart(data, priceHistory = null) {
                 }
             }
             
+            console.log(`Q${i}: date=${d.fiscal_date}, eps=${d.reported_eps}, ttmEps=${ttmEps.toFixed(2)}, quarters=${quarters}`);
+            
             // Find price on or near earnings date
             if (quarters >= 3 && ttmEps > 0) {
                 const fiscalDate = d.fiscal_date;
                 let price = priceByDate[fiscalDate];
+                
+                console.log(`  Looking for price on ${fiscalDate}: found=${price}`);
                 
                 // Try nearby dates if exact match not found
                 if (!price) {
@@ -719,19 +727,23 @@ function drawPEChart(data, priceHistory = null) {
                     for (let offset = 1; offset <= 5 && !price; offset++) {
                         const fwd = new Date(date);
                         fwd.setDate(fwd.getDate() + offset);
-                        price = priceByDate[fwd.toISOString().split('T')[0]];
+                        const fwdStr = fwd.toISOString().split('T')[0];
+                        price = priceByDate[fwdStr];
                         
                         if (!price) {
                             const back = new Date(date);
                             back.setDate(back.getDate() - offset);
-                            price = priceByDate[back.toISOString().split('T')[0]];
+                            const backStr = back.toISOString().split('T')[0];
+                            price = priceByDate[backStr];
                         }
                     }
+                    if (price) console.log(`  Found nearby price: ${price}`);
                 }
                 
                 if (price) {
                     entry.pe_ratio = price / ttmEps;
                     entry.price = price;
+                    console.log(`  Calculated P/E: ${entry.pe_ratio.toFixed(2)}`);
                 }
             }
             
@@ -740,6 +752,8 @@ function drawPEChart(data, priceHistory = null) {
     }
     
     const pes = peData.map(d => d.pe_ratio).filter(v => v != null && !isNaN(v));
+    console.log('Valid P/E values:', pes.length);
+    
     if (pes.length === 0) {
         ctx.fillStyle = '#94a3b8';
         ctx.font = '14px sans-serif';
