@@ -331,9 +331,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const chartData = [...data.earnings].reverse();
         window.lastChartData = chartData;  // Store for tab switching
         
-        // Use price history if available, otherwise fall back to earnings data
-        const priceHistory = data.price_history || [];
-        
         // Get active tab safely
         const activeTabEl = document.querySelector('.tab-content.active');
         const activeTab = activeTabEl ? activeTabEl.id : 'overview';
@@ -341,8 +338,12 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log(`Drawing charts for active tab: ${activeTab}`);
         
         // Always draw charts for Overview on load
-        drawPriceChart(priceHistory.length > 0 ? priceHistory : chartData);
+        // For now, use earnings data for price chart (will be updated when price history loads)
+        drawPriceChart(chartData);
         drawEPSChart(chartData);
+        
+        // Fetch price history separately to avoid rate limits
+        fetchPriceHistory(data.ticker);
         
         // Draw other charts if their tabs are active
         if (activeTab === 'financials') {
@@ -379,6 +380,28 @@ document.addEventListener('DOMContentLoaded', () => {
             empty.classList.remove('hidden');
         }
     }, 100);
+
+    // Fetch price history separately to avoid rate limits
+    async function fetchPriceHistory(ticker) {
+        try {
+            console.log(`Fetching price history for ${ticker}...`);
+            const response = await fetch(`${API_BASE}/stocks/${ticker}/prices?days=365`);
+            
+            if (!response.ok) {
+                console.log('Price history not available (rate limit or error)');
+                return;
+            }
+            
+            const data = await response.json();
+            if (data.prices && data.prices.length > 0) {
+                console.log(`Received ${data.prices.length} price points`);
+                // Redraw price chart with real historical data
+                drawPriceChart(data.prices);
+            }
+        } catch (err) {
+            console.log('Could not fetch price history:', err.message);
+        }
+    }
 
     // Chart drawing functions
 function drawEPSChart(data) {

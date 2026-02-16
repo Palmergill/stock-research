@@ -37,11 +37,12 @@ class PolygonClient:
             # 4. Get historical price for 52-week range
             year_high_low = self._get_52_week_range(ticker)
             
-            # 5. Get 1-year daily price history for chart
-            price_history = self._get_price_history(ticker, days=365)
-            
-            # 6. Build earnings history from financials
+            # 5. Build earnings history from financials
             earnings = self._build_earnings_from_financials(financials)
+            
+            # 6. Get 1-year daily price history for chart (may be rate limited)
+            # Note: Price history is fetched separately to avoid rate limits
+            price_history = []  # Will be populated on demand or cached separately
             
             # 6. Calculate additional metrics
             revenue_growth = self._calculate_revenue_growth(financials)

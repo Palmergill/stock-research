@@ -57,3 +57,20 @@ async def get_earnings(ticker: str, db: Session = Depends(get_db)):
         return {"ticker": ticker, "earnings": data["earnings"]}
     except Exception as e:
         raise HTTPException(status_code=404, detail=f"Could not fetch earnings for {ticker}: {str(e)}")
+
+@router.get("/{ticker}/prices")
+async def get_price_history(ticker: str, days: int = 365):
+    """Get daily price history for a ticker (separate endpoint to avoid rate limits)"""
+    try:
+        if not polygon_client.is_configured():
+            raise HTTPException(status_code=503, detail="Polygon API not configured")
+        
+        price_history = polygon_client._get_price_history(ticker, days=days)
+        return {
+            "ticker": ticker.upper(),
+            "days": days,
+            "count": len(price_history),
+            "prices": price_history
+        }
+    except Exception as e:
+        raise HTTPException(status_code=429, detail=f"Rate limit or error: {str(e)}")
