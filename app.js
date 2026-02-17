@@ -438,6 +438,54 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // ============================================
+    // FULL SCREEN CHART MODAL
+    // ============================================
+    const chartModal = document.getElementById('chartModal');
+    const closeChartModalBtn = document.getElementById('closeChartModal');
+    const chartModalBackdrop = document.querySelector('.chart-modal-backdrop');
+    const chartModalTitle = document.getElementById('chartModalTitle');
+
+    // Open modal when clicking price chart
+    document.addEventListener('click', (e) => {
+        if (e.target.id === 'priceChart') {
+            openChartModal();
+        }
+    });
+
+    // Close modal handlers
+    closeChartModalBtn?.addEventListener('click', closeChartModal);
+    chartModalBackdrop?.addEventListener('click', closeChartModal);
+    
+    // ESC key to close modal
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !chartModal.classList.contains('hidden')) {
+            closeChartModal();
+        }
+    });
+
+    function openChartModal() {
+        if (!window.lastPriceHistory && !window.lastChartData) return;
+        
+        chartModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden'; // Prevent background scrolling
+        
+        // Update title with current ticker
+        if (currentTicker) {
+            chartModalTitle.textContent = `${currentTicker} - Stock Price History`;
+        }
+        
+        // Draw full screen chart with more detail
+        setTimeout(() => {
+            drawFullScreenPriceChart(window.lastPriceHistory || window.lastChartData);
+        }, 10);
+    }
+
+    function closeChartModal() {
+        chartModal.classList.add('hidden');
+        document.body.style.overflow = ''; // Restore scrolling
+    }
+
     // Chart drawing functions
 function drawEPSChart(data) {
     const canvas = document.getElementById('epsChart');
@@ -1056,5 +1104,213 @@ function drawPriceChart(data) {
     ctx.font = '12px sans-serif';
     ctx.textAlign = 'left';
     ctx.fillText('Price', padding.left + 18, 26);
+}
+
+function drawFullScreenPriceChart(data) {
+    const canvas = document.getElementById('fullScreenPriceChart');
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+
+    // Larger canvas for full screen
+    canvas.width = 1200 * dpr;
+    canvas.height = 600 * dpr;
+    ctx.scale(dpr, dpr);
+    canvas.style.width = '100%';
+    canvas.style.height = 'auto';
+
+    const padding = { top: 60, right: 80, bottom: 80, left: 80 };
+    const chartWidth = 1200 - padding.left - padding.right;
+    const chartHeight = 600 - padding.top - padding.bottom;
+
+    ctx.clearRect(0, 0, 1200, 600);
+
+    // Handle both formats: price_history (close) and earnings (price)
+    const prices = data.map(d => d.close || d.price).filter(v => v != null);
+    if (prices.length === 0) {
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '16px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('No price data available', 600, 300);
+        return;
+    }
+
+    const maxPrice = Math.max(...prices);
+    const minPrice = Math.min(...prices);
+    const priceRange = maxPrice - minPrice;
+
+    // Add padding to min/max for visual breathing room
+    const chartMax = maxPrice + priceRange * 0.1;
+    const chartMin = Math.max(0, minPrice - priceRange * 0.1);
+    const chartRange = chartMax - chartMin;
+
+    const spacing = chartWidth / (data.length - 1);
+
+    // Helper to get Y coordinate for a price
+    const getY = (price) => padding.top + chartHeight - ((price - chartMin) / chartRange) * chartHeight;
+    const getX = (i) => padding.left + spacing * i;
+
+    // Draw grid lines - more detailed for full screen
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 5]);
+
+    // 5 horizontal grid lines
+    for (let i = 0; i <= 4; i++) {
+        const val = chartMax - chartRange * i / 4;
+        const y = getY(val);
+        
+        ctx.beginPath();
+        ctx.moveTo(padding.left, y);
+        ctx.lineTo(padding.left + chartWidth, y);
+        ctx.stroke();
+
+        ctx.fillStyle = '#64748b';
+        ctx.font = '13px sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText(`$${val.toFixed(2)}`, padding.left - 15, y + 5);
+    }
+
+    ctx.setLineDash([]);
+
+    // Area under line with smooth gradient
+    const gradient = ctx.createLinearGradient(0, padding.top, 0, padding.top + chartHeight);
+    gradient.addColorStop(0, 'rgba(16, 185, 129, 0.3)');
+    gradient.addColorStop(1, 'rgba(16, 185, 129, 0.02)');
+
+    ctx.beginPath();
+    ctx.moveTo(padding.left, padding.top + chartHeight);
+
+    // Build smooth curve using bezier
+    const points = data.map((d, i) => ({
+        x: getX(i),
+        y: getY(d.close || d.price)
+    }));
+
+    ctx.lineTo(points[0].x, points[0].y);
+
+    for (let i = 0; i < points.length - 1; i++) {
+        const curr = points[i];
+        const next = points[i + 1];
+        const cp1x = curr.x + (next.x - curr.x) * 0.3;
+        const cp1y = curr.y;
+        const cp2x = next.x - (next.x - curr.x) * 0.3;
+        const cp2y = next.y;
+        ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, next.x, next.y);
+    }
+
+    ctx.lineTo(padding.left + chartWidth, padding.top + chartHeight);
+    ctx.closePath();
+    ctx.fillStyle = gradient;
+    ctx.fill();
+
+    // Smooth price line - thicker for full screen
+    ctx.strokeStyle = '#10b981';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+
+    for (let i = 0; i < points.length - 1; i++) {
+        const curr = points[i];
+        const next = points[i + 1];
+        const cp1x = curr.x + (next.x - curr.x) * 0.3;
+        const cp1y = curr.y;
+        const cp2x = next.x - (next.x - curr.x) * 0.3;
+        const cp2y = next.y;
+        ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, next.x, next.y);
+    }
+    ctx.stroke();
+
+    // Find high and low points
+    let highIdx = 0, lowIdx = 0;
+    prices.forEach((p, i) => {
+        if (p > prices[highIdx]) highIdx = i;
+        if (p < prices[lowIdx]) lowIdx = i;
+    });
+
+    // Draw high point marker - larger for full screen
+    const highX = getX(highIdx);
+    const highY = getY(prices[highIdx]);
+
+    ctx.fillStyle = '#22c55e';
+    ctx.beginPath();
+    ctx.arc(highX, highY, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    // High label with background
+    ctx.fillStyle = '#22c55e';
+    ctx.font = 'bold 14px sans-serif';
+    ctx.textAlign = highIdx < data.length / 2 ? 'left' : 'right';
+    ctx.fillText(`High: $${prices[highIdx].toFixed(2)}`, highX + (highIdx < data.length / 2 ? 15 : -15), highY - 15);
+
+    // Draw low point marker
+    const lowX = getX(lowIdx);
+    const lowY = getY(prices[lowIdx]);
+
+    ctx.fillStyle = '#ef4444';
+    ctx.beginPath();
+    ctx.arc(lowX, lowY, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    // Low label
+    ctx.fillStyle = '#ef4444';
+    ctx.font = 'bold 14px sans-serif';
+    ctx.textAlign = lowIdx < data.length / 2 ? 'left' : 'right';
+    ctx.fillText(`Low: $${prices[lowIdx].toFixed(2)}`, lowX + (lowIdx < data.length / 2 ? 15 : -15), lowY + 25);
+
+    // X-axis labels - monthly for more detail
+    let lastMonth = '';
+    data.forEach((d, i) => {
+        const dateStr = d.date || d.fiscal_date;
+        const month = dateStr.slice(0, 7);  // YYYY-MM
+        if (month === lastMonth) return;
+        lastMonth = month;
+
+        const x = getX(i);
+        ctx.fillStyle = '#64748b';
+        ctx.font = '12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(month, x, padding.top + chartHeight + 30);
+    });
+
+    // Current price label at end
+    const lastPrice = prices[prices.length - 1];
+    const lastX = points[points.length - 1].x;
+    const lastY = points[points.length - 1].y;
+
+    ctx.fillStyle = '#10b981';
+    ctx.font = 'bold 14px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(`$${lastPrice.toFixed(2)}`, lastX + 12, lastY + 5);
+
+    // Legend
+    ctx.fillStyle = '#10b981';
+    ctx.fillRect(padding.left, 20, 16, 16);
+    ctx.fillStyle = '#e2e8f0';
+    ctx.font = '14px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('Price', padding.left + 24, 33);
+
+    // Stats box
+    const firstPrice = data[0]?.close || data[0]?.price;
+    if (firstPrice && lastPrice) {
+        const change = ((lastPrice - firstPrice) / firstPrice) * 100;
+        const changeColor = change >= 0 ? '#22c55e' : '#ef4444';
+        const changeSymbol = change >= 0 ? '+' : '';
+        
+        ctx.fillStyle = changeColor;
+        ctx.font = 'bold 14px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(`${changeSymbol}${change.toFixed(2)}%`, padding.left + 100, 33);
+    }
 }
 });
