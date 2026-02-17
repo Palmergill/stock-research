@@ -934,6 +934,75 @@ canvas.dataset.tooltipSetup = 'true';
 - Helps users spot improving/declining metrics
 - Subtle appearance on hover doesn't clutter UI
 
+### ✅ Loading Spinners in Search Input & Refresh Button
+
+**Status:** Completed and deployed
+
+**Changes Made:**
+1. Added spinner inside search input (right side) that appears during API calls
+2. Added spinner to search button that replaces text during loading
+3. Added spinner to refresh button in company header
+4. Smooth transitions between text and spinner states
+
+**CSS Added:**
+```css
+.input-spinner {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    width: 20px;
+    height: 20px;
+}
+
+.spinner-ring {
+    border: 2px solid transparent;
+    border-top-color: var(--accent-blue);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+```
+
+**Visual Impact:**
+- Clear visual feedback during loading
+- Professional loading states
+- No more "Refreshing..." text changes - smooth spinner transition
+
+### ✅ Modal Backdrop Blur & Improved Animations
+
+**Status:** Completed and deployed
+
+**Changes Made:**
+1. Added backdrop blur animation (0 → 10px) when modal opens
+2. Improved modal entrance with spring physics (scale + translateY)
+3. Added exit animation (scale down + fade)
+4. Content stagger animation (header → body → close button)
+
+**CSS Added:**
+```css
+.chart-modal-backdrop {
+    backdrop-filter: blur(0px);
+    transition: backdrop-filter 0.3s ease;
+}
+
+.chart-modal:not(.closing) .chart-modal-backdrop {
+    backdrop-filter: blur(10px);
+}
+
+.chart-modal-content {
+    animation: modalSlideIn 0.4s var(--ease-spring);
+}
+
+.chart-modal-header { animation: fadeSlideDown 0.3s ease-out 0.1s both; }
+.chart-modal-body { animation: fadeSlideUp 0.3s ease-out 0.2s both; }
+.close-modal-btn { animation: fadeIn 0.2s ease-out 0.3s both; }
+```
+
+**Visual Impact:**
+- Much more polished modal experience
+- Backdrop blur creates depth and focus
+- Spring animation feels premium
+- Smooth exit animation instead of instant close
+
 ---
 
 ## Summary of Completed Work (While Palmer Sleeps)
