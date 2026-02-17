@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🦞 Stock Research (Simple)</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            margin: 0;
+            padding: 20px;
+        }
+        .container { max-width: 800px; margin: 0 auto; }
+        h1 { font-size: 24px; margin-bottom: 20px; }
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        input {
+            flex: 1;
+            padding: 12px;
+            font-size: 16px;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            background: #1e293b;
+            color: white;
+        }
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        button:disabled { opacity: 0.5; }
+        .results {
+            background: #1e293b;
+            padding: 20px;
+            border-radius: 12px;
+            display: none;
+        }
+        .results.visible { display: block; }
+        .company { font-size: 20px; font-weight: bold; margin-bottom: 10px; }
+        .price { font-size: 32px; color: #10b981; }
+        .loading { text-align: center; padding: 40px; display: none; }
+        .error { color: #ef4444; padding: 20px; display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🦞 Stock Research</h1>
+        <div class="search-box">
+            <input type="text" id="tickerInput" placeholder="Enter ticker (e.g., TSLA)">
+            <button id="searchBtn" onclick="doSearch()">Search</button>
+        </div>
+        <div class="loading" id="loading">Loading...</div>
+        <div class="error" id="error"></div>
+        <div class="results" id="results">
+            <div class="company" id="companyName"></div>
+            <div class="price" id="currentPrice"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://stock-research-production-b3ac.up.railway.app/api';
+        
+        async function doSearch() {
+            const ticker = document.getElementById('tickerInput').value.trim().toUpperCase();
+            if (!ticker) return;
+            
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('results').classList.remove('visible');
+            document.getElementById('searchBtn').disabled = true;
+            
+            try {
+                const response = await fetch(`${API_BASE}/stocks/${ticker}`);
+                const data = await response.json();
+                
+                if (response.ok && data.summary) {
+                    document.getElementById('companyName').textContent = data.name || data.ticker;
+                    document.getElementById('currentPrice').textContent = '$' + data.summary.current_price.toFixed(2);
+                    document.getElementById('results').classList.add('visible');
+                } else {
+                    throw new Error(data.detail || 'Failed to load');
+                }
+            } catch (err) {
+                document.getElementById('error').textContent = 'Error: ' + err.message;
+                document.getElementById('error').style.display = 'block';
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('searchBtn').disabled = false;
+            }
+        }
+        
+        // Allow Enter key
+        document.getElementById('tickerInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') doSearch();
+        });
+    </script>
+</body>
+</html>
