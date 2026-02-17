@@ -751,6 +751,33 @@ input:focus ~ .input-underline-focus {
 - Smooth animation feels responsive
 - Accessibility improvement
 
+### ✅ Fixed: Chart Not Rendering (Bug Fix)
+
+**Status:** Fixed and deployed
+
+**Problem:** Stock price history chart wasn't loading - canvas was empty.
+
+**Root Cause:** In the `setupChartTooltip` function, I was cloning the canvas element to remove old event listeners. However, cloning a canvas creates a blank copy without the drawing context. When I replaced the original canvas with the clone, the chart drawing was lost.
+
+**Fix:** Instead of cloning the canvas, I now:
+1. Use a data attribute (`data-tooltip-setup`) to track if listeners are already set up
+2. Skip setup if already done: `if (canvas.dataset.tooltipSetup === 'true') return;`
+3. Add listeners directly to the original canvas without cloning
+
+**Code Change:**
+```javascript
+// Before (broken):
+const newCanvas = canvas.cloneNode(true);
+canvas.parentNode.replaceChild(newCanvas, canvas);
+
+// After (fixed):
+if (canvas.dataset.tooltipSetup === 'true') return;
+canvas.dataset.tooltipSetup = 'true';
+// Add listeners directly to original canvas
+```
+
+**Lesson Learned:** Cloning a canvas copies the DOM element but not the rendered bitmap. Use flags to prevent duplicate listeners instead of cloning.
+
 ---
 
 ## Summary of Completed Work (While Palmer Sleeps)
