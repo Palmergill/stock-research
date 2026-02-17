@@ -608,6 +608,39 @@ canvas {
     }
 }
 
+/* Landscape mode for chart modal on mobile */
+@media (max-width: 768px) and (orientation: portrait) {
+    .chart-modal {
+        transform: rotate(90deg);
+        transform-origin: center center;
+        width: 100vh;
+        height: 100vw;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        margin-left: -50vh;
+        margin-top: -50vw;
+    }
+    
+    .chart-modal-content {
+        width: 100vh;
+        height: 100vw;
+        max-height: 100vw;
+    }
+    
+    .chart-modal-body {
+        height: calc(100vw - 70px);
+    }
+}
+
+/* When modal is open, lock body scroll */
+body.chart-modal-open {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+}
+
 /* Touch device optimizations */
 @media (pointer: coarse) {
     #priceChart {

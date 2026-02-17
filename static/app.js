@@ -473,11 +473,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Store original orientation to restore later
+    let originalOrientation = null;
+
     function openChartModal() {
         if (!window.lastPriceHistory && !window.lastChartData) return;
         
         chartModal.classList.remove('hidden');
+        document.body.classList.add('chart-modal-open');
         document.body.style.overflow = 'hidden'; // Prevent background scrolling
+        
+        // Try to lock to landscape on mobile
+        if (screen.orientation && screen.orientation.lock) {
+            originalOrientation = screen.orientation.type;
+            screen.orientation.lock('landscape').catch(() => {
+                // Lock not supported or failed, CSS rotation will handle it
+                console.log('Orientation lock not available, using CSS rotation');
+            });
+        }
         
         // Update title with current ticker
         if (currentTicker) {
@@ -492,7 +505,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function closeChartModal() {
         chartModal.classList.add('hidden');
+        document.body.classList.remove('chart-modal-open');
         document.body.style.overflow = ''; // Restore scrolling
+        
+        // Unlock orientation if we locked it
+        if (screen.orientation && screen.orientation.unlock && originalOrientation) {
+            screen.orientation.unlock();
+            originalOrientation = null;
+        }
     }
 
     // Chart drawing functions
