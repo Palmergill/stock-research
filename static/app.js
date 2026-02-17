@@ -763,12 +763,21 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Animate key metrics with count-up effect
         if (summary.current_price) {
-            animateCountUp(document.getElementById('currentPrice'), 0, summary.current_price, 600, '$', '', 2);
+            const currentPriceEl = document.getElementById('currentPrice');
+            if (currentPriceEl) {
+                animateCountUp(currentPriceEl, 0, summary.current_price, 600, '$', '', 2);
+            }
         } else {
-            document.getElementById('currentPrice').textContent = 'N/A';
+            const currentPriceEl = document.getElementById('currentPrice');
+            if (currentPriceEl) {
+                currentPriceEl.textContent = 'N/A';
+            }
         }
         
-        document.getElementById('marketCap').textContent = formatMarketCap(summary.market_cap);
+        const marketCapEl = document.getElementById('marketCap');
+        if (marketCapEl) {
+            marketCapEl.textContent = formatMarketCap(summary.market_cap);
+        }
         
         if (summary.pe_ratio != null) {
             animateCountUp(document.getElementById('peRatio'), 0, summary.pe_ratio, 500, '', '', 2);
