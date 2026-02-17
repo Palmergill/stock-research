@@ -13,7 +13,11 @@ router = APIRouter(prefix="/api/stocks", tags=["stocks"])
 @router.get("/search")
 async def search_stocks_endpoint(q: str = Query(..., min_length=1), limit: int = 10):
     """Search stocks by ticker or company name"""
-    results = search_stocks(q, limit)
+    # Use mock search if not using real data
+    if stock_data_client._use_mock():
+        results = stock_data_client.mock.search_stocks(q, limit)
+    else:
+        results = search_stocks(q, limit)
     return {"results": results, "query": q}
 
 @router.get("/{ticker}/debug/finnhub")
@@ -69,12 +73,14 @@ async def get_earnings(ticker: str, db: Session = Depends(get_db)):
 
 @router.get("/{ticker}/prices")
 async def get_price_history(ticker: str, days: int = 365):
-    """Get daily price history for a ticker (separate endpoint to avoid rate limits)"""
+    """Get daily price history for a ticker"""
     try:
-        if not polygon_client.is_configured():
-            raise HTTPException(status_code=503, detail="Polygon API not configured")
+        # Use mock data if not using real data
+        if stock_data_client._use_mock():
+            price_history = stock_data_client.mock.get_price_history(ticker, days=days)
+        else:
+            price_history = polygon_client._get_price_history(ticker, days=days)
         
-        price_history = polygon_client._get_price_history(ticker, days=days)
         return {
             "ticker": ticker.upper(),
             "days": days,
@@ -82,7 +88,15 @@ async def get_price_history(ticker: str, days: int = 365):
             "prices": price_history
         }
     except Exception as e:
-        raise HTTPException(status_code=429, detail=f"Rate limit or error: {str(e)}")
+        # Fall back to mock data on error
+        price_history = stock_data_client.mock.get_price_history(ticker, days=days)
+        return {
+            "ticker": ticker.upper(),
+            "days": days,
+            "count": len(price_history),
+            "prices": price_history,
+            "_mock": True
+        }
 
 @router.get("/{ticker}")
 async def get_stock(ticker: str, refresh: bool = False, db: Session = Depends(get_db)):

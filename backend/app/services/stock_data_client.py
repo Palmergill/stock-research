@@ -1,14 +1,15 @@
 """
-Stock Data Client - Polygon.io Primary + Yahoo Finance Estimates
+Stock Data Client - Mock Data for Development
 
 This module provides unified access to stock data.
-- Polygon.io: Primary source for financials, prices, company info
-- Yahoo Finance: Supplement for analyst earnings estimates only
+- Mock Data: Default for development (no API calls, no rate limits)
+- Polygon.io: Optional real data source (set USE_REAL_DATA=true)
 """
 
 from datetime import datetime, timedelta
 from typing import Optional, List
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -19,13 +20,17 @@ CACHE_TTL = {
     "company_info": timedelta(hours=24),
 }
 
+# Use mock data by default - set USE_REAL_DATA=true to use Polygon
+USE_REAL_DATA = os.getenv("USE_REAL_DATA", "false").lower() == "true"
+
 
 class StockDataClient:
-    """Primary stock data client - Polygon.io primary, Yahoo for estimates."""
+    """Primary stock data client - Mock by default, Polygon optional."""
     
     def __init__(self):
         self._polygon_client = None
-        self._yfinance_client = None
+        self._mock_client = None
+        self._finnhub_client = None
     
     @property
     def polygon(self):
@@ -36,12 +41,24 @@ class StockDataClient:
         return self._polygon_client
     
     @property
+    def mock(self):
+        """Lazy import of mock client."""
+        if self._mock_client is None:
+            from app.services.mock_client import mock_data_client
+            self._mock_client = mock_data_client
+        return self._mock_client
+    
+    @property
     def finnhub(self):
         """Lazy import of Finnhub client for estimates."""
-        if self._yfinance_client is None:
+        if self._finnhub_client is None:
             from app.services.finnhub_client import finnhub_estimates_client
-            self._yfinance_client = finnhub_estimates_client
-        return self._yfinance_client
+            self._finnhub_client = finnhub_estimates_client
+        return self._finnhub_client
+    
+    def _use_mock(self) -> bool:
+        """Check if we should use mock data."""
+        return not USE_REAL_DATA or not self.polygon.is_configured()
     
     def _is_cache_fresh(self, fetched_at: datetime, data_type: str = "price") -> bool:
         """Check if cached data is still fresh based on data type."""
@@ -54,14 +71,14 @@ class StockDataClient:
         
         ticker = ticker.upper().strip()
         
-        # Validate API is configured
-        if not self.polygon.is_configured():
-            cached = self._get_cached_data(ticker, db, accept_stale=True)
-            if cached:
-                cached["_warning"] = "Using cached data - API key not configured"
-                return cached
-            raise Exception("Polygon API key not configured")
+        # Use mock data by default (no API calls, no rate limits)
+        if self._use_mock():
+            logger.info(f"[{ticker}] Using mock data")
+            data = self.mock.get_stock_data(ticker)
+            data["_mock"] = True
+            return data
         
+        # Real data path (requires API keys)
         # Check cache unless force_refresh
         if not force_refresh:
             cached = self._get_cached_data(ticker, db)
@@ -103,15 +120,12 @@ class StockDataClient:
                 stale_data["_warning"] = f"Using {hours_old}h old data - API error"
                 return stale_data
             
-            # Raise specific error
-            if "429" in error_msg or "rate limit" in error_msg.lower():
-                raise Exception(f"Rate limit exceeded. Try again in a minute.")
-            elif "404" in error_msg or "not found" in error_msg.lower():
-                raise Exception(f"Ticker '{ticker}' not found.")
-            elif "401" in error_msg:
-                raise Exception("API authentication failed. Check your Polygon API key.")
-            else:
-                raise Exception(f"Could not fetch data: {error_msg}")
+            # Fall back to mock data on error
+            logger.warning(f"[{ticker}] Falling back to mock data due to error")
+            data = self.mock.get_stock_data(ticker)
+            data["_mock"] = True
+            data["_warning"] = f"Using mock data - API error: {error_msg}"
+            return data
     
     def _get_cached_data(self, ticker: str, db, accept_stale: bool = False):
         """Retrieve cached data from database."""
