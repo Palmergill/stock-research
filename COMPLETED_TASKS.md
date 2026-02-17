@@ -415,6 +415,46 @@ header {
 - Looks more like financial terminals/Bloomberg
 - Cleaner, more professional data display
 
+### ✅ Animated Line Drawing for Price Chart
+
+**Status:** Completed and deployed
+
+**Changes Made:**
+1. Price chart line now animates/draws itself when first rendered
+2. 1-second animation with cubic easing (ease-out)
+3. High/low markers and labels appear after line animation completes
+4. X-axis labels, legend, and tooltips also animate in sequence
+
+**JavaScript Added:**
+```javascript
+// Animate the line drawing
+const duration = 1000;
+const startTime = performance.now();
+
+function animateLine(currentTime) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const easeProgress = 1 - Math.pow(1 - progress, 3);
+    
+    // Draw partial path based on progress
+    const drawCount = Math.floor(points.length * easeProgress);
+    // ... draw partial bezier curves
+    
+    if (progress < 1) {
+        requestAnimationFrame(animateLine);
+    } else {
+        ctx.stroke(path);
+        drawMarkersAndLabels(); // Show markers after line complete
+    }
+}
+```
+
+**Visual Impact:**
+- Line "draws" itself across the chart (like a live ticker)
+- Markers pop in after line reaches them
+- More dynamic, engaging chart experience
+- Professional animation feel
+
 ---
 
 ## Summary of Completed Work (While Palmer Sleeps)
