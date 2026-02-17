@@ -475,7 +475,17 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js" onerror="console.warn('Chart.js CDN failed')"></script>
-    <script src="app.js?v=3"></script>
+    <script>
+        // Immediate test - runs before app.js
+        document.addEventListener('DOMContentLoaded', function() {
+            var debug = document.getElementById('debugStatus');
+            if (debug) {
+                debug.style.display = 'block';
+                debug.textContent = 'JS starting...';
+            }
+        });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" onerror="console.warn('Chart.js CDN failed')"></script>
+    <script src="app.js?v=4"></script>
 </body>
 </html>
