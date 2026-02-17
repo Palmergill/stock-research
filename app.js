@@ -104,6 +104,8 @@ function updateMetricTrend(elementId, trend) {
 
 // Count-up animation helper
 function animateCountUp(element, start, end, duration = 500, prefix = '', suffix = '', decimals = 2) {
+    if (!element) return;
+    
     if (start === end || isNaN(start) || isNaN(end)) {
         element.textContent = `${prefix}${end.toFixed(decimals)}${suffix}`;
         return;
