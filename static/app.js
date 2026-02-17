@@ -1761,330 +1761,126 @@ function drawSparkline(canvas, data, color) {
     ctx.fill();
 }
 
+// Global Chart.js instances
+let priceChartInstance = null;
+
 function drawPriceChart(data) {
     const canvas = document.getElementById('priceChart');
     if (!canvas) return;
-
+    
+    // Destroy existing chart if any
+    if (priceChartInstance) {
+        priceChartInstance.destroy();
+    }
+    
     const ctx = canvas.getContext('2d');
-    const dpr = window.devicePixelRatio || 1;
-
-    canvas.width = 800 * dpr;
-    canvas.height = 300 * dpr;
-    ctx.scale(dpr, dpr);
-    canvas.style.width = '100%';
-    canvas.style.height = 'auto';
-
-    const padding = { top: 50, right: 50, bottom: 50, left: 60 };
-    const chartWidth = 800 - padding.left - padding.right;
-    const chartHeight = 300 - padding.top - padding.bottom;
-
-    ctx.clearRect(0, 0, 800, 300);
-
-    // Handle both formats: price_history (close) and earnings (price)
+    
+    // Prepare data
     const prices = data.map(d => d.close || d.price).filter(v => v != null);
-    if (prices.length === 0) {
-        ctx.fillStyle = '#94a3b8';
-        ctx.font = '14px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('No price data available', 400, 150);
-        return;
-    }
-
-    const maxPrice = Math.max(...prices);
-    const minPrice = Math.min(...prices);
-    const priceRange = maxPrice - minPrice;
-
-    // Add padding to min/max for visual breathing room
-    const chartMax = maxPrice + priceRange * 0.1;
-    const chartMin = Math.max(0, minPrice - priceRange * 0.1);
-    const chartRange = chartMax - chartMin;
-
-    const spacing = chartWidth / (data.length - 1);
-
-    // Helper to get Y coordinate for a price
-    const getY = (price) => padding.top + chartHeight - ((price - chartMin) / chartRange) * chartHeight;
-    const getX = (i) => padding.left + spacing * i;
-
-    // Subtle grid - only 3 horizontal lines (min, mid, max)
-    ctx.strokeStyle = '#334155';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([]);
-
-    [chartMax, (chartMax + chartMin) / 2, chartMin].forEach((val, i) => {
-        const y = getY(val);
-        ctx.beginPath();
-        ctx.moveTo(padding.left, y);
-        ctx.lineTo(padding.left + chartWidth, y);
-        ctx.stroke();
-
-        ctx.fillStyle = '#64748b';
-        ctx.font = '11px sans-serif';
-        ctx.textAlign = 'right';
-        ctx.fillText(`$${val.toFixed(0)}`, padding.left - 10, y + 4);
+    if (prices.length === 0) return;
+    
+    // Format labels (show every ~15th date)
+    const labels = data.map((d, i) => {
+        if (i % 15 === 0 || i === data.length - 1) {
+            const date = d.date || d.fiscal_date;
+            return date ? date.slice(0, 7) : '';
+        }
+        return '';
     });
-
-    // Area under line with smooth gradient
-    const gradient = ctx.createLinearGradient(0, padding.top, 0, padding.top + chartHeight);
-    gradient.addColorStop(0, 'rgba(16, 185, 129, 0.25)');
+    
+    // Create gradient
+    const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+    gradient.addColorStop(0, 'rgba(16, 185, 129, 0.3)');
     gradient.addColorStop(1, 'rgba(16, 185, 129, 0.02)');
-
-    ctx.beginPath();
-    ctx.moveTo(padding.left, padding.top + chartHeight);
-
-    // Build smooth curve using bezier
-    const points = data.map((d, i) => ({
-        x: getX(i),
-        y: getY(d.close || d.price)
-    }));
-
-    ctx.lineTo(points[0].x, points[0].y);
-
-    for (let i = 0; i < points.length - 1; i++) {
-        const curr = points[i];
-        const next = points[i + 1];
-        const cp1x = curr.x + (next.x - curr.x) * 0.3;
-        const cp1y = curr.y;
-        const cp2x = next.x - (next.x - curr.x) * 0.3;
-        const cp2y = next.y;
-        ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, next.x, next.y);
-    }
-
-    ctx.lineTo(padding.left + chartWidth, padding.top + chartHeight);
-    ctx.closePath();
-    ctx.fillStyle = gradient;
-    ctx.fill();
-
-    // Smooth price line with animation
-    ctx.strokeStyle = '#10b981';
-    ctx.lineWidth = 2.5;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
     
-    // Create the path for animation
-    const path = new Path2D();
-    path.moveTo(points[0].x, points[0].y);
-    
-    for (let i = 0; i < points.length - 1; i++) {
-        const curr = points[i];
-        const next = points[i + 1];
-        const cp1x = curr.x + (next.x - curr.x) * 0.3;
-        const cp1y = curr.y;
-        const cp2x = next.x - (next.x - curr.x) * 0.3;
-        const cp2y = next.y;
-        path.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, next.x, next.y);
-    }
-    
-    // Animate the line drawing
-    const pathLength = points.length * spacing; // Approximate length
-    const duration = 1000; // 1 second animation
-    const startTime = performance.now();
-    
-    function animateLine(currentTime) {
-        const elapsed = currentTime - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        
-        // Ease out cubic
-        const easeProgress = 1 - Math.pow(1 - progress, 3);
-        
-        ctx.save();
-        ctx.beginPath();
-        
-        // Draw partial path based on progress
-        const drawCount = Math.floor(points.length * easeProgress);
-        if (drawCount > 0) {
-            ctx.moveTo(points[0].x, points[0].y);
-            
-            for (let i = 0; i < Math.min(drawCount, points.length - 1); i++) {
-                const curr = points[i];
-                const next = points[i + 1];
-                const cp1x = curr.x + (next.x - curr.x) * 0.3;
-                const cp1y = curr.y;
-                const cp2x = next.x - (next.x - curr.x) * 0.3;
-                const cp2y = next.y;
-                ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, next.x, next.y);
+    // Create Chart.js chart
+    priceChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Price',
+                data: prices,
+                borderColor: '#10b981',
+                backgroundColor: gradient,
+                borderWidth: 2.5,
+                fill: true,
+                tension: 0.4,
+                pointRadius: 0,
+                pointHoverRadius: 6,
+                pointHoverBackgroundColor: '#10b981',
+                pointHoverBorderColor: '#fff',
+                pointHoverBorderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                    titleColor: '#94a3b8',
+                    bodyColor: '#f8fafc',
+                    borderColor: 'rgba(59, 130, 246, 0.3)',
+                    borderWidth: 1,
+                    padding: 12,
+                    displayColors: false,
+                    callbacks: {
+                        title: function(context) {
+                            const idx = context[0].dataIndex;
+                            const d = data[idx];
+                            return d.date || d.fiscal_date || '';
+                        },
+                        label: function(context) {
+                            return '$' + context.parsed.y.toFixed(2);
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: {
+                        display: false,
+                        drawBorder: false
+                    },
+                    ticks: {
+                        color: '#64748b',
+                        maxTicksLimit: 6,
+                        font: {
+                            size: 10
+                        }
+                    }
+                },
+                y: {
+                    grid: {
+                        color: 'rgba(51, 65, 85, 0.5)',
+                        drawBorder: false
+                    },
+                    ticks: {
+                        color: '#64748b',
+                        callback: function(value) {
+                            return '$' + value.toFixed(0);
+                        },
+                        font: {
+                            size: 11
+                        }
+                    }
+                }
+            },
+            animation: {
+                duration: 1000,
+                easing: 'easeOutQuart'
             }
-            
-            ctx.stroke();
         }
-        ctx.restore();
-        
-        if (progress < 1) {
-            requestAnimationFrame(animateLine);
-        } else {
-            // Draw complete line
-            ctx.stroke(path);
-            // Draw markers after line animation completes
-            drawMarkersAndLabels();
-        }
-    }
-    
-    requestAnimationFrame(animateLine);
-
-    // Store reference to draw markers after animation
-    function drawMarkersAndLabels() {
-        // Find high and low points
-        let highIdx = 0, lowIdx = 0;
-        prices.forEach((p, i) => {
-            if (p > prices[highIdx]) highIdx = i;
-            if (p < prices[lowIdx]) lowIdx = i;
-        });
-
-        // Draw high point marker on canvas
-        const highX = getX(highIdx);
-        const highY = getY(prices[highIdx]);
-
-        ctx.fillStyle = '#22c55e';
-        ctx.beginPath();
-        ctx.arc(highX, highY, 5, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = '#1e293b';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        
-        // Position HTML overlay markers
-        const highMarker = document.getElementById('highMarker');
-        const lowMarker = document.getElementById('lowMarker');
-        const dpr = window.devicePixelRatio || 1;
-        
-        if (highMarker) {
-            const canvasRect = canvas.getBoundingClientRect();
-            const scaleX = canvasRect.width / canvas.width;
-            const scaleY = canvasRect.height / canvas.height;
-            
-            highMarker.style.left = `${(highX / dpr) * scaleX}px`;
-            highMarker.style.top = `${(highY / dpr) * scaleY}px`;
-            highMarker.classList.add('visible');
-        }
-        
-        if (lowMarker) {
-            const canvasRect = canvas.getBoundingClientRect();
-            const scaleX = canvasRect.width / canvas.width;
-            const scaleY = canvasRect.height / canvas.height;
-            const lowX = getX(lowIdx);
-            const lowY = getY(prices[lowIdx]);
-            
-            lowMarker.style.left = `${(lowX / dpr) * scaleX}px`;
-            lowMarker.style.top = `${(lowY / dpr) * scaleY}px`;
-            lowMarker.classList.add('visible');
-        }
-
-        // High label
-        ctx.fillStyle = '#22c55e';
-        ctx.font = 'bold 11px sans-serif';
-        ctx.textAlign = highIdx < data.length / 2 ? 'left' : 'right';
-        ctx.fillText(`High: $${prices[highIdx].toFixed(2)}`, highX + (highIdx < data.length / 2 ? 10 : -10), highY - 10);
-
-        // Draw low point marker
-        const lowX = getX(lowIdx);
-        const lowY = getY(prices[lowIdx]);
-
-        ctx.fillStyle = '#ef4444';
-        ctx.beginPath();
-        ctx.arc(lowX, lowY, 5, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = '#1e293b';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-
-        // Low label
-        ctx.fillStyle = '#ef4444';
-        ctx.font = 'bold 11px sans-serif';
-        ctx.textAlign = lowIdx < data.length / 2 ? 'left' : 'right';
-        ctx.fillText(`Low: $${prices[lowIdx].toFixed(2)}`, lowX + (lowIdx < data.length / 2 ? 10 : -10), lowY + 18);
-        
-        // X-axis labels - quarterly only
-        let lastLabel = '';
-        data.forEach((d, i) => {
-            const dateStr = d.date || d.fiscal_date;
-            const label = dateStr.slice(0, 4) + ' Q' + Math.ceil(parseInt(dateStr.slice(5, 7)) / 3);
-            if (label === lastLabel) return;
-            lastLabel = label;
-
-            const x = getX(i);
-            ctx.fillStyle = '#64748b';
-            ctx.font = '10px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText(label, x, padding.top + chartHeight + 20);
-        });
-
-        // Current price label at end
-        const lastPrice = prices[prices.length - 1];
-        const lastX = points[points.length - 1].x;
-        const lastY = points[points.length - 1].y;
-
-        ctx.fillStyle = '#10b981';
-        ctx.font = 'bold 12px sans-serif';
-        ctx.textAlign = 'left';
-        ctx.fillText(`$${lastPrice.toFixed(2)}`, lastX + 8, lastY + 4);
-
-        // Legend
-        ctx.fillStyle = '#10b981';
-        ctx.fillRect(padding.left, 15, 12, 12);
-        ctx.fillStyle = '#e2e8f0';
-        ctx.font = '12px sans-serif';
-        ctx.textAlign = 'left';
-        ctx.fillText('Price', padding.left + 18, 26);
-        
-        // Click/tap hint
-        ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
-        ctx.font = '11px sans-serif';
-        ctx.textAlign = 'right';
-        const hintText = window.innerWidth <= 768 ? 'Tap to expand' : 'Click to expand';
-        ctx.fillText(hintText, padding.left + chartWidth, 26);
-        
-        // Setup tooltip interactions
-        setupChartTooltip(canvas, data, points, prices, getX, padding, chartWidth, chartHeight);
-    }
+    });
 }
-
-// Chart tooltip helper function
-function setupChartTooltip(canvas, data, points, values, getX, padding, chartWidth, chartHeight) {
-    const tooltip = document.getElementById('chartTooltip');
-    if (!tooltip) return;
-    
-    const tooltipDate = tooltip.querySelector('.tooltip-date');
-    const tooltipValue = tooltip.querySelector('.tooltip-value');
-    
-    // Get indicator line element
-    const indicatorLine = document.getElementById('chartIndicatorLine');
-    
-    // Use existing canvas - don't clone to preserve drawing
-    const dpr = window.devicePixelRatio || 1;
-    
-    // Check if we already set up listeners on this canvas
-    if (canvas.dataset.tooltipSetup === 'true') return;
-    canvas.dataset.tooltipSetup = 'true';
-    
-    canvas.addEventListener('mousemove', (e) => {
-        const rect = canvas.getBoundingClientRect();
-        const mouseX = (e.clientX - rect.left) * dpr;
-        const mouseY = (e.clientY - rect.top) * dpr;
-        
-        // Check if within chart area
-        if (mouseX < padding.left || mouseX > padding.left + chartWidth ||
-            mouseY < padding.top || mouseY > padding.top + chartHeight) {
-            tooltip.classList.add('hidden');
-            if (indicatorLine) indicatorLine.classList.add('hidden');
-            return;
-        }
-        
-        // Find nearest data point
-        let nearestIdx = 0;
-        let minDist = Infinity;
-        
-        points.forEach((point, i) => {
-            const dist = Math.abs(point.x - mouseX);
-            if (dist < minDist) {
-                minDist = dist;
-                nearestIdx = i;
-            }
-        });
-        
-        // Only show if close enough (within 30px)
-        if (minDist > 30 * dpr) {
-            tooltip.classList.add('hidden');
-            if (indicatorLine) indicatorLine.classList.add('hidden');
-            return;
         }
         
         const dataPoint = data[nearestIdx];

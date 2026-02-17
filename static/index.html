@@ -303,15 +303,7 @@
                     <div class="card chart-container">
                         <h3>Stock Price History</h3>
                         <div class="chart-wrapper">
-                            <canvas id="priceChart" width="800" height="300"></canvas>
-                            <div class="chart-overlay" id="priceChartOverlay"></div>
-                            <div class="chart-high-marker" id="highMarker">
-                                <div class="pulse-ring"></div>
-                            </div>
-                            <div class="chart-low-marker" id="lowMarker">
-                                <div class="pulse-ring"></div>
-                            </div>
-                            <div class="chart-indicator-line hidden" id="chartIndicatorLine"></div>
+                            <canvas id="priceChart"></canvas>
                         </div>
                     </div>
 
@@ -482,6 +474,7 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
