@@ -816,22 +816,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const chartModalBackdrop = document.querySelector('.chart-modal-backdrop');
     const chartModalTitle = document.getElementById('chartModalTitle');
 
-    // Open modal when clicking price chart (mouse and touch)
-    const priceChartCanvas = document.getElementById('priceChart');
-    if (priceChartCanvas) {
-        priceChartCanvas.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            openChartModal();
-        });
-        
-        // Touch support for mobile
-        priceChartCanvas.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            openChartModal();
-        }, { passive: false });
-    }
-
     // Close modal handlers
     closeChartModalBtn?.addEventListener('click', closeChartModal);
     chartModalBackdrop?.addEventListener('click', closeChartModal);

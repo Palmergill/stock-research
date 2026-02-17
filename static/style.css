@@ -1534,9 +1534,9 @@ canvas {
     height: auto;
 }
 
-/* Make price chart cursor pointer to indicate clickability */
+/* Price chart cursor */
 #priceChart {
-    cursor: pointer;
+    cursor: crosshair;
     touch-action: manipulation; /* Optimize for touch */
     -webkit-tap-highlight-color: transparent; /* Remove tap highlight on mobile */
 }
