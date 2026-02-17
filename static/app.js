@@ -56,6 +56,32 @@ function animateCountUp(element, start, end, duration = 500, prefix = '', suffix
 
 // Wait for DOM to be ready
 document.addEventListener('DOMContentLoaded', () => {
+    // Add ripple effect to all buttons
+    function createRipple(event) {
+        const button = event.currentTarget;
+        const circle = document.createElement('span');
+        const diameter = Math.max(button.clientWidth, button.clientHeight);
+        const radius = diameter / 2;
+        
+        circle.style.width = circle.style.height = `${diameter}px`;
+        circle.style.left = `${event.clientX - button.getBoundingClientRect().left - radius}px`;
+        circle.style.top = `${event.clientY - button.getBoundingClientRect().top - radius}px`;
+        circle.classList.add('ripple');
+        
+        const existingRipple = button.getElementsByClassName('ripple')[0];
+        if (existingRipple) {
+            existingRipple.remove();
+        }
+        
+        button.appendChild(circle);
+        
+        setTimeout(() => circle.remove(), 600);
+    }
+    
+    document.querySelectorAll('button').forEach(button => {
+        button.addEventListener('click', createRipple);
+    });
+    
     // DOM elements
     const searchForm = document.getElementById('searchForm');
     const tickerInput = document.getElementById('tickerInput');

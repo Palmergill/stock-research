@@ -163,16 +163,39 @@ button {
     background: var(--accent-blue);
     color: white;
     cursor: pointer;
-    transition: opacity 0.2s;
+    transition: opacity 0.2s, transform 0.1s;
+    position: relative;
+    overflow: hidden;
 }
 
 button:hover {
     opacity: 0.9;
 }
 
+button:active {
+    transform: scale(0.95);
+}
+
 button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+/* Button Ripple Effect */
+button .ripple {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.4);
+    transform: scale(0);
+    animation: ripple-animation 0.6s linear;
+    pointer-events: none;
+}
+
+@keyframes ripple-animation {
+    to {
+        transform: scale(4);
+        opacity: 0;
+    }
 }
 
 /* States */
