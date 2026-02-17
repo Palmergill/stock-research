@@ -238,6 +238,15 @@ button:disabled {
     border-radius: 12px;
     padding: 24px;
     margin-bottom: 24px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border: 1px solid transparent;
+}
+
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.4), 
+                0 4px 12px rgba(59, 130, 246, 0.15);
+    border-color: rgba(59, 130, 246, 0.2);
 }
 
 .company-header {
@@ -423,6 +432,14 @@ button:disabled {
     display: flex;
     flex-direction: column;
     gap: 4px;
+    padding: 12px;
+    border-radius: 8px;
+    transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.metric:hover {
+    background: rgba(59, 130, 246, 0.08);
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.1);
 }
 
 .metric-label {
@@ -430,6 +447,11 @@ button:disabled {
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    transition: color 0.2s ease;
+}
+
+.metric:hover .metric-label {
+    color: var(--accent-blue);
 }
 
 .metric-value {
