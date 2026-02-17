@@ -254,6 +254,25 @@ class StockDataClient:
                 "price_52w_high": summary.price_52w_high,
                 "price_52w_low": summary.price_52w_low,
                 "next_earnings_date": summary.next_earnings_date.isoformat() if summary.next_earnings_date else None,
+                # New valuation metrics
+                "ps_ratio": summary.ps_ratio,
+                "pb_ratio": summary.pb_ratio,
+                "ev_ebitda": summary.ev_ebitda,
+                "enterprise_value": summary.enterprise_value,
+                "shares_outstanding": summary.shares_outstanding,
+                # Profitability metrics
+                "gross_margin": summary.gross_margin,
+                "ebitda_margin": summary.ebitda_margin,
+                "roa": summary.roa,
+                "roic": summary.roic,
+                # Financial health metrics
+                "current_ratio": summary.current_ratio,
+                "quick_ratio": summary.quick_ratio,
+                "interest_coverage": summary.interest_coverage,
+                "cash": summary.cash,
+                "working_capital": summary.working_capital,
+                # Market data
+                "avg_volume": summary.avg_volume,
             },
             "earnings": [
                 {
