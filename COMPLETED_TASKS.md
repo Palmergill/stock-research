@@ -6,8 +6,8 @@
 **Version:** v2.0.0-beta1  
 **Last Updated:** 2026-02-17  
 
-**Tasks Completed:** 38  
-**Remaining:** ~20 tasks  
+**Tasks Completed:** 42  
+**Remaining:** ~16 tasks  
 
 ---
 
@@ -62,6 +62,13 @@
 36. ✅ **Trend Arrows for Metrics** - Green ↗ / red ↘ / gray → indicators
 37. ✅ **Monospaced Fonts for Numbers** - Tabular nums prevent jumping
 38. ✅ **Removed Chart Click Popup** - Hover tooltips only, no click-to-expand
+
+### New Additions (4 tasks)
+
+39. ✅ **Earnings Surprise Indicators** - Color-coded bars with beat/miss percentages on EPS chart
+40. ✅ **Mini Sparklines** - Inline trend charts for P/E, Revenue Growth, FCF
+41. ✅ **Auto-Retry Countdown** - Automatic retry with 3-second countdown on errors
+42. ✅ **Progress Bar Loading** - Multi-step progress with gradient fill animation
 
 ---
 
