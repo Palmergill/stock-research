@@ -542,6 +542,59 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+    
+    // Stock tips for loading state
+    const stockTips = [
+        { icon: '💡', text: 'The P/E ratio helps compare valuations across companies.' },
+        { icon: '📈', text: 'Revenue growth shows if a business is expanding over time.' },
+        { icon: '💰', text: 'Free Cash Flow is more reliable than net income for analysis.' },
+        { icon: '⚖️', text: 'Debt-to-Equity ratio shows financial risk and flexibility.' },
+        { icon: '🎯', text: 'ROE above 15% often signals a competitive advantage.' },
+        { icon: '📊', text: 'EPS surprises drive stock price movements on earnings day.' },
+        { icon: '🔍', text: 'Compare P/E ratios to industry averages for context.' },
+        { icon: '📉', text: '52-week range shows where current price sits historically.' }
+    ];
+    
+    let tipInterval = null;
+    let currentTipIndex = 0;
+    
+    function startStockTips() {
+        const tipContainer = document.getElementById('stockTip');
+        if (!tipContainer) return;
+        
+        // Clear any existing interval
+        if (tipInterval) clearInterval(tipInterval);
+        
+        currentTipIndex = 0;
+        updateTip(tipContainer, 0);
+        
+        tipInterval = setInterval(() => {
+            currentTipIndex = (currentTipIndex + 1) % stockTips.length;
+            
+            // Fade out
+            tipContainer.classList.add('fade-out');
+            
+            setTimeout(() => {
+                updateTip(tipContainer, currentTipIndex);
+                tipContainer.classList.remove('fade-out');
+            }, 500);
+        }, 4000);
+    }
+    
+    function stopStockTips() {
+        if (tipInterval) {
+            clearInterval(tipInterval);
+            tipInterval = null;
+        }
+    }
+    
+    function updateTip(container, index) {
+        const tip = stockTips[index];
+        const iconSpan = container.querySelector('.tip-icon');
+        const textSpan = container.querySelector('.tip-text');
+        if (iconSpan) iconSpan.textContent = tip.icon;
+        if (textSpan) textSpan.textContent = tip.text;
+    }
 
     async function loadStock(ticker, forceRefresh = false, attempt = 1) {
         currentTicker = ticker;
@@ -560,6 +613,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (inputSpinner) inputSpinner.classList.remove('hidden');
         if (btnSpinner) btnSpinner.classList.remove('hidden');
         searchBtn.classList.add('loading');
+        
+        // Start rotating stock tips
+        startStockTips();
         
         // Update progress bar
         updateLoadingProgress(1);
@@ -614,6 +670,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     retryCountdown.classList.remove('hidden');
                     if (retryBtn) retryBtn.classList.add('hidden');
                     
+                    // Show attempt number
+                    const attemptText = document.createElement('div');
+                    attemptText.className = 'retry-attempt';
+                    attemptText.textContent = `Attempt ${attempt} of 3`;
+                    attemptText.style.cssText = 'font-size: 12px; color: var(--text-muted); margin-top: 8px;';
+                    retryCountdown.appendChild(attemptText);
+                    
                     let seconds = 3;
                     countdownSpan.textContent = seconds;
                     
@@ -625,12 +688,22 @@ document.addEventListener('DOMContentLoaded', () => {
                             clearInterval(countdownInterval);
                             retryCountdown.classList.add('hidden');
                             if (retryBtn) retryBtn.classList.remove('hidden');
+                            // Remove attempt text
+                            const attemptEl = retryCountdown.querySelector('.retry-attempt');
+                            if (attemptEl) attemptEl.remove();
                             loadStock(ticker, forceRefresh, attempt + 1);
                         }
                     }, 1000);
                     
                     // Store interval ID so it can be cleared if user clicks retry manually
                     window.currentRetryInterval = countdownInterval;
+                }
+            } else {
+                // Show final attempt message
+                const retryCountdown = document.getElementById('retryCountdown');
+                if (retryCountdown) {
+                    retryCountdown.innerHTML = '<span style="color: var(--accent-red);">All retry attempts failed</span>';
+                    retryCountdown.classList.remove('hidden');
                 }
             }
             
@@ -653,6 +726,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (inputSpinner) inputSpinner.classList.add('hidden');
             if (btnSpinner) btnSpinner.classList.add('hidden');
             searchBtn.classList.remove('loading');
+            
+            // Stop stock tips
+            stopStockTips();
         }
     }
 

@@ -538,6 +538,60 @@ button .ripple {
     color: var(--accent-green);
 }
 
+/* Stock Tips */
+.stock-tips-container {
+    text-align: center;
+    margin: 20px 0;
+    min-height: 24px;
+}
+
+.stock-tip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-muted);
+    opacity: 0;
+    transform: translateY(10px);
+    animation: tip-fade-in 0.5s ease forwards;
+}
+
+.stock-tip.fade-out {
+    animation: tip-fade-out 0.5s ease forwards;
+}
+
+.tip-icon {
+    font-size: 16px;
+}
+
+.tip-text {
+    max-width: 400px;
+    line-height: 1.4;
+}
+
+@keyframes tip-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes tip-fade-out {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+}
+
 /* Retry Countdown */
 .retry-countdown {
     font-size: 14px;
@@ -726,6 +780,63 @@ button .ripple {
 .data-source {
     font-size: 13px;
     color: var(--text-muted);
+}
+
+/* Feature Callouts */
+.feature-callouts {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin: 32px 0;
+    flex-wrap: wrap;
+}
+
+.feature-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 0.2s ease;
+    min-width: 80px;
+}
+
+.feature-item:hover {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: rgba(59, 130, 246, 0.2);
+    transform: translateY(-2px);
+}
+
+.feature-icon {
+    font-size: 24px;
+}
+
+.feature-text {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+@media (max-width: 768px) {
+    .feature-callouts {
+        gap: 12px;
+    }
+    
+    .feature-item {
+        padding: 12px;
+        min-width: 70px;
+    }
+    
+    .feature-icon {
+        font-size: 20px;
+    }
+    
+    .feature-text {
+        font-size: 11px;
+    }
 }
 
 .examples {
@@ -1964,6 +2075,39 @@ button,
         transparent 2px
     );
     background-size: 8px 8px;
+}
+
+/* Chart Background Gradients */
+.chart-wrapper {
+    position: relative;
+    width: 100%;
+    min-height: 300px;
+}
+
+.chart-wrapper::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(
+        ellipse at center top,
+        rgba(59, 130, 246, 0.03) 0%,
+        transparent 70%
+    );
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Glow effect on positive areas */
+.chart-positive-glow {
+    filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.3));
+}
+
+/* Glow effect on negative areas */
+.chart-negative-glow {
+    filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.3));
 }
 
 /* Section Dividers */
