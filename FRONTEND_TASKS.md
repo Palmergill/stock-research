@@ -188,8 +188,8 @@
 - Loading states
 
 **Tasks:**
-- [ ] Add Material-style ripple on all buttons
-- [ ] Implement scale(0.95) on active press
+- [x] ~~Add Material-style ripple on all buttons~~ ✓ Completed - see [COMPLETED_TASKS.md](./COMPLETED_TASKS.md)
+- [x] ~~Implement scale(0.95) on active press~~ ✓ Completed (included with ripple)
 - [ ] Add loading spinner inside refresh button
 
 ### 4.3 Hover States
