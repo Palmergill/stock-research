@@ -1109,6 +1109,39 @@ button .ripple {
     color: var(--text-secondary);
 }
 
+.metric-value-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.metric-trend {
+    font-size: 14px;
+    opacity: 0;
+    transform: translateX(-4px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.metric:hover .metric-trend {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.metric[data-trend="up"] .metric-trend::before {
+    content: '↗';
+    color: var(--accent-green);
+}
+
+.metric[data-trend="down"] .metric-trend::before {
+    content: '↘';
+    color: var(--accent-red);
+}
+
+.metric[data-trend="neutral"] .metric-trend::before {
+    content: '→';
+    color: var(--text-muted);
+}
+
 .metric-value {
     font-size: 20px;
     font-weight: 700;

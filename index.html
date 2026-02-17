@@ -197,33 +197,54 @@
                     <div class="card metrics-overview metrics-key">
                         <h3>Key Metrics</h3>
                         <div class="metrics-grid-compact">
-                            <div class="metric" title="What you're paying for each dollar of earnings. Compare to industry peers and historical averages to gauge if the stock is cheap or expensive.">
+                            <div class="metric" data-trend="neutral" title="What you're paying for each dollar of earnings. Compare to industry peers and historical averages to gauge if the stock is cheap or expensive.">
                                 <span class="metric-label">P/E Ratio</span>
-                                <span id="peRatio" class="metric-value"></span>
+                                <div class="metric-value-container">
+                                    <span id="peRatio" class="metric-value"></span>
+                                    <span class="metric-trend"></span>
+                                </div>
                             </div>
-                            <div class="metric" title="Year-over-year growth in revenue. Shows whether the business is expanding. Top-line growth is harder to fake than earnings.">
+                            <div class="metric" data-trend="neutral" title="Year-over-year growth in revenue. Shows whether the business is expanding. Top-line growth is harder to fake than earnings.">
                                 <span class="metric-label">Revenue Growth (YoY)</span>
-                                <span id="revenueGrowth" class="metric-value"></span>
+                                <div class="metric-value-container">
+                                    <span id="revenueGrowth" class="metric-value"></span>
+                                    <span class="metric-trend"></span>
+                                </div>
                             </div>
-                            <div class="metric" title="Cash left after running the business and capital expenditures. Available for dividends, buybacks, debt reduction, or reinvestment. More reliable than net income.">
+                            <div class="metric" data-trend="neutral" title="Cash left after running the business and capital expenditures. Available for dividends, buybacks, debt reduction, or reinvestment. More reliable than net income.">
                                 <span class="metric-label">Free Cash Flow</span>
-                                <span id="freeCashFlow" class="metric-value"></span>
+                                <div class="metric-value-container">
+                                    <span id="freeCashFlow" class="metric-value"></span>
+                                    <span class="metric-trend"></span>
+                                </div>
                             </div>
-                            <div class="metric" title="How leveraged the company is. High debt amplifies returns in good times but can be fatal in downturns. Shows financial risk and flexibility.">
+                            <div class="metric" data-trend="neutral" title="How leveraged the company is. High debt amplifies returns in good times but can be fatal in downturns. Shows financial risk and flexibility.">
                                 <span class="metric-label">Debt-to-Equity</span>
-                                <span id="debtToEquity" class="metric-value"></span>
+                                <div class="metric-value-container">
+                                    <span id="debtToEquity" class="metric-value"></span>
+                                    <span class="metric-trend"></span>
+                                </div>
                             </div>
-                            <div class="metric" title="How effectively management converts shareholder capital into profits. Consistently high ROE (15%+) often signals a durable competitive advantage.">
+                            <div class="metric" data-trend="neutral" title="How effectively management converts shareholder capital into profits. Consistently high ROE (15%+) often signals a durable competitive advantage.">
                                 <span class="metric-label">Return on Equity</span>
-                                <span id="roe" class="metric-value"></span>
+                                <div class="metric-value-container">
+                                    <span id="roe" class="metric-value"></span>
+                                    <span class="metric-trend"></span>
+                                </div>
                             </div>
-                            <div class="metric" title="Net income as a percentage of revenue. Shows how much profit the company keeps from each dollar of sales.">
+                            <div class="metric" data-trend="neutral" title="Net income as a percentage of revenue. Shows how much profit the company keeps from each dollar of sales.">
                                 <span class="metric-label">Profit Margin</span>
-                                <span id="profitMargin" class="metric-value"></span>
+                                <div class="metric-value-container">
+                                    <span id="profitMargin" class="metric-value"></span>
+                                    <span class="metric-trend"></span>
+                                </div>
                             </div>
-                            <div class="metric" title="Operating income as a percentage of revenue. Measures efficiency of core business operations.">
+                            <div class="metric" data-trend="neutral" title="Operating income as a percentage of revenue. Measures efficiency of core business operations.">
                                 <span class="metric-label">Operating Margin</span>
-                                <span id="operatingMargin" class="metric-value"></span>
+                                <div class="metric-value-container">
+                                    <span id="operatingMargin" class="metric-value"></span>
+                                    <span class="metric-trend"></span>
+                                </div>
                             </div>
                         </div>
                     </div>

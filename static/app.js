@@ -21,6 +21,45 @@ function formatNumber(value, decimals = 2) {
     return value.toFixed(decimals);
 }
 
+// Calculate trends from earnings data and update metric indicators
+function calculateAndDisplayTrends(earnings) {
+    if (!earnings || earnings.length < 2) return;
+    
+    // Sort by date (oldest first)
+    const sorted = [...earnings].sort((a, b) => new Date(a.fiscal_date) - new Date(b.fiscal_date));
+    const recent = sorted.slice(-4); // Last 4 quarters
+    const older = sorted.slice(-8, -4); // 4 quarters before that
+    
+    if (recent.length < 2) return;
+    
+    // Calculate revenue trend
+    const recentRevenue = recent.reduce((sum, e) => sum + (e.revenue || 0), 0) / recent.length;
+    const olderRevenue = older.length > 0 ? older.reduce((sum, e) => sum + (e.revenue || 0), 0) / older.length : recentRevenue;
+    const revenueTrend = recentRevenue > olderRevenue * 1.05 ? 'up' : recentRevenue < olderRevenue * 0.95 ? 'down' : 'neutral';
+    updateMetricTrend('revenueGrowth', revenueTrend);
+    
+    // Calculate EPS trend
+    const recentEPS = recent.reduce((sum, e) => sum + (e.basic_eps || 0), 0) / recent.length;
+    const olderEPS = older.length > 0 ? older.reduce((sum, e) => sum + (e.basic_eps || 0), 0) / older.length : recentEPS;
+    const epsTrend = recentEPS > olderEPS * 1.1 ? 'up' : recentEPS < olderEPS * 0.9 ? 'down' : 'neutral';
+    updateMetricTrend('peRatio', epsTrend); // P/E trend based on EPS direction
+    
+    // Calculate FCF trend (if available)
+    const recentFCF = recent.reduce((sum, e) => sum + (e.free_cash_flow || 0), 0) / recent.length;
+    const olderFCF = older.length > 0 ? older.reduce((sum, e) => sum + (e.free_cash_flow || 0), 0) / older.length : recentFCF;
+    const fcfTrend = recentFCF > olderFCF * 1.1 ? 'up' : recentFCF < olderFCF * 0.9 ? 'down' : 'neutral';
+    updateMetricTrend('freeCashFlow', fcfTrend);
+}
+
+function updateMetricTrend(elementId, trend) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+    const metricCard = element.closest('.metric');
+    if (metricCard) {
+        metricCard.dataset.trend = trend;
+    }
+}
+
 // Count-up animation helper
 function animateCountUp(element, start, end, duration = 500, prefix = '', suffix = '', decimals = 2) {
     if (start === end || isNaN(start) || isNaN(end)) {
@@ -560,6 +599,9 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             document.getElementById('operatingMargin').textContent = 'N/A';
         }
+        
+        // Calculate and display trends based on earnings data
+        calculateAndDisplayTrends(data.earnings || []);
         
         // Valuation Metrics
         document.getElementById('psRatio').textContent = formatNumber(summary.ps_ratio);
