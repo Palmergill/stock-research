@@ -47,6 +47,28 @@ class PolygonClient:
             # Calculate margins from financial data
             profit_margin = self._calculate_profit_margin(financials)
             operating_margin = self._calculate_operating_margin(financials)
+            gross_margin = self._calculate_gross_margin(financials)
+            ebitda_margin = self._calculate_ebitda_margin(financials)
+            
+            # Calculate additional valuation and health metrics
+            shares_outstanding = self._get_shares_outstanding(details, financials)
+            enterprise_value = self._calculate_ev(details, financials, price_data)
+            
+            # Financial health metrics
+            current_ratio = self._calculate_current_ratio(financials)
+            quick_ratio = self._calculate_quick_ratio(financials)
+            interest_coverage = self._calculate_interest_coverage(financials)
+            cash = self._extract_balance_sheet(financials, "cash_and_cash_equivalents")
+            working_capital = self._calculate_working_capital(financials)
+            
+            # Profitability metrics
+            roa = self._calculate_roa(financials)
+            roic = self._calculate_roic(financials)
+            
+            # Calculate ratios
+            ps_ratio = self._calculate_ps_ratio(details, price_data)
+            pb_ratio = self._calculate_pb_ratio(details, financials, price_data)
+            ev_ebitda = self._calculate_ev_ebitda(enterprise_value, financials)
             
             return {
                 "name": details.get("name", ticker),
@@ -62,11 +84,26 @@ class PolygonClient:
                 "price_52w_low": year_high_low.get("low"),
                 "profit_margin": profit_margin,
                 "operating_margin": operating_margin,
+                "gross_margin": gross_margin,
+                "ebitda_margin": ebitda_margin,
+                "roa": roa,
+                "roic": roic,
+                "ps_ratio": ps_ratio,
+                "pb_ratio": pb_ratio,
+                "ev_ebitda": ev_ebitda,
+                "enterprise_value": enterprise_value,
+                "shares_outstanding": shares_outstanding,
+                "current_ratio": current_ratio,
+                "quick_ratio": quick_ratio,
+                "interest_coverage": interest_coverage,
+                "cash": cash,
+                "working_capital": working_capital,
                 "dividend_yield": details.get("dividend_yield"),
-                "beta": details.get("beta"),  # May be available in some tickers
-                "next_earnings_date": None,  # Requires different endpoint
+                "beta": details.get("beta"),
+                "avg_volume": price_data.get("volume"),
+                "next_earnings_date": None,
                 "earnings": earnings,
-                "price_history": price_history,  # 1-year daily prices
+                "price_history": price_history,
                 "source": "Polygon.io"
             }
             
@@ -617,6 +654,511 @@ class PolygonClient:
                 return "Q4"
         except:
             return "Q"
+    
+    # ==================== NEW CALCULATION METHODS ====================
+    
+    def _calculate_gross_margin(self, financials: List[Dict]) -> Optional[float]:
+        """Calculate gross margin: Gross Profit / Revenue * 100"""
+        try:
+            if not financials:
+                return None
+            
+            fin = financials[0].get("financials", {})
+            income = fin.get("income_statement", {})
+            
+            # Get gross profit
+            gross_profit = None
+            for key in ["gross_profit", "gross_profit_loss"]:
+                gp_data = income.get(key)
+                if isinstance(gp_data, dict):
+                    gross_profit = gp_data.get("value")
+                elif gp_data is not None:
+                    gross_profit = gp_data
+                if gross_profit is not None:
+                    break
+            
+            # Get revenue
+            revenue = None
+            for key in ["revenues", "total_revenue", "revenue"]:
+                rev_data = income.get(key)
+                if isinstance(rev_data, dict):
+                    revenue = rev_data.get("value")
+                elif rev_data is not None:
+                    revenue = rev_data
+                if revenue:
+                    break
+            
+            if gross_profit is not None and revenue and revenue > 0:
+                margin = (gross_profit / revenue) * 100
+                return round(margin, 2)
+        except Exception as e:
+            logger.warning(f"Could not calculate gross margin: {e}")
+        return None
+    
+    def _calculate_ebitda_margin(self, financials: List[Dict]) -> Optional[float]:
+        """Calculate EBITDA margin: EBITDA / Revenue * 100"""
+        try:
+            if not financials:
+                return None
+            
+            fin = financials[0].get("financials", {})
+            income = fin.get("income_statement", {})
+            
+            # Get EBITDA
+            ebitda = None
+            for key in ["ebitda", " EBITDA"]:
+                ebitda_data = income.get(key)
+                if isinstance(ebitda_data, dict):
+                    ebitda = ebitda_data.get("value")
+                elif ebitda_data is not None:
+                    ebitda = ebitda_data
+                if ebitda is not None:
+                    break
+            
+            # Get revenue
+            revenue = None
+            for key in ["revenues", "total_revenue", "revenue"]:
+                rev_data = income.get(key)
+                if isinstance(rev_data, dict):
+                    revenue = rev_data.get("value")
+                elif rev_data is not None:
+                    revenue = rev_data
+                if revenue:
+                    break
+            
+            if ebitda is not None and revenue and revenue > 0:
+                margin = (ebitda / revenue) * 100
+                return round(margin, 2)
+        except Exception as e:
+            logger.warning(f"Could not calculate EBITDA margin: {e}")
+        return None
+    
+    def _calculate_roa(self, financials: List[Dict]) -> Optional[float]:
+        """Calculate ROA = Net Income / Total Assets * 100"""
+        try:
+            if not financials:
+                return None
+            
+            fin = financials[0].get("financials", {})
+            income = fin.get("income_statement", {})
+            balance = fin.get("balance_sheet", {})
+            
+            # Get net income
+            net_income = None
+            for key in ["net_income_loss", "net_income", "net_income_loss_attributable_to_parent"]:
+                ni_data = income.get(key)
+                if isinstance(ni_data, dict):
+                    net_income = ni_data.get("value")
+                elif ni_data is not None:
+                    net_income = ni_data
+                if net_income is not None:
+                    break
+            
+            # Get total assets
+            assets = None
+            for key in ["assets", "total_assets"]:
+                assets_data = balance.get(key)
+                if isinstance(assets_data, dict):
+                    assets = assets_data.get("value")
+                elif assets_data is not None:
+                    assets = assets_data
+                if assets is not None:
+                    break
+            
+            if net_income is not None and assets and assets > 0:
+                roa = (net_income / assets) * 100
+                return round(roa, 2)
+        except Exception as e:
+            logger.warning(f"Could not calculate ROA: {e}")
+        return None
+    
+    def _calculate_roic(self, financials: List[Dict]) -> Optional[float]:
+        """Calculate ROIC = NOPAT / Invested Capital * 100"""
+        try:
+            if not financials:
+                return None
+            
+            fin = financials[0].get("financials", {})
+            income = fin.get("income_statement", {})
+            balance = fin.get("balance_sheet", {})
+            
+            # Get operating income
+            operating_income = None
+            for key in ["operating_income_loss", "operating_income"]:
+                op_data = income.get(key)
+                if isinstance(op_data, dict):
+                    operating_income = op_data.get("value")
+                elif op_data is not None:
+                    operating_income = op_data
+                if operating_income is not None:
+                    break
+            
+            # Get invested capital (equity + debt - cash)
+            equity = None
+            for key in ["equity", "equity_attributable_to_parent", "stockholders_equity"]:
+                eq_data = balance.get(key)
+                if isinstance(eq_data, dict):
+                    equity = eq_data.get("value")
+                elif eq_data is not None:
+                    equity = eq_data
+                if equity is not None:
+                    break
+            
+            debt = None
+            for key in ["long_term_debt", "total_debt"]:
+                debt_data = balance.get(key)
+                if isinstance(debt_data, dict):
+                    debt = debt_data.get("value")
+                elif debt_data is not None:
+                    debt = debt_data
+                if debt is not None:
+                    break
+            
+            cash = None
+            for key in ["cash_and_cash_equivalents", "cash"]:
+                cash_data = balance.get(key)
+                if isinstance(cash_data, dict):
+                    cash = cash_data.get("value")
+                elif cash_data is not None:
+                    cash = cash_data
+                if cash is not None:
+                    break
+            
+            if operating_income is not None and equity is not None:
+                invested_capital = equity
+                if debt:
+                    invested_capital += debt
+                if cash:
+                    invested_capital -= cash
+                
+                if invested_capital > 0:
+                    roic = (operating_income / invested_capital) * 100
+                    return round(roic, 2)
+        except Exception as e:
+            logger.warning(f"Could not calculate ROIC: {e}")
+        return None
+    
+    def _calculate_current_ratio(self, financials: List[Dict]) -> Optional[float]:
+        """Calculate current ratio: Current Assets / Current Liabilities"""
+        try:
+            if not financials:
+                return None
+            
+            fin = financials[0].get("financials", {})
+            balance = fin.get("balance_sheet", {})
+            
+            # Get current assets
+            current_assets = None
+            for key in ["current_assets", "total_current_assets"]:
+                ca_data = balance.get(key)
+                if isinstance(ca_data, dict):
+                    current_assets = ca_data.get("value")
+                elif ca_data is not None:
+                    current_assets = ca_data
+                if current_assets is not None:
+                    break
+            
+            # Get current liabilities
+            current_liabilities = None
+            for key in ["current_liabilities", "total_current_liabilities"]:
+                cl_data = balance.get(key)
+                if isinstance(cl_data, dict):
+                    current_liabilities = cl_data.get("value")
+                elif cl_data is not None:
+                    current_liabilities = cl_data
+                if current_liabilities is not None:
+                    break
+            
+            if current_assets is not None and current_liabilities and current_liabilities > 0:
+                ratio = current_assets / current_liabilities
+                return round(ratio, 2)
+        except Exception as e:
+            logger.warning(f"Could not calculate current ratio: {e}")
+        return None
+    
+    def _calculate_quick_ratio(self, financials: List[Dict]) -> Optional[float]:
+        """Calculate quick ratio: (Current Assets - Inventory) / Current Liabilities"""
+        try:
+            if not financials:
+                return None
+            
+            fin = financials[0].get("financials", {})
+            balance = fin.get("balance_sheet", {})
+            
+            # Get current assets
+            current_assets = None
+            for key in ["current_assets", "total_current_assets"]:
+                ca_data = balance.get(key)
+                if isinstance(ca_data, dict):
+                    current_assets = ca_data.get("value")
+                elif ca_data is not None:
+                    current_assets = ca_data
+                if current_assets is not None:
+                    break
+            
+            # Get inventory
+            inventory = None
+            for key in ["inventory", "inventories"]:
+                inv_data = balance.get(key)
+                if isinstance(inv_data, dict):
+                    inventory = inv_data.get("value")
+                elif inv_data is not None:
+                    inventory = inv_data
+                if inventory is not None:
+                    break
+            
+            # Get current liabilities
+            current_liabilities = None
+            for key in ["current_liabilities", "total_current_liabilities"]:
+                cl_data = balance.get(key)
+                if isinstance(cl_data, dict):
+                    current_liabilities = cl_data.get("value")
+                elif cl_data is not None:
+                    current_liabilities = cl_data
+                if current_liabilities is not None:
+                    break
+            
+            if current_assets is not None and current_liabilities and current_liabilities > 0:
+                quick_assets = current_assets - (inventory or 0)
+                ratio = quick_assets / current_liabilities
+                return round(ratio, 2)
+        except Exception as e:
+            logger.warning(f"Could not calculate quick ratio: {e}")
+        return None
+    
+    def _calculate_interest_coverage(self, financials: List[Dict]) -> Optional[float]:
+        """Calculate interest coverage: EBIT / Interest Expense"""
+        try:
+            if not financials:
+                return None
+            
+            fin = financials[0].get("financials", {})
+            income = fin.get("income_statement", {})
+            
+            # Get EBIT (operating income)
+            ebit = None
+            for key in ["operating_income_loss", "operating_income", "ebit"]:
+                ebit_data = income.get(key)
+                if isinstance(ebit_data, dict):
+                    ebit = ebit_data.get("value")
+                elif ebit_data is not None:
+                    ebit = ebit_data
+                if ebit is not None:
+                    break
+            
+            # Get interest expense
+            interest_expense = None
+            for key in ["interest_expense", "interest_expense_operating"]:
+                int_data = income.get(key)
+                if isinstance(int_data, dict):
+                    interest_expense = int_data.get("value")
+                elif int_data is not None:
+                    interest_expense = int_data
+                if interest_expense is not None:
+                    break
+            
+            if ebit is not None and interest_expense and interest_expense > 0:
+                coverage = ebit / interest_expense
+                return round(coverage, 2)
+        except Exception as e:
+            logger.warning(f"Could not calculate interest coverage: {e}")
+        return None
+    
+    def _calculate_working_capital(self, financials: List[Dict]) -> Optional[float]:
+        """Calculate working capital: Current Assets - Current Liabilities"""
+        try:
+            if not financials:
+                return None
+            
+            fin = financials[0].get("financials", {})
+            balance = fin.get("balance_sheet", {})
+            
+            # Get current assets
+            current_assets = None
+            for key in ["current_assets", "total_current_assets"]:
+                ca_data = balance.get(key)
+                if isinstance(ca_data, dict):
+                    current_assets = ca_data.get("value")
+                elif ca_data is not None:
+                    current_assets = ca_data
+                if current_assets is not None:
+                    break
+            
+            # Get current liabilities
+            current_liabilities = None
+            for key in ["current_liabilities", "total_current_liabilities"]:
+                cl_data = balance.get(key)
+                if isinstance(cl_data, dict):
+                    current_liabilities = cl_data.get("value")
+                elif cl_data is not None:
+                    current_liabilities = cl_data
+                if current_liabilities is not None:
+                    break
+            
+            if current_assets is not None and current_liabilities is not None:
+                return current_assets - current_liabilities
+        except Exception as e:
+            logger.warning(f"Could not calculate working capital: {e}")
+        return None
+    
+    def _extract_balance_sheet(self, financials: List[Dict], field: str) -> Optional[float]:
+        """Extract a field from the balance sheet"""
+        if not financials:
+            return None
+        
+        try:
+            fin = financials[0].get("financials", {})
+            balance = fin.get("balance_sheet", {})
+            
+            data = balance.get(field)
+            if isinstance(data, dict):
+                return data.get("value")
+            elif data is not None:
+                return float(data)
+        except Exception as e:
+            logger.warning(f"Error extracting {field}: {e}")
+        return None
+    
+    def _get_shares_outstanding(self, details: Dict, financials: List[Dict]) -> Optional[float]:
+        """Get shares outstanding from ticker details or financials"""
+        # Try details first
+        shares = details.get("weighted_shares_outstanding") or details.get("shares_outstanding")
+        if shares:
+            return float(shares)
+        
+        # Try financials
+        if financials:
+            fin = financials[0].get("financials", {})
+            balance = fin.get("balance_sheet", {})
+            
+            for key in ["shares_outstanding", "common_stock_shares_outstanding"]:
+                data = balance.get(key)
+                if isinstance(data, dict):
+                    return data.get("value")
+                elif data is not None:
+                    return float(data)
+        return None
+    
+    def _calculate_ev(self, details: Dict, financials: List[Dict], price_data: Dict) -> Optional[float]:
+        """Calculate Enterprise Value: Market Cap + Debt - Cash"""
+        try:
+            market_cap = details.get("market_cap")
+            if not market_cap and price_data.get("close"):
+                shares = self._get_shares_outstanding(details, financials)
+                if shares:
+                    market_cap = shares * price_data["close"]
+            
+            if not market_cap:
+                return None
+            
+            if financials:
+                fin = financials[0].get("financials", {})
+                balance = fin.get("balance_sheet", {})
+                
+                # Get debt
+                debt = 0
+                for key in ["long_term_debt", "total_debt", "liabilities"]:
+                    debt_data = balance.get(key)
+                    if isinstance(debt_data, dict):
+                        debt = debt_data.get("value", 0)
+                        break
+                    elif debt_data is not None:
+                        debt = float(debt_data)
+                        break
+                
+                # Get cash
+                cash = 0
+                for key in ["cash_and_cash_equivalents", "cash"]:
+                    cash_data = balance.get(key)
+                    if isinstance(cash_data, dict):
+                        cash = cash_data.get("value", 0)
+                        break
+                    elif cash_data is not None:
+                        cash = float(cash_data)
+                        break
+                
+                return market_cap + debt - cash
+        except Exception as e:
+            logger.warning(f"Could not calculate EV: {e}")
+        return None
+    
+    def _calculate_ps_ratio(self, details: Dict, price_data: Dict) -> Optional[float]:
+        """Calculate P/S ratio: Market Cap / Revenue"""
+        try:
+            market_cap = details.get("market_cap")
+            price = price_data.get("close")
+            
+            if not market_cap and price:
+                shares = details.get("weighted_shares_outstanding") or details.get("shares_outstanding")
+                if shares:
+                    market_cap = float(shares) * price
+            
+            if not market_cap:
+                return None
+            
+            # Get revenue from ticker details if available
+            revenue = details.get("revenue") or details.get("total_revenue")
+            if revenue and revenue > 0:
+                return round(market_cap / revenue, 2)
+        except Exception as e:
+            logger.warning(f"Could not calculate P/S ratio: {e}")
+        return None
+    
+    def _calculate_pb_ratio(self, details: Dict, financials: List[Dict], price_data: Dict) -> Optional[float]:
+        """Calculate P/B ratio: Market Cap / Book Value"""
+        try:
+            market_cap = details.get("market_cap")
+            price = price_data.get("close")
+            
+            if not market_cap and price:
+                shares = self._get_shares_outstanding(details, financials)
+                if shares:
+                    market_cap = shares * price
+            
+            if not market_cap:
+                return None
+            
+            # Get book value (equity)
+            if financials:
+                fin = financials[0].get("financials", {})
+                balance = fin.get("balance_sheet", {})
+                
+                for key in ["equity", "equity_attributable_to_parent", "stockholders_equity"]:
+                    eq_data = balance.get(key)
+                    book_value = None
+                    if isinstance(eq_data, dict):
+                        book_value = eq_data.get("value")
+                    elif eq_data is not None:
+                        book_value = float(eq_data)
+                    
+                    if book_value and book_value > 0:
+                        return round(market_cap / book_value, 2)
+        except Exception as e:
+            logger.warning(f"Could not calculate P/B ratio: {e}")
+        return None
+    
+    def _calculate_ev_ebitda(self, ev: Optional[float], financials: List[Dict]) -> Optional[float]:
+        """Calculate EV/EBITDA ratio"""
+        try:
+            if not ev or not financials:
+                return None
+            
+            fin = financials[0].get("financials", {})
+            income = fin.get("income_statement", {})
+            
+            # Get EBITDA
+            ebitda = None
+            for key in ["ebitda", "EBITDA"]:
+                ebitda_data = income.get(key)
+                if isinstance(ebitda_data, dict):
+                    ebitda = ebitda_data.get("value")
+                elif ebitda_data is not None:
+                    ebitda = float(ebitda_data)
+                if ebitda is not None and ebitda > 0:
+                    return round(ev / ebitda, 2)
+        except Exception as e:
+            logger.warning(f"Could not calculate EV/EBITDA: {e}")
+        return None
 
 # Singleton instance
 polygon_client = PolygonClient()

@@ -64,6 +64,25 @@ class StockSummary(Base):
     # Key overview metrics
     revenue_growth = Column(Float, nullable=True)
     free_cash_flow = Column(Float, nullable=True)
+    # Additional valuation metrics
+    ps_ratio = Column(Float, nullable=True)
+    pb_ratio = Column(Float, nullable=True)
+    ev_ebitda = Column(Float, nullable=True)
+    enterprise_value = Column(Float, nullable=True)
+    shares_outstanding = Column(Float, nullable=True)
+    # Profitability metrics
+    gross_margin = Column(Float, nullable=True)
+    ebitda_margin = Column(Float, nullable=True)
+    roa = Column(Float, nullable=True)
+    roic = Column(Float, nullable=True)
+    # Financial health metrics
+    current_ratio = Column(Float, nullable=True)
+    quick_ratio = Column(Float, nullable=True)
+    interest_coverage = Column(Float, nullable=True)
+    cash = Column(Float, nullable=True)
+    working_capital = Column(Float, nullable=True)
+    # Market data
+    avg_volume = Column(Float, nullable=True)
     fetched_at = Column(DateTime, default=datetime.utcnow)
 
 def get_db():

@@ -195,6 +195,25 @@ class StockDataClient:
             "price_52w_high": data.get("price_52w_high"),
             "price_52w_low": data.get("price_52w_low"),
             "next_earnings_date": data.get("next_earnings_date"),
+            # New valuation metrics
+            "ps_ratio": data.get("ps_ratio"),
+            "pb_ratio": data.get("pb_ratio"),
+            "ev_ebitda": data.get("ev_ebitda"),
+            "enterprise_value": data.get("enterprise_value"),
+            "shares_outstanding": data.get("shares_outstanding"),
+            # Profitability metrics
+            "gross_margin": data.get("gross_margin"),
+            "ebitda_margin": data.get("ebitda_margin"),
+            "roa": data.get("roa"),
+            "roic": data.get("roic"),
+            # Financial health metrics
+            "current_ratio": data.get("current_ratio"),
+            "quick_ratio": data.get("quick_ratio"),
+            "interest_coverage": data.get("interest_coverage"),
+            "cash": data.get("cash"),
+            "working_capital": data.get("working_capital"),
+            # Market data
+            "avg_volume": data.get("avg_volume"),
             "fetched_at": datetime.utcnow()
         }
         

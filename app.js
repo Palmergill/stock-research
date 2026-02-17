@@ -308,6 +308,51 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('profitMargin').textContent = formatPercent(summary.profit_margin);
         document.getElementById('operatingMargin').textContent = formatPercent(summary.operating_margin);
         
+        // Valuation Metrics
+        document.getElementById('psRatio').textContent = formatNumber(summary.ps_ratio);
+        document.getElementById('pbRatio').textContent = formatNumber(summary.pb_ratio);
+        document.getElementById('evebitda').textContent = formatNumber(summary.ev_ebitda);
+        document.getElementById('marketCap2').textContent = formatMarketCap(summary.market_cap);
+        document.getElementById('enterpriseValue').textContent = formatMarketCap(summary.enterprise_value);
+        document.getElementById('sharesOutstanding').textContent = summary.shares_outstanding 
+            ? formatNumber(summary.shares_outstanding / 1e9) + 'B' 
+            : '-';
+        
+        // Profitability Metrics
+        document.getElementById('grossMargin').textContent = formatPercent(summary.gross_margin);
+        document.getElementById('ebitdaMargin').textContent = formatPercent(summary.ebitda_margin);
+        document.getElementById('roa').textContent = formatPercent(summary.roa);
+        document.getElementById('roic').textContent = formatPercent(summary.roic);
+        
+        // Financial Health
+        document.getElementById('currentRatio').textContent = formatNumber(summary.current_ratio);
+        document.getElementById('quickRatio').textContent = formatNumber(summary.quick_ratio);
+        document.getElementById('interestCoverage').textContent = formatNumber(summary.interest_coverage);
+        document.getElementById('cash').textContent = formatMarketCap(summary.cash);
+        document.getElementById('workingCapital').textContent = formatMarketCap(summary.working_capital);
+        
+        // Market Data
+        document.getElementById('price52wHigh').textContent = summary.price_52w_high 
+            ? `$${summary.price_52w_high.toFixed(2)}` 
+            : '-';
+        document.getElementById('price52wLow').textContent = summary.price_52w_low 
+            ? `$${summary.price_52w_low.toFixed(2)}` 
+            : '-';
+        
+        // Calculate 52-week position
+        if (summary.current_price && summary.price_52w_high && summary.price_52w_low) {
+            const range = summary.price_52w_high - summary.price_52w_low;
+            const position = ((summary.current_price - summary.price_52w_low) / range) * 100;
+            document.getElementById('price52wPosition').textContent = `${position.toFixed(1)}%`;
+        } else {
+            document.getElementById('price52wPosition').textContent = '-';
+        }
+        
+        document.getElementById('beta').textContent = formatNumber(summary.beta);
+        document.getElementById('avgVolume').textContent = summary.avg_volume 
+            ? formatNumber(summary.avg_volume / 1e6) + 'M' 
+            : '-';
+        
         // Draw charts (reverse data for chronological order)
         const chartData = [...data.earnings].reverse();
         window.lastChartData = chartData;  // Store for tab switching

@@ -123,6 +123,114 @@
                         <canvas id="priceChart" width="800" height="300"></canvas>
                     </div>
 
+                    <!-- Valuation Metrics -->
+                    <div class="card metrics-overview">
+                        <h3>Valuation Metrics</h3>
+                        <div class="metrics-grid-compact">
+                            <div class="metric" title="Price-to-Sales ratio. Useful for valuing growth companies that may not be profitable yet. Lower is generally better.">
+                                <span class="metric-label">P/S Ratio</span>
+                                <span id="psRatio" class="metric-value">-</span>
+                            </div>
+                            <div class="metric" title="Price-to-Book ratio. Compares market value to book value. < 1 may indicate undervaluation, > 3 often overvalued.">
+                                <span class="metric-label">P/B Ratio</span>
+                                <span id="pbRatio" class="metric-value">-</span>
+                            </div>
+                            <div class="metric" title="Enterprise Value to EBITDA. Comprehensive valuation metric that accounts for debt. Useful for comparing across capital structures.">
+                                <span class="metric-label">EV/EBITDA</span>
+                                <span id="evebitda" class="metric-value">-</span>
+                            </div>
+                            <div class="metric" title="Market capitalization. Total value of all outstanding shares.">
+                                <span class="metric-label">Market Cap</span>
+                                <span id="marketCap2" class="metric-value">-</span>
+                            </div>
+                            <div class="metric" title="Enterprise Value. Market cap plus debt minus cash. Theoretical takeover price.">
+                                <span class="metric-label">Enterprise Value</span>
+                                <span id="enterpriseValue" class="metric-value">-</span>
+                            </div>
+                            <div class="metric" title="Shares outstanding. Number of shares held by all shareholders.">
+                                <span class="metric-label">Shares Outstanding</span>
+                                <span id="sharesOutstanding" class="metric-value">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Profitability Metrics -->
+                    <div class="card metrics-overview">
+                        <h3>Profitability</h3>
+                        <div class="metrics-grid-compact">
+                            <div class="metric" title="Gross profit margin. Percentage of revenue left after cost of goods sold. Shows pricing power and production efficiency.">
+                                <span class="metric-label">Gross Margin</span>
+                                <span id="grossMargin" class="metric-value">-</span>
+                            </div>
+                            <div class="metric" title="EBITDA margin. Earnings before interest, taxes, depreciation. Shows operating profitability.">
+                                <span class="metric-label">EBITDA Margin</span>
+                                <span id="ebitdaMargin" class="metric-value">-</span>
+                            </div>
+                            <div class="metric" title="Return on Assets. How efficiently the company uses its assets to generate profit.">
+                                <span class="metric-label">Return on Assets</span>
+                                <span id="roa" class="metric-value">-</span>
+                            </div>
+                            <div class="metric" title="Return on Invested Capital. Measures return to all investors (debt + equity). ROIC > WACC creates value.">
+                                <span class="metric-label">ROIC</span>
+                                <span id="roic" class="metric-value">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Financial Health -->
+                    <div class="card metrics-overview">
+                        <h3>Financial Health</h3>
+                        <div class="metrics-grid-compact">
+                            <div class="metric" title="Current Ratio. Current assets divided by current liabilities. > 1.5 suggests good short-term liquidity.">
+                                <span class="metric-label">Current Ratio</span>
+                                <span id="currentRatio" class="metric-value">-</span>
+                            </div>
+                            <div class="metric" title="Quick Ratio. Current assets minus inventory, divided by liabilities. More conservative liquidity measure.">
+                                <span class="metric-label">Quick Ratio</span>
+                                <span id="quickRatio" class="metric-value">-</span>
+                            </div>
+                            <div class="metric" title="Interest Coverage. EBIT divided by interest expense. > 3 indicates comfortable debt service ability.">
+                                <span class="metric-label">Interest Coverage</span>
+                                <span id="interestCoverage" class="metric-value">-</span>
+                            </div>
+                            <div class="metric" title="Total cash and equivalents on the balance sheet.">
+                                <span class="metric-label">Cash & Equivalents</span>
+                                <span id="cash" class="metric-value">-</span>
+                            </div>
+                            <div class="metric" title="Working capital. Current assets minus current liabilities. Positive means short-term obligations can be met.">
+                                <span class="metric-label">Working Capital</span>
+                                <span id="workingCapital" class="metric-value">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Market Data -->
+                    <div class="card metrics-overview">
+                        <h3>Market Data</h3>
+                        <div class="metrics-grid-compact">
+                            <div class="metric" title="52-week high. The highest price in the past year.">
+                                <span class="metric-label">52W High</span>
+                                <span id="price52wHigh" class="metric-value">-</span>
+                            </div>
+                            <div class="metric" title="52-week low. The lowest price in the past year.">
+                                <span class="metric-label">52W Low</span>
+                                <span id="price52wLow" class="metric-value">-</span>
+                            </div>
+                            <div class="metric" title="Position in 52-week range. Shows where current price sits relative to yearly high and low.">
+                                <span class="metric-label">52W Position</span>
+                                <span id="price52wPosition" class="metric-value">-</span>
+                            </div>
+                            <div class="metric" title="Beta. Measures volatility relative to market. > 1 means more volatile than S&P 500.">
+                                <span class="metric-label">Beta</span>
+                                <span id="beta" class="metric-value">-</span>
+                            </div>
+                            <div class="metric" title="Average daily trading volume. Higher volume means better liquidity.">
+                                <span class="metric-label">Avg Volume</span>
+                                <span id="avgVolume" class="metric-value">-</span>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
 
                 <!-- Tab Content: Earnings -->
