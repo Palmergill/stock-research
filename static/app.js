@@ -112,6 +112,87 @@ document.addEventListener('DOMContentLoaded', () => {
     
     initMagneticButtons();
     
+    // Initialize custom metric tooltips
+    function initMetricTooltips() {
+        const tooltip = document.getElementById('metricTooltip');
+        if (!tooltip) return;
+        
+        const titleEl = tooltip.querySelector('.tooltip-title');
+        const descEl = tooltip.querySelector('.tooltip-description');
+        
+        // Find all metric cards with title attributes
+        document.querySelectorAll('.metric[title]').forEach(metric => {
+            const titleText = metric.getAttribute('title');
+            if (!titleText) return;
+            
+            // Extract label as title and rest as description
+            const labelEl = metric.querySelector('.metric-label');
+            const label = labelEl ? labelEl.textContent : 'Metric';
+            
+            // Remove default title to prevent browser tooltip
+            metric.removeAttribute('title');
+            metric.dataset.tooltipTitle = label;
+            metric.dataset.tooltipDesc = titleText;
+            
+            metric.addEventListener('mouseenter', (e) => {
+                titleEl.textContent = label;
+                descEl.textContent = titleText;
+                tooltip.classList.remove('hidden');
+                
+                // Position tooltip
+                positionTooltip(e, tooltip, metric);
+            });
+            
+            metric.addEventListener('mousemove', (e) => {
+                positionTooltip(e, tooltip, metric);
+            });
+            
+            metric.addEventListener('mouseleave', () => {
+                tooltip.classList.add('hidden');
+            });
+        });
+        
+        function positionTooltip(e, tooltip, metric) {
+            const rect = metric.getBoundingClientRect();
+            const tooltipRect = tooltip.getBoundingClientRect();
+            
+            // Position above the metric by default
+            let top = rect.top - tooltipRect.height - 12;
+            let left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
+            
+            // Adjust if going off screen
+            if (top < 10) {
+                top = rect.bottom + 12; // Show below if not enough space above
+            }
+            if (left < 10) {
+                left = 10;
+            } else if (left + tooltipRect.width > window.innerWidth - 10) {
+                left = window.innerWidth - tooltipRect.width - 10;
+            }
+            
+            tooltip.style.top = `${top}px`;
+            tooltip.style.left = `${left}px`;
+        }
+    }
+    
+    // Run after a short delay to ensure DOM is ready
+    setTimeout(initMetricTooltips, 100);
+    
+    // Initialize trending stock buttons
+    function initTrendingStocks() {
+        document.querySelectorAll('.trending-stock').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const ticker = btn.dataset.ticker;
+                if (ticker) {
+                    tickerInput.value = ticker;
+                    loadStock(ticker);
+                }
+            });
+        });
+    }
+    
+    initTrendingStocks();
+    
     // DOM elements
     const searchForm = document.getElementById('searchForm');
     const tickerInput = document.getElementById('tickerInput');

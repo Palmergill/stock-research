@@ -100,14 +100,56 @@
             </div>
 
             <div id="error" class="error hidden">
+                <div class="error-icon">⚠️</div>
                 <p id="errorMessage"></p>
                 <button id="retryBtn" class="retry-btn">Try Again</button>
             </div>
 
             <div id="empty" class="empty">
-                <p>Search for a stock to see real-time data and charts.</p>
-                <p class="examples">Try: AAPL, TSLA, MSFT, AMZN, NVDA</p>
-                <p style="margin-top: 20px; font-size: 13px; color: #64748b;">Data provided by Finnhub, Yahoo Finance, and Alpha Vantage</p>
+                <div class="empty-illustration">
+                    <svg viewBox="0 0 120 120" class="chart-doodle">
+                        <path class="doodle-line" d="M10,100 L30,80 L50,90 L70,60 L90,70 L110,30" />
+                        <circle class="doodle-dot" cx="30" cy="80" r="4" />
+                        <circle class="doodle-dot" cx="50" cy="90" r="4" />
+                        <circle class="doodle-dot" cx="70" cy="60" r="4" />
+                        <circle class="doodle-dot" cx="90" cy="70" r="4" />
+                        <circle class="doodle-dot" cx="110" cy="30" r="4" />
+                    </svg>
+                </div>
+                <h3 class="empty-title">Discover Your Next Investment</h3>
+                <p class="empty-description">Search for any stock ticker to access real-time data, interactive charts, and comprehensive financial metrics.</p>
+                
+                <div class="trending-stocks">
+                    <span class="trending-label">Trending Now</span>
+                    <div class="trending-grid">
+                        <button class="trending-stock" data-ticker="TSLA">
+                            <span class="trending-ticker">TSLA</span>
+                            <span class="trending-name">Tesla</span>
+                        </button>
+                        <button class="trending-stock" data-ticker="AAPL">
+                            <span class="trending-ticker">AAPL</span>
+                            <span class="trending-name">Apple</span>
+                        </button>
+                        <button class="trending-stock" data-ticker="NVDA">
+                            <span class="trending-ticker">NVDA</span>
+                            <span class="trending-name">NVIDIA</span>
+                        </button>
+                        <button class="trending-stock" data-ticker="MSFT">
+                            <span class="trending-ticker">MSFT</span>
+                            <span class="trending-name">Microsoft</span>
+                        </button>
+                        <button class="trending-stock" data-ticker="AMZN">
+                            <span class="trending-ticker">AMZN</span>
+                            <span class="trending-name">Amazon</span>
+                        </button>
+                        <button class="trending-stock" data-ticker="GOOGL">
+                            <span class="trending-ticker">GOOGL</span>
+                            <span class="trending-name">Alphabet</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <p class="data-source">Data provided by Polygon.io and Finnhub</p>
             </div>
 
             <div id="results" class="hidden">
@@ -348,6 +390,12 @@
     <div id="chartTooltip" class="chart-tooltip hidden">
         <div class="tooltip-date"></div>
         <div class="tooltip-value"></div>
+    </div>
+
+    <!-- Metric Tooltip -->
+    <div id="metricTooltip" class="metric-tooltip hidden">
+        <div class="tooltip-title"></div>
+        <div class="tooltip-description"></div>
     </div>
 
     <!-- Full Screen Chart Modal -->
