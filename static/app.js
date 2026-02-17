@@ -866,6 +866,9 @@ function drawPEChart(data, priceHistory = null) {
         ctx.font = '11px sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText(d.fiscal_date.slice(0, 7), x, padding.top + chartHeight + 20);
+    });
+}
+
 function drawPriceChart(data) {
     const canvas = document.getElementById('priceChart');
     if (!canvas) return;
