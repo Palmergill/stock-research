@@ -1187,6 +1187,80 @@ function drawPriceChart(data) {
     ctx.textAlign = 'right';
     const hintText = window.innerWidth <= 768 ? 'Tap to expand' : 'Click to expand';
     ctx.fillText(hintText, padding.left + chartWidth, 26);
+    
+    // Setup tooltip interactions
+    setupChartTooltip(canvas, data, points, prices, getX, padding, chartWidth, chartHeight);
+}
+
+// Chart tooltip helper function
+function setupChartTooltip(canvas, data, points, values, getX, padding, chartWidth, chartHeight) {
+    const tooltip = document.getElementById('chartTooltip');
+    if (!tooltip) return;
+    
+    const tooltipDate = tooltip.querySelector('.tooltip-date');
+    const tooltipValue = tooltip.querySelector('.tooltip-value');
+    
+    // Remove old listeners if any (by cloning)
+    const newCanvas = canvas.cloneNode(true);
+    canvas.parentNode.replaceChild(newCanvas, canvas);
+    
+    // Get fresh context after clone
+    const ctx = newCanvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    
+    newCanvas.addEventListener('mousemove', (e) => {
+        const rect = newCanvas.getBoundingClientRect();
+        const x = (e.clientX - rect.left) * dpr;
+        const y = (e.clientY - rect.top) * dpr;
+        
+        // Check if within chart area
+        if (x < padding.left || x > padding.left + chartWidth ||
+            y < padding.top || y > padding.top + chartHeight) {
+            tooltip.classList.add('hidden');
+            return;
+        }
+        
+        // Find nearest data point
+        let nearestIdx = 0;
+        let minDist = Infinity;
+        
+        points.forEach((point, i) => {
+            const dist = Math.abs(point.x - x);
+            if (dist < minDist) {
+                minDist = dist;
+                nearestIdx = i;
+            }
+        });
+        
+        // Only show if close enough (within 30px)
+        if (minDist > 30 * dpr) {
+            tooltip.classList.add('hidden');
+            return;
+        }
+        
+        const dataPoint = data[nearestIdx];
+        const dateStr = dataPoint.date || dataPoint.fiscal_date;
+        const value = dataPoint.close || dataPoint.price;
+        
+        // Update tooltip content
+        tooltipDate.textContent = dateStr;
+        tooltipValue.textContent = `$${value.toFixed(2)}`;
+        
+        // Position tooltip
+        const tooltipX = e.clientX + 15;
+        const tooltipY = e.clientY - 10;
+        
+        tooltip.style.left = `${tooltipX}px`;
+        tooltip.style.top = `${tooltipY}px`;
+        tooltip.classList.remove('hidden');
+        
+        // Redraw chart with highlight line
+        // Note: This would need the full redraw function, simplified here
+    });
+    
+    newCanvas.addEventListener('mouseleave', () => {
+        tooltip.classList.add('hidden');
+    });
 }
 
 function drawFullScreenPriceChart(data) {

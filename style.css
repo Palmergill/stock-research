@@ -934,3 +934,46 @@ body.chart-modal-open {
         cursor: default;
     }
 }
+
+/* Chart Tooltip */
+.chart-tooltip {
+    position: fixed;
+    background: rgba(15, 23, 42, 0.95);
+    border: 1px solid var(--bg-tertiary);
+    border-radius: 8px;
+    padding: 12px 16px;
+    pointer-events: none;
+    z-index: 100;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(8px);
+    transition: opacity 0.15s ease;
+    min-width: 140px;
+}
+
+.chart-tooltip.hidden {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.tooltip-date {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.tooltip-value {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* Hover cursor for charts with tooltips */
+#priceChart,
+#epsChart,
+#revenueChart,
+#fcfChart,
+#peChart {
+    cursor: crosshair;
+}
