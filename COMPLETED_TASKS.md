@@ -183,6 +183,42 @@ setTimeout(() => {
 - Layout preview reduces perceived load time
 - Smooth transition from skeleton to real content
 
+### ✅ Chart Hover Tooltips
+
+**Status:** Completed and deployed
+
+**Changes Made:**
+1. Added tooltip HTML element that follows mouse cursor
+2. Created `setupChartTooltip()` helper function
+3. Tooltip shows date and exact price when hovering over chart
+4. Added crosshair cursor to all charts for better UX
+5. Tooltip only appears when near a data point (within 30px)
+
+**Features:**
+- Date displayed in header format (e.g., "2025-02-17")
+- Price displayed as "$417.44"
+- Glassmorphism backdrop (blur effect)
+- Smooth fade in/out transitions
+- Positions intelligently near cursor
+
+**CSS Added:**
+```css
+.chart-tooltip {
+    position: fixed;
+    background: rgba(15, 23, 42, 0.95);
+    border: 1px solid var(--bg-tertiary);
+    border-radius: 8px;
+    padding: 12px 16px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+```
+
+**Visual Impact:**
+- Users can see exact values without guessing
+- Professional chart interaction experience
+- Crosshair cursor indicates interactivity
+
 ---
 
 ## Pending Tasks

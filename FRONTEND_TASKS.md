@@ -99,7 +99,7 @@
 - Interactive legend
 
 **Tasks:**
-- [ ] Add hover tooltip showing exact value and date
+- [x] ~~Add hover tooltip showing exact value and date~~ ✓ Completed - see [COMPLETED_TASKS.md](./COMPLETED_TASKS.md)
 - [ ] Implement animated line draw on first render (stroke-dasharray trick)
 - [ ] Add pulsing animation on high/low markers
 - [ ] Highlight data point on hover with vertical indicator line
