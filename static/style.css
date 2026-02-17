@@ -609,25 +609,27 @@ canvas {
     }
 }
 
-/* Landscape rotation for mobile chart modal */
+/* Portrait mode - landscape-oriented chart that fits on screen */
 @media (max-width: 768px) and (orientation: portrait) {
     .chart-modal {
-        transform: rotate(90deg);
-        transform-origin: bottom left;
-        width: 100vh;
-        height: 100vw;
         position: fixed;
-        top: -100vw;
+        top: 0;
         left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
     
     .chart-modal-content {
-        width: 100vh;
-        height: 100vw;
-        max-height: 100vw;
-        border-radius: 0;
+        width: 90%;
+        max-width: 500px;
+        max-height: 90vh;
+        border-radius: 12px;
         display: flex;
         flex-direction: column;
+        margin: 20px;
     }
     
     .chart-modal-header {
@@ -652,8 +654,7 @@ canvas {
     }
     
     .chart-modal-body {
-        flex: 1;
-        padding: 8px;
+        padding: 20px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -662,8 +663,8 @@ canvas {
     }
     
     #fullScreenPriceChart {
-        max-width: 80%;
-        max-height: 80%;
+        max-width: 100%;
+        max-height: 100%;
         width: auto;
         height: auto;
     }

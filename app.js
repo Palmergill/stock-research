@@ -1153,25 +1153,22 @@ function drawFullScreenPriceChart(data) {
     const isMobile = window.innerWidth <= 768;
     const isPortrait = window.innerHeight > window.innerWidth;
     
-    // For the rotated modal in portrait, we need to size the canvas 
-    // to fit the rotated viewport (width = vh, height = vw)
+    // Size canvas appropriately for the container
+    // Portrait: smaller landscape-oriented chart that fits in the modal
+    // Landscape: use more of the available space
     let canvasWidth, canvasHeight;
     if (isMobile && isPortrait) {
-        // In portrait with rotated modal: use viewport dimensions swapped
-        // The modal is rotated 90deg, so available space is roughly:
-        // width = viewport height, height = viewport width - header
-        const vh = window.innerHeight;
-        const vw = window.innerWidth;
-        canvasWidth = Math.min(vh * 0.95, 700);
-        canvasHeight = Math.min(vw * 0.75, 450);
+        // Portrait: landscape chart that fits within ~400px wide modal
+        canvasWidth = 500;
+        canvasHeight = 280;
     } else if (isMobile) {
         // Device is already in landscape
-        canvasWidth = Math.min(window.innerWidth * 0.9, 800);
-        canvasHeight = Math.min(window.innerHeight * 0.7, 400);
+        canvasWidth = Math.min(window.innerWidth * 0.85, 700);
+        canvasHeight = Math.min(window.innerHeight * 0.6, 350);
     } else {
         // Desktop
-        canvasWidth = 900;
-        canvasHeight = 450;
+        canvasWidth = 800;
+        canvasHeight = 400;
     }
 
     canvas.width = canvasWidth * dpr;
