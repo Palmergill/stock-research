@@ -314,6 +314,7 @@ document.addEventListener('DOMContentLoaded', () => {
         loading.classList.remove('hidden');
         error.classList.add('hidden');
         empty.classList.add('hidden');
+        results.classList.remove('visible');
         results.classList.add('hidden');
         searchBtn.disabled = true;
         
@@ -377,6 +378,11 @@ document.addEventListener('DOMContentLoaded', () => {
         
         loading.classList.add('hidden');
         results.classList.remove('hidden');
+        
+        // Trigger slide-up animation
+        requestAnimationFrame(() => {
+            results.classList.add('visible');
+        });
         
         // Safely get summary values
         const summary = data.summary || {};

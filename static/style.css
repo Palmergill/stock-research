@@ -439,6 +439,19 @@ button .ripple {
     transform: translateY(-4px);
 }
 
+/* Results container slide-up animation */
+#results {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+#results.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+}
+
 .company-header {
     padding: 20px 24px;
 }
@@ -556,6 +569,10 @@ button .ripple {
 }
 
 /* Category Color Coding for Metric Sections */
+.metrics-key {
+    border-left: 3px solid var(--accent-blue);
+}
+
 .metrics-key h3 {
     /* Key Metrics - Blue accent */
     color: var(--accent-blue);
@@ -564,6 +581,10 @@ button .ripple {
 .metrics-key .metric:hover {
     background: rgba(59, 130, 246, 0.08);
     box-shadow: 0 0 20px rgba(59, 130, 246, 0.15);
+}
+
+.metrics-valuation {
+    border-left: 3px solid var(--accent-purple);
 }
 
 .metrics-valuation h3 {
@@ -576,6 +597,10 @@ button .ripple {
     box-shadow: 0 0 20px rgba(139, 92, 246, 0.15);
 }
 
+.metrics-profitability {
+    border-left: 3px solid var(--accent-green);
+}
+
 .metrics-profitability h3 {
     /* Profitability - Green accent */
     color: var(--accent-green);
@@ -586,6 +611,10 @@ button .ripple {
     box-shadow: 0 0 20px rgba(16, 185, 129, 0.15);
 }
 
+.metrics-health {
+    border-left: 3px solid var(--accent-cyan);
+}
+
 .metrics-health h3 {
     /* Financial Health - Cyan accent */
     color: var(--accent-cyan);
@@ -594,6 +623,10 @@ button .ripple {
 .metrics-health .metric:hover {
     background: rgba(6, 182, 212, 0.08);
     box-shadow: 0 0 20px rgba(6, 182, 212, 0.15);
+}
+
+.metrics-market {
+    border-left: 3px solid var(--accent-orange);
 }
 
 .metrics-market h3 {
@@ -656,10 +689,12 @@ button .ripple {
 }
 
 .card h3 {
-    font-size: 18px;
-    font-weight: 600;
+    font-size: 14px;
+    font-weight: 700;
     color: var(--text-primary);
     margin-bottom: 20px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
 }
 
 .card-header {
@@ -725,21 +760,22 @@ button .ripple {
 }
 
 .metric-label {
-    font-size: 11px;
+    font-size: 12px;
     color: var(--text-muted);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.8px;
+    font-weight: 500;
     transition: color 0.2s ease;
 }
 
 .metric:hover .metric-label {
-    color: var(--accent-blue);
+    color: var(--text-secondary);
 }
 
 .metric-value {
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--text-secondary);
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-primary);
     font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Consolas', monospace;
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.5px;
