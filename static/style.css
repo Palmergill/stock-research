@@ -1058,7 +1058,7 @@ button .ripple {
     box-shadow: 0 0 20px rgba(245, 158, 11, 0.15);
 }
 
-/* Mobile adjustments for tab indicator */
+/* Mobile adjustments */
 @media (max-width: 768px) {
     .tab-indicator {
         display: none; /* Hide sliding indicator on mobile, use default active state */
@@ -1066,6 +1066,45 @@ button .ripple {
     
     .tab-btn.active {
         background: var(--accent-blue);
+    }
+    
+    /* Stack metrics vertically on mobile */
+    .metrics-grid-compact {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+    
+    .metrics-grid-compact .metric {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px;
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 8px;
+    }
+    
+    .metrics-grid-compact .metric-label {
+        font-size: 13px;
+    }
+    
+    .metrics-grid-compact .metric-value {
+        font-size: 18px;
+    }
+    
+    /* Make charts full width on mobile */
+    .chart-wrapper canvas {
+        min-height: 250px;
+    }
+    
+    /* Better spacing on mobile */
+    .card {
+        padding: 20px;
+        margin-bottom: 16px;
+    }
+    
+    /* Trending stocks grid - 2 columns on mobile */
+    .trending-grid {
+        grid-template-columns: repeat(2, 1fr);
     }
 }
 
@@ -1134,6 +1173,35 @@ button .ripple {
     color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
+}
+
+/* Value change flash animations */
+@keyframes flash-green {
+    0% { color: var(--text-primary); }
+    30% { color: var(--accent-green); text-shadow: 0 0 20px rgba(16, 185, 129, 0.5); }
+    100% { color: var(--text-primary); }
+}
+
+@keyframes flash-red {
+    0% { color: var(--text-primary); }
+    30% { color: var(--accent-red); text-shadow: 0 0 20px rgba(239, 68, 68, 0.5); }
+    100% { color: var(--text-primary); }
+}
+
+.metric-value.flash-up {
+    animation: flash-green 0.8s ease;
+}
+
+.metric-value.flash-down {
+    animation: flash-red 0.8s ease;
+}
+
+#currentPrice.flash-up {
+    animation: flash-green 0.8s ease;
+}
+
+#currentPrice.flash-down {
+    animation: flash-red 0.8s ease;
 }
 
 /* Metrics */
@@ -1784,4 +1852,37 @@ button,
     .suggestion-item:hover {
         background: rgba(59, 130, 246, 0.4);
     }
+    
+    /* High contrast mode for metric trends */
+    .metric[data-trend="up"] .metric-value {
+        border-bottom: 2px solid var(--accent-green);
+    }
+    
+    .metric[data-trend="down"] .metric-value {
+        border-bottom: 2px solid var(--accent-red);
+    }
+    
+    .metric[data-trend="neutral"] .metric-value {
+        border-bottom: 2px solid var(--text-muted);
+    }
+}
+
+/* Pattern fills for accessibility (color blindness) */
+.pattern-stripe {
+    background-image: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 4px,
+        rgba(255, 255, 255, 0.1) 4px,
+        rgba(255, 255, 255, 0.1) 8px
+    );
+}
+
+.pattern-dot {
+    background-image: radial-gradient(
+        circle,
+        rgba(255, 255, 255, 0.2) 2px,
+        transparent 2px
+    );
+    background-size: 8px 8px;
 }

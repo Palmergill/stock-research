@@ -21,6 +21,48 @@ function formatNumber(value, decimals = 2) {
     return value.toFixed(decimals);
 }
 
+// Store previous values for flash animation
+window.previousValues = {};
+
+// Helper to update value with flash animation
+function updateValueWithFlash(elementId, newValue, formatter = (v) => v) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+    
+    const oldValue = window.previousValues[elementId];
+    const formattedNew = formatter(newValue);
+    
+    // Skip if first load or no change
+    if (oldValue === undefined || oldValue === formattedNew) {
+        element.textContent = formattedNew;
+        window.previousValues[elementId] = formattedNew;
+        return;
+    }
+    
+    // Determine direction for color flash
+    const oldNum = parseFloat(oldValue.toString().replace(/[^0-9.-]/g, ''));
+    const newNum = parseFloat(formattedNew.toString().replace(/[^0-9.-]/g, ''));
+    
+    element.classList.remove('flash-up', 'flash-down');
+    void element.offsetWidth; // Trigger reflow
+    
+    if (!isNaN(oldNum) && !isNaN(newNum)) {
+        if (newNum > oldNum) {
+            element.classList.add('flash-up');
+        } else if (newNum < oldNum) {
+            element.classList.add('flash-down');
+        }
+    }
+    
+    element.textContent = formattedNew;
+    window.previousValues[elementId] = formattedNew;
+    
+    // Remove animation class after animation completes
+    setTimeout(() => {
+        element.classList.remove('flash-up', 'flash-down');
+    }, 800);
+}
+
 // Calculate trends from earnings data and update metric indicators
 function calculateAndDisplayTrends(earnings) {
     if (!earnings || earnings.length < 2) return;
@@ -621,15 +663,14 @@ document.addEventListener('DOMContentLoaded', () => {
         // Calculate and display trends based on earnings data
         calculateAndDisplayTrends(data.earnings || []);
         
-        // Valuation Metrics
-        document.getElementById('psRatio').textContent = formatNumber(summary.ps_ratio);
-        document.getElementById('pbRatio').textContent = formatNumber(summary.pb_ratio);
-        document.getElementById('evebitda').textContent = formatNumber(summary.ev_ebitda);
-        document.getElementById('marketCap2').textContent = formatMarketCap(summary.market_cap);
-        document.getElementById('enterpriseValue').textContent = formatMarketCap(summary.enterprise_value);
-        document.getElementById('sharesOutstanding').textContent = summary.shares_outstanding 
-            ? formatNumber(summary.shares_outstanding / 1e9) + 'B' 
-            : '-';
+        // Valuation Metrics (with flash animation on change)
+        updateValueWithFlash('psRatio', summary.ps_ratio, formatNumber);
+        updateValueWithFlash('pbRatio', summary.pb_ratio, formatNumber);
+        updateValueWithFlash('evebitda', summary.ev_ebitda, formatNumber);
+        updateValueWithFlash('marketCap2', summary.market_cap, formatMarketCap);
+        updateValueWithFlash('enterpriseValue', summary.enterprise_value, formatMarketCap);
+        updateValueWithFlash('sharesOutstanding', summary.shares_outstanding, 
+            (v) => v ? formatNumber(v / 1e9) + 'B' : '-');
         
         // Profitability Metrics
         document.getElementById('grossMargin').textContent = formatPercent(summary.gross_margin);
