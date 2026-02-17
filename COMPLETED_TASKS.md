@@ -1003,6 +1003,94 @@ canvas.dataset.tooltipSetup = 'true';
 - Spring animation feels premium
 - Smooth exit animation instead of instant close
 
+### ✅ Color Flash on Value Changes
+
+**Status:** Completed and deployed
+
+**Changes Made:**
+1. Added CSS animations for value change flash (green for up, red for down)
+2. Created `updateValueWithFlash()` helper function
+3. Stores previous values to detect changes
+4. Flash animation includes glow effect
+
+**CSS Added:**
+```css
+@keyframes flash-green {
+    0% { color: var(--text-primary); }
+    30% { color: var(--accent-green); text-shadow: 0 0 20px rgba(16, 185, 129, 0.5); }
+    100% { color: var(--text-primary); }
+}
+
+.metric-value.flash-up {
+    animation: flash-green 0.8s ease;
+}
+```
+
+**Visual Impact:**
+- Clear visual feedback when values change (e.g., after refresh)
+- Green flash for increases, red for decreases
+- Helps users notice data updates
+
+### ✅ Mobile Layout Improvements
+
+**Status:** Completed and deployed
+
+**Changes Made:**
+1. Metrics now stack vertically on mobile (instead of cramped grid)
+2. Each metric is a full-width row with label/value side-by-side
+3. Charts are full-width on mobile
+4. Trending stocks grid uses 2 columns on mobile
+5. Better card padding on mobile
+
+**CSS Changes:**
+```css
+@media (max-width: 768px) {
+    .metrics-grid-compact {
+        grid-template-columns: 1fr;
+    }
+    .metrics-grid-compact .metric {
+        flex-direction: row;
+        justify-content: space-between;
+    }
+}
+```
+
+**Visual Impact:**
+- Much better mobile experience
+- Easier to read metrics on small screens
+- Touch-friendly spacing
+
+### ✅ Accessibility Pattern Fills
+
+**Status:** Completed and deployed
+
+**Changes Made:**
+1. Added CSS pattern classes (stripes, dots) for future use
+2. Added high contrast mode support for metric trends
+3. Trends show colored underline in high contrast mode
+
+**CSS Added:**
+```css
+.pattern-stripe {
+    background-image: repeating-linear-gradient(45deg, ...);
+}
+
+.pattern-dot {
+    background-image: radial-gradient(circle, ...);
+}
+
+@media (prefers-contrast: high) {
+    .metric[data-trend="up"] .metric-value {
+        border-bottom: 2px solid var(--accent-green);
+    }
+}
+```
+
+**Visual Impact:**
+- Better accessibility for color-blind users
+- Patterns can be applied to charts
+- High contrast mode support
+
 ---
 
 ## Summary of Completed Work (While Palmer Sleeps)
