@@ -972,6 +972,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============================================
     // AUTO-LOAD TSLA ON HOMEPAGE
     // ============================================
+    showStatus('Auto-loading TSLA...');
     console.log('Initializing auto-load for TSLA...');
     tickerInput.value = 'TSLA';
     empty.classList.add('hidden');
@@ -980,10 +981,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Small delay to ensure everything is ready
     setTimeout(async () => {
         try {
+            showStatus('Loading TSLA...');
             console.log('Auto-loading TSLA...');
             await loadStock('TSLA');
+            showStatus('TSLA loaded!');
             console.log('TSLA loaded successfully');
         } catch (err) {
+            showStatus('ERROR loading TSLA: ' + err.message);
             console.error('Failed to load TSLA:', err);
             loading.classList.add('hidden');
             error.classList.remove('hidden');
