@@ -103,7 +103,7 @@ class PolygonClient:
                 "avg_volume": price_data.get("volume"),
                 "next_earnings_date": None,
                 "earnings": earnings,
-                "price_history": price_history,
+                "price_history": [],  # Fetched separately via /prices endpoint
                 "source": "Polygon.io"
             }
             
