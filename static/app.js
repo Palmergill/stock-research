@@ -136,7 +136,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function fetchSuggestions(query) {
         if (!query || query.length < 1) {
-            searchSuggestions.classList.add('hidden');
+            searchSuggestions.classList.remove('visible');
+            setTimeout(() => searchSuggestions.classList.add('hidden'), 200);
             return;
         }
 
@@ -154,7 +155,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderSuggestions(suggestions) {
         if (suggestions.length === 0) {
-            searchSuggestions.classList.add('hidden');
+            searchSuggestions.classList.remove('visible');
+            setTimeout(() => searchSuggestions.classList.add('hidden'), 200);
             return;
         }
 
@@ -169,6 +171,10 @@ document.addEventListener('DOMContentLoaded', () => {
         `).join('');
 
         searchSuggestions.classList.remove('hidden');
+        // Trigger animation in next frame
+        requestAnimationFrame(() => {
+            searchSuggestions.classList.add('visible');
+        });
         selectedSuggestionIndex = -1;
 
         // Add click handlers
@@ -176,7 +182,8 @@ document.addEventListener('DOMContentLoaded', () => {
             item.addEventListener('click', () => {
                 const ticker = item.dataset.ticker;
                 tickerInput.value = ticker;
-                searchSuggestions.classList.add('hidden');
+                searchSuggestions.classList.remove('visible');
+                setTimeout(() => searchSuggestions.classList.add('hidden'), 200);
                 loadStock(ticker);
             });
         });
@@ -209,17 +216,20 @@ document.addEventListener('DOMContentLoaded', () => {
             if (selectedSuggestionIndex >= 0 && selectedSuggestionIndex < currentSuggestions.length) {
                 const ticker = currentSuggestions[selectedSuggestionIndex].ticker;
                 tickerInput.value = ticker;
-                searchSuggestions.classList.add('hidden');
+                searchSuggestions.classList.remove('visible');
+                setTimeout(() => searchSuggestions.classList.add('hidden'), 200);
                 loadStock(ticker);
             } else {
                 const query = tickerInput.value.trim().toUpperCase();
                 if (query) {
-                    searchSuggestions.classList.add('hidden');
+                    searchSuggestions.classList.remove('visible');
+                    setTimeout(() => searchSuggestions.classList.add('hidden'), 200);
                     loadStock(query);
                 }
             }
         } else if (e.key === 'Escape') {
-            searchSuggestions.classList.add('hidden');
+            searchSuggestions.classList.remove('visible');
+            setTimeout(() => searchSuggestions.classList.add('hidden'), 200);
         }
     });
 
@@ -233,7 +243,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Hide suggestions when clicking outside
     document.addEventListener('click', (e) => {
         if (!searchForm.contains(e.target)) {
-            searchSuggestions.classList.add('hidden');
+            searchSuggestions.classList.remove('visible');
+            setTimeout(() => searchSuggestions.classList.add('hidden'), 200);
         }
     });
 

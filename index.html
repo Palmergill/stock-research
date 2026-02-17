@@ -15,12 +15,16 @@
             </div>
             <form id="searchForm">
                 <div class="search-container">
-                    <input 
-                        type="text" 
-                        id="tickerInput" 
-                        placeholder="Search ticker or company name..." 
-                        autocomplete="off"
-                    >
+                    <div class="input-wrapper">
+                        <input 
+                            type="text" 
+                            id="tickerInput" 
+                            placeholder="Search ticker or company name..." 
+                            autocomplete="off"
+                        >
+                        <div class="input-underline"></div>
+                        <div class="input-underline-focus"></div>
+                    </div>
                     <div id="searchSuggestions" class="suggestions hidden"></div>
                 </div>
                 <button type="submit" id="searchBtn">Search</button>

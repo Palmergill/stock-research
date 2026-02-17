@@ -87,6 +87,37 @@ form {
     flex: 1;
 }
 
+/* Input wrapper for underline animations */
+.input-wrapper {
+    position: relative;
+}
+
+.input-underline,
+.input-underline-focus {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 2px;
+    background: var(--bg-tertiary);
+    transition: all 0.3s ease;
+}
+
+.input-underline {
+    width: 100%;
+    border-radius: 0 0 8px 8px;
+}
+
+.input-underline-focus {
+    width: 0;
+    background: var(--accent-blue);
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+}
+
+.input-wrapper input:focus ~ .input-underline-focus {
+    width: 100%;
+}
+
+/* Suggestions with slide-down animation */
 .suggestions {
     position: absolute;
     top: 100%;
@@ -96,10 +127,19 @@ form {
     border: 1px solid var(--bg-tertiary);
     border-top: none;
     border-radius: 0 0 8px 8px;
-    max-height: 300px;
+    max-height: 0;
     overflow-y: auto;
     z-index: 100;
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: max-height 0.2s ease-out, opacity 0.2s ease-out, transform 0.2s ease-out;
+}
+
+.suggestions.visible {
+    max-height: 300px;
+    opacity: 1;
+    transform: translateY(0);
 }
 
 .suggestion-item {
@@ -109,16 +149,41 @@ form {
     padding: 12px 16px;
     cursor: pointer;
     border-bottom: 1px solid var(--bg-tertiary);
-    transition: background 0.15s;
+    transition: background 0.15s, transform 0.15s;
+    position: relative;
 }
 
 .suggestion-item:last-child {
     border-bottom: none;
 }
 
-.suggestion-item:hover,
+.suggestion-item:hover {
+    background: rgba(59, 130, 246, 0.15);
+}
+
 .suggestion-item.active {
-    background: rgba(59, 130, 246, 0.2);
+    background: rgba(59, 130, 246, 0.25);
+    transform: translateX(4px);
+}
+
+.suggestion-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: var(--accent-blue);
+    animation: slideInLeft 0.2s ease;
+}
+
+@keyframes slideInLeft {
+    from {
+        transform: scaleY(0);
+    }
+    to {
+        transform: scaleY(1);
+    }
 }
 
 .suggestion-main {
