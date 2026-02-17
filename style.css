@@ -740,6 +740,43 @@ button .ripple {
     font-size: 18px;
     font-weight: 600;
     color: var(--text-secondary);
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Consolas', monospace;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.5px;
+}
+
+/* Monospaced font for all numeric displays */
+#currentPrice,
+#marketCap,
+#peRatio,
+#revenueGrowth,
+#freeCashFlow,
+#debtToEquity,
+#roe,
+#profitMargin,
+#operatingMargin,
+#psRatio,
+#pbRatio,
+#evebitda,
+#marketCap2,
+#enterpriseValue,
+#sharesOutstanding,
+#grossMargin,
+#ebitdaMargin,
+#roa,
+#roic,
+#currentRatio,
+#quickRatio,
+#interestCoverage,
+#cash,
+#workingCapital,
+#price52wHigh,
+#price52wLow,
+#price52wPosition,
+#beta,
+#avgVolume {
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Consolas', monospace;
+    font-variant-numeric: tabular-nums;
 }
 
 .metric-value.positive {
