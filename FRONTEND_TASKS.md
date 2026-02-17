@@ -73,9 +73,9 @@
 - Glow on hover
 
 **Tasks:**
-- [ ] Add transform: translateY(-4px) on card hover
-- [ ] Implement box-shadow expansion on hover
-- [ ] Add subtle glow pulse on metric cards with accent colors
+- [x] ~~Add transform: translateY(-4px) on card hover~~ ✓ Completed - see [COMPLETED_TASKS.md](./COMPLETED_TASKS.md)
+- [x] ~~Implement box-shadow expansion on hover~~ ✓ Completed - see [COMPLETED_TASKS.md](./COMPLETED_TASKS.md)
+- [x] ~~Add subtle glow pulse on metric cards with accent colors~~ ✓ Completed - see [COMPLETED_TASKS.md](./COMPLETED_TASKS.md)
 - [ ] Create magnetic button effect on primary buttons
 
 ### 2.3 Tab Switching - Abrupt
