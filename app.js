@@ -82,6 +82,36 @@ document.addEventListener('DOMContentLoaded', () => {
         button.addEventListener('click', createRipple);
     });
     
+    // Magnetic button effect for primary buttons
+    function initMagneticButtons() {
+        const magneticButtons = document.querySelectorAll('button:not(.tab-btn):not(.refresh-btn)');
+        
+        magneticButtons.forEach(button => {
+            button.classList.add('magnetic');
+            
+            button.addEventListener('mousemove', (e) => {
+                const rect = button.getBoundingClientRect();
+                const x = e.clientX - rect.left - rect.width / 2;
+                const y = e.clientY - rect.top - rect.height / 2;
+                
+                // Magnetic pull strength (max 8px movement)
+                const strength = 0.3;
+                const maxMove = 8;
+                
+                const moveX = Math.max(-maxMove, Math.min(maxMove, x * strength));
+                const moveY = Math.max(-maxMove, Math.min(maxMove, y * strength));
+                
+                button.style.transform = `translate(${moveX}px, ${moveY}px)`;
+            });
+            
+            button.addEventListener('mouseleave', () => {
+                button.style.transform = '';
+            });
+        });
+    }
+    
+    initMagneticButtons();
+    
     // DOM elements
     const searchForm = document.getElementById('searchForm');
     const tickerInput = document.getElementById('tickerInput');
