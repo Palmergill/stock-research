@@ -287,6 +287,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const empty = document.getElementById('empty');
     const results = document.getElementById('results');
     
+    // Verify critical elements exist
+    if (!searchForm || !tickerInput || !searchBtn) {
+        showStatus('ERROR: Critical elements missing');
+        console.error('Missing elements:', { searchForm, tickerInput, searchBtn });
+        return;
+    }
+    showStatus('Elements found, setting up...');
+    
     // Initialize trending stock buttons
     function initTrendingStocks() {
         document.querySelectorAll('.trending-stock').forEach(btn => {
@@ -543,13 +551,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    searchForm.addEventListener('submit', handleSearch);
-    
-    // Also attach click handler directly to search button for mobile
-    searchBtn.addEventListener('click', (e) => {
-        console.log('Search button clicked');
-        handleSearch(e);
-    });
+    try {
+        searchForm.addEventListener('submit', handleSearch);
+        showStatus('Search form listener attached');
+    } catch (err) {
+        showStatus('ERROR: Failed to attach submit listener');
+        console.error(err);
+    }
 
     // Retry handler
     retryBtn.addEventListener('click', () => {
@@ -1814,6 +1822,12 @@ function drawSparkline(canvas, data, color) {
 let priceChartInstance = null;
 
 function drawPriceChart(data) {
+    // Check if Chart.js is loaded
+    if (typeof Chart === 'undefined') {
+        console.warn('Chart.js not loaded, skipping chart render');
+        return;
+    }
+    
     const canvas = document.getElementById('priceChart');
     if (!canvas) return;
     
