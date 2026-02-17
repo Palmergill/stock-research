@@ -261,6 +261,18 @@ document.addEventListener('DOMContentLoaded', () => {
     // Run after a short delay to ensure DOM is ready
     setTimeout(initMetricTooltips, 100);
     
+    // DOM elements
+    const searchForm = document.getElementById('searchForm');
+    const tickerInput = document.getElementById('tickerInput');
+    const searchBtn = document.getElementById('searchBtn');
+    const searchSuggestions = document.getElementById('searchSuggestions');
+    const loading = document.getElementById('loading');
+    const error = document.getElementById('error');
+    const errorMessage = document.getElementById('errorMessage');
+    const retryBtn = document.getElementById('retryBtn');
+    const empty = document.getElementById('empty');
+    const results = document.getElementById('results');
+    
     // Initialize trending stock buttons
     function initTrendingStocks() {
         document.querySelectorAll('.trending-stock').forEach(btn => {
@@ -275,18 +287,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     initTrendingStocks();
-    
-    // DOM elements
-    const searchForm = document.getElementById('searchForm');
-    const tickerInput = document.getElementById('tickerInput');
-    const searchBtn = document.getElementById('searchBtn');
-    const searchSuggestions = document.getElementById('searchSuggestions');
-    const loading = document.getElementById('loading');
-    const error = document.getElementById('error');
-    const errorMessage = document.getElementById('errorMessage');
-    const retryBtn = document.getElementById('retryBtn');
-    const empty = document.getElementById('empty');
-    const results = document.getElementById('results');
 
     if (!searchForm) {
         console.error('Search form not found');
