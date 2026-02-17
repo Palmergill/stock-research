@@ -1180,14 +1180,16 @@ function drawPriceChart(data) {
     ctx.fillStyle = gradient;
     ctx.fill();
 
-    // Smooth price line
+    // Smooth price line with animation
     ctx.strokeStyle = '#10b981';
     ctx.lineWidth = 2.5;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    ctx.beginPath();
-    ctx.moveTo(points[0].x, points[0].y);
-
+    
+    // Create the path for animation
+    const path = new Path2D();
+    path.moveTo(points[0].x, points[0].y);
+    
     for (let i = 0; i < points.length - 1; i++) {
         const curr = points[i];
         const next = points[i + 1];
@@ -1195,95 +1197,143 @@ function drawPriceChart(data) {
         const cp1y = curr.y;
         const cp2x = next.x - (next.x - curr.x) * 0.3;
         const cp2y = next.y;
-        ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, next.x, next.y);
+        path.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, next.x, next.y);
     }
-    ctx.stroke();
-
-    // Find high and low points
-    let highIdx = 0, lowIdx = 0;
-    prices.forEach((p, i) => {
-        if (p > prices[highIdx]) highIdx = i;
-        if (p < prices[lowIdx]) lowIdx = i;
-    });
-
-    // Draw high point marker
-    const highX = getX(highIdx);
-    const highY = getY(prices[highIdx]);
-
-    ctx.fillStyle = '#22c55e';
-    ctx.beginPath();
-    ctx.arc(highX, highY, 5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = '#1e293b';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    // High label
-    ctx.fillStyle = '#22c55e';
-    ctx.font = 'bold 11px sans-serif';
-    ctx.textAlign = highIdx < data.length / 2 ? 'left' : 'right';
-    ctx.fillText(`High: $${prices[highIdx].toFixed(2)}`, highX + (highIdx < data.length / 2 ? 10 : -10), highY - 10);
-
-    // Draw low point marker
-    const lowX = getX(lowIdx);
-    const lowY = getY(prices[lowIdx]);
-
-    ctx.fillStyle = '#ef4444';
-    ctx.beginPath();
-    ctx.arc(lowX, lowY, 5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = '#1e293b';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    // Low label
-    ctx.fillStyle = '#ef4444';
-    ctx.font = 'bold 11px sans-serif';
-    ctx.textAlign = lowIdx < data.length / 2 ? 'left' : 'right';
-    ctx.fillText(`Low: $${prices[lowIdx].toFixed(2)}`, lowX + (lowIdx < data.length / 2 ? 10 : -10), lowY + 18);
-
-    // X-axis labels - quarterly only
-    let lastLabel = '';
-    data.forEach((d, i) => {
-        const dateStr = d.date || d.fiscal_date;
-        const label = dateStr.slice(0, 4) + ' Q' + Math.ceil(parseInt(dateStr.slice(5, 7)) / 3);
-        if (label === lastLabel) return;
-        lastLabel = label;
-
-        const x = getX(i);
-        ctx.fillStyle = '#64748b';
-        ctx.font = '10px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(label, x, padding.top + chartHeight + 20);
-    });
-
-    // Current price label at end
-    const lastPrice = prices[prices.length - 1];
-    const lastX = points[points.length - 1].x;
-    const lastY = points[points.length - 1].y;
-
-    ctx.fillStyle = '#10b981';
-    ctx.font = 'bold 12px sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText(`$${lastPrice.toFixed(2)}`, lastX + 8, lastY + 4);
-
-    // Legend
-    ctx.fillStyle = '#10b981';
-    ctx.fillRect(padding.left, 15, 12, 12);
-    ctx.fillStyle = '#e2e8f0';
-    ctx.font = '12px sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText('Price', padding.left + 18, 26);
     
-    // Click/tap hint
-    ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
-    ctx.font = '11px sans-serif';
-    ctx.textAlign = 'right';
-    const hintText = window.innerWidth <= 768 ? 'Tap to expand' : 'Click to expand';
-    ctx.fillText(hintText, padding.left + chartWidth, 26);
+    // Animate the line drawing
+    const pathLength = points.length * spacing; // Approximate length
+    const duration = 1000; // 1 second animation
+    const startTime = performance.now();
     
-    // Setup tooltip interactions
-    setupChartTooltip(canvas, data, points, prices, getX, padding, chartWidth, chartHeight);
+    function animateLine(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // Ease out cubic
+        const easeProgress = 1 - Math.pow(1 - progress, 3);
+        
+        ctx.save();
+        ctx.beginPath();
+        
+        // Draw partial path based on progress
+        const drawCount = Math.floor(points.length * easeProgress);
+        if (drawCount > 0) {
+            ctx.moveTo(points[0].x, points[0].y);
+            
+            for (let i = 0; i < Math.min(drawCount, points.length - 1); i++) {
+                const curr = points[i];
+                const next = points[i + 1];
+                const cp1x = curr.x + (next.x - curr.x) * 0.3;
+                const cp1y = curr.y;
+                const cp2x = next.x - (next.x - curr.x) * 0.3;
+                const cp2y = next.y;
+                ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, next.x, next.y);
+            }
+            
+            ctx.stroke();
+        }
+        ctx.restore();
+        
+        if (progress < 1) {
+            requestAnimationFrame(animateLine);
+        } else {
+            // Draw complete line
+            ctx.stroke(path);
+            // Draw markers after line animation completes
+            drawMarkersAndLabels();
+        }
+    }
+    
+    requestAnimationFrame(animateLine);
+
+    // Store reference to draw markers after animation
+    function drawMarkersAndLabels() {
+        // Find high and low points
+        let highIdx = 0, lowIdx = 0;
+        prices.forEach((p, i) => {
+            if (p > prices[highIdx]) highIdx = i;
+            if (p < prices[lowIdx]) lowIdx = i;
+        });
+
+        // Draw high point marker
+        const highX = getX(highIdx);
+        const highY = getY(prices[highIdx]);
+
+        ctx.fillStyle = '#22c55e';
+        ctx.beginPath();
+        ctx.arc(highX, highY, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // High label
+        ctx.fillStyle = '#22c55e';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.textAlign = highIdx < data.length / 2 ? 'left' : 'right';
+        ctx.fillText(`High: $${prices[highIdx].toFixed(2)}`, highX + (highIdx < data.length / 2 ? 10 : -10), highY - 10);
+
+        // Draw low point marker
+        const lowX = getX(lowIdx);
+        const lowY = getY(prices[lowIdx]);
+
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.arc(lowX, lowY, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Low label
+        ctx.fillStyle = '#ef4444';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.textAlign = lowIdx < data.length / 2 ? 'left' : 'right';
+        ctx.fillText(`Low: $${prices[lowIdx].toFixed(2)}`, lowX + (lowIdx < data.length / 2 ? 10 : -10), lowY + 18);
+        
+        // X-axis labels - quarterly only
+        let lastLabel = '';
+        data.forEach((d, i) => {
+            const dateStr = d.date || d.fiscal_date;
+            const label = dateStr.slice(0, 4) + ' Q' + Math.ceil(parseInt(dateStr.slice(5, 7)) / 3);
+            if (label === lastLabel) return;
+            lastLabel = label;
+
+            const x = getX(i);
+            ctx.fillStyle = '#64748b';
+            ctx.font = '10px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(label, x, padding.top + chartHeight + 20);
+        });
+
+        // Current price label at end
+        const lastPrice = prices[prices.length - 1];
+        const lastX = points[points.length - 1].x;
+        const lastY = points[points.length - 1].y;
+
+        ctx.fillStyle = '#10b981';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(`$${lastPrice.toFixed(2)}`, lastX + 8, lastY + 4);
+
+        // Legend
+        ctx.fillStyle = '#10b981';
+        ctx.fillRect(padding.left, 15, 12, 12);
+        ctx.fillStyle = '#e2e8f0';
+        ctx.font = '12px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText('Price', padding.left + 18, 26);
+        
+        // Click/tap hint
+        ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+        ctx.font = '11px sans-serif';
+        ctx.textAlign = 'right';
+        const hintText = window.innerWidth <= 768 ? 'Tap to expand' : 'Click to expand';
+        ctx.fillText(hintText, padding.left + chartWidth, 26);
+        
+        // Setup tooltip interactions
+        setupChartTooltip(canvas, data, points, prices, getX, padding, chartWidth, chartHeight);
+    }
 }
 
 // Chart tooltip helper function
