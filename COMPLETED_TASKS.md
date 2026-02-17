@@ -390,6 +390,31 @@ header {
 - Modern, premium feel like iOS/macOS native apps
 - Smooth transition when scrolling past content
 
+### ✅ Monospaced Font for Numeric Values
+
+**Status:** Completed and deployed
+
+**Changes Made:**
+1. Added monospace font stack to all `.metric-value` elements
+2. Added tabular-nums to ensure numbers align properly
+3. Applied to all specific metric ID elements (price, ratios, percentages, etc.)
+4. Slight negative letter-spacing for tighter number display
+
+**CSS Added:**
+```css
+.metric-value {
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Consolas', monospace;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.5px;
+}
+```
+
+**Visual Impact:**
+- Numbers no longer jump around when changing (e.g., $417.44 to $418.12)
+- All digits take up same width (tabular nums)
+- Looks more like financial terminals/Bloomberg
+- Cleaner, more professional data display
+
 ---
 
 ## Summary of Completed Work (While Palmer Sleeps)

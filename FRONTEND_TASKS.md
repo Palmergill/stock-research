@@ -43,10 +43,10 @@
 - No monospaced font for numbers (they jump around)
 
 **Tasks:**
-- [ ] Add monospaced font (SF Mono, JetBrains Mono) for all numeric values
+- [x] ~~Add monospaced font (SF Mono, JetBrains Mono) for all numeric values~~ ✓ Completed - see [COMPLETED_TASKS.md](./COMPLETED_TASKS.md)
 - [ ] Increase contrast between label (11px muted) and value (18px)
 - [ ] Add text-transform and letter-spacing to section headers
-- [ ] Implement tabular-nums for aligned number display
+- [x] ~~Implement tabular-nums for aligned number display~~ ✓ Completed (included with monospace fonts)
 
 ---
 
