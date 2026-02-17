@@ -504,9 +504,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Search handler
-    searchForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        console.log('Search form submitted');
+    async function handleSearch(e) {
+        if (e) e.preventDefault();
+        console.log('Search triggered');
         const ticker = tickerInput.value.trim().toUpperCase();
         console.log('Ticker:', ticker);
         if (!ticker) {
@@ -515,7 +515,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         // Visual feedback
-        searchBtn.textContent = 'Loading...';
+        const btnText = searchBtn.querySelector('.btn-text');
+        const btnSpinner = searchBtn.querySelector('.btn-spinner');
+        if (btnText) btnText.classList.add('hidden');
+        if (btnSpinner) btnSpinner.classList.remove('hidden');
+        searchBtn.disabled = true;
         
         try {
             await loadStock(ticker);
@@ -523,8 +527,18 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Error in loadStock:', err);
             alert('Error loading stock: ' + err.message);
         } finally {
-            searchBtn.textContent = 'Search';
+            if (btnText) btnText.classList.remove('hidden');
+            if (btnSpinner) btnSpinner.classList.add('hidden');
+            searchBtn.disabled = false;
         }
+    }
+    
+    searchForm.addEventListener('submit', handleSearch);
+    
+    // Also attach click handler directly to search button for mobile
+    searchBtn.addEventListener('click', (e) => {
+        console.log('Search button clicked');
+        handleSearch(e);
     });
 
     // Retry handler
