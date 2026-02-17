@@ -41,6 +41,18 @@
 
         <main id="main">
             <div id="loading" class="loading hidden">
+                <!-- Progress Bar -->
+                <div class="progress-container">
+                    <div class="progress-bar" id="loadingProgress">
+                        <div class="progress-fill"></div>
+                    </div>
+                    <div class="progress-steps">
+                        <span class="progress-step active" data-step="1">Fetching stock data...</span>
+                        <span class="progress-step" data-step="2">Loading price history...</span>
+                        <span class="progress-step" data-step="3">Rendering charts...</span>
+                    </div>
+                </div>
+                
                 <!-- Skeleton Header -->
                 <div class="card company-header skeleton">
                     <div class="company-header-content">
@@ -110,6 +122,9 @@
             <div id="error" class="error hidden">
                 <div class="error-icon">⚠️</div>
                 <p id="errorMessage"></p>
+                <div id="retryCountdown" class="retry-countdown hidden">
+                    Retrying in <span class="countdown-seconds">3</span>s...
+                </div>
                 <button id="retryBtn" class="retry-btn">Try Again</button>
             </div>
 
@@ -211,23 +226,32 @@
                         <div class="metrics-grid-compact">
                             <div class="metric" data-trend="neutral" title="What you're paying for each dollar of earnings. Compare to industry peers and historical averages to gauge if the stock is cheap or expensive.">
                                 <span class="metric-label">P/E Ratio</span>
-                                <div class="metric-value-container">
-                                    <span id="peRatio" class="metric-value"></span>
-                                    <span class="metric-trend"></span>
+                                <div class="metric-value-row">
+                                    <div class="metric-value-container">
+                                        <span id="peRatio" class="metric-value"></span>
+                                        <span class="metric-trend"></span>
+                                    </div>
+                                    <canvas class="sparkline" id="peSparkline" width="60" height="20"></canvas>
                                 </div>
                             </div>
                             <div class="metric" data-trend="neutral" title="Year-over-year growth in revenue. Shows whether the business is expanding. Top-line growth is harder to fake than earnings.">
                                 <span class="metric-label">Revenue Growth (YoY)</span>
-                                <div class="metric-value-container">
-                                    <span id="revenueGrowth" class="metric-value"></span>
-                                    <span class="metric-trend"></span>
+                                <div class="metric-value-row">
+                                    <div class="metric-value-container">
+                                        <span id="revenueGrowth" class="metric-value"></span>
+                                        <span class="metric-trend"></span>
+                                    </div>
+                                    <canvas class="sparkline" id="revenueSparkline" width="60" height="20"></canvas>
                                 </div>
                             </div>
                             <div class="metric" data-trend="neutral" title="Cash left after running the business and capital expenditures. Available for dividends, buybacks, debt reduction, or reinvestment. More reliable than net income.">
                                 <span class="metric-label">Free Cash Flow</span>
-                                <div class="metric-value-container">
-                                    <span id="freeCashFlow" class="metric-value"></span>
-                                    <span class="metric-trend"></span>
+                                <div class="metric-value-row">
+                                    <div class="metric-value-container">
+                                        <span id="freeCashFlow" class="metric-value"></span>
+                                        <span class="metric-trend"></span>
+                                    </div>
+                                    <canvas class="sparkline" id="fcfSparkline" width="60" height="20"></canvas>
                                 </div>
                             </div>
                             <div class="metric" data-trend="neutral" title="How leveraged the company is. High debt amplifies returns in good times but can be fatal in downturns. Shows financial risk and flexibility.">

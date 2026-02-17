@@ -509,12 +509,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Retry handler
     retryBtn.addEventListener('click', () => {
+        // Clear any running countdown
+        if (window.currentRetryInterval) {
+            clearInterval(window.currentRetryInterval);
+            window.currentRetryInterval = null;
+        }
+        const retryCountdown = document.getElementById('retryCountdown');
+        if (retryCountdown) retryCountdown.classList.add('hidden');
+        retryBtn.classList.remove('hidden');
+        
         if (currentTicker) {
             loadStock(currentTicker);
         }
     });
+    
+    // Update loading progress bar
+    function updateLoadingProgress(step) {
+        const progressFill = document.querySelector('#loadingProgress .progress-fill');
+        const steps = document.querySelectorAll('.progress-step');
+        
+        if (progressFill) {
+            const progress = (step / 3) * 100;
+            progressFill.style.width = `${progress}%`;
+        }
+        
+        steps.forEach((s, index) => {
+            s.classList.remove('active', 'completed');
+            if (index + 1 === step) {
+                s.classList.add('active');
+            } else if (index + 1 < step) {
+                s.classList.add('completed');
+            }
+        });
+    }
 
-    async function loadStock(ticker, forceRefresh = false) {
+    async function loadStock(ticker, forceRefresh = false, attempt = 1) {
         currentTicker = ticker;
         
         // Show loading
@@ -531,6 +560,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (inputSpinner) inputSpinner.classList.remove('hidden');
         if (btnSpinner) btnSpinner.classList.remove('hidden');
         searchBtn.classList.add('loading');
+        
+        // Update progress bar
+        updateLoadingProgress(1);
         
         const url = `${API_BASE}/stocks/${ticker}?refresh=${forceRefresh}`;
         
@@ -549,6 +581,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(errorDetail);
             }
             
+            // Update progress - step 1 complete
+            updateLoadingProgress(2);
+            
             const data = await response.json();
             console.log('Received data:', data);
             
@@ -557,11 +592,47 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error('Invalid data structure received from server');
             }
             
+            // Fetch price history
+            await fetchPriceHistory(ticker);
+            
+            // Update progress - step 2 complete
+            updateLoadingProgress(3);
+            
             displayResults(data);
             
         } catch (err) {
             loading.classList.add('hidden');
             error.classList.remove('hidden');
+            
+            // Auto-retry logic (max 3 attempts)
+            if (attempt < 3) {
+                const retryCountdown = document.getElementById('retryCountdown');
+                const countdownSpan = retryCountdown?.querySelector('.countdown-seconds');
+                const retryBtn = document.getElementById('retryBtn');
+                
+                if (retryCountdown && countdownSpan) {
+                    retryCountdown.classList.remove('hidden');
+                    if (retryBtn) retryBtn.classList.add('hidden');
+                    
+                    let seconds = 3;
+                    countdownSpan.textContent = seconds;
+                    
+                    const countdownInterval = setInterval(() => {
+                        seconds--;
+                        countdownSpan.textContent = seconds;
+                        
+                        if (seconds <= 0) {
+                            clearInterval(countdownInterval);
+                            retryCountdown.classList.add('hidden');
+                            if (retryBtn) retryBtn.classList.remove('hidden');
+                            loadStock(ticker, forceRefresh, attempt + 1);
+                        }
+                    }, 1000);
+                    
+                    // Store interval ID so it can be cleared if user clicks retry manually
+                    window.currentRetryInterval = countdownInterval;
+                }
+            }
             
             // Show user-friendly error
             let displayError = err.message;
@@ -662,6 +733,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Calculate and display trends based on earnings data
         calculateAndDisplayTrends(data.earnings || []);
+        
+        // Draw sparklines for key metrics
+        drawSparklines(data.earnings || []);
         
         // Valuation Metrics (with flash animation on change)
         updateValueWithFlash('psRatio', summary.ps_ratio, formatNumber);
@@ -945,9 +1019,48 @@ function drawEPSChart(data) {
         const barHeight = ((d.reported_eps - minVal) / (maxVal - minVal)) * chartHeight;
         const y = padding.top + chartHeight - barHeight;
         
-        // Bar
-        ctx.fillStyle = '#3b82f6';
+        // Determine if beat or miss
+        const surprise = d.reported_eps && d.estimated_eps ? 
+            ((d.reported_eps - d.estimated_eps) / Math.abs(d.estimated_eps)) * 100 : null;
+        const isBeat = surprise && surprise > 0;
+        const isMiss = surprise && surprise < 0;
+        
+        // Bar color based on beat/miss
+        if (isBeat) {
+            ctx.fillStyle = '#10b981'; // Green for beat
+        } else if (isMiss) {
+            ctx.fillStyle = '#ef4444'; // Red for miss
+        } else {
+            ctx.fillStyle = '#3b82f6'; // Blue for neutral
+        }
         ctx.fillRect(x, y, barWidth, barHeight);
+        
+        // Add surprise indicator above bar
+        if (surprise !== null) {
+            const surpriseY = y - 25;
+            const surpriseText = isBeat ? `+${surprise.toFixed(1)}%` : `${surprise.toFixed(1)}%`;
+            
+            // Background pill
+            ctx.fillStyle = isBeat ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)';
+            ctx.beginPath();
+            ctx.roundRect(x + barWidth/2 - 25, surpriseY - 8, 50, 16, 8);
+            ctx.fill();
+            
+            // Text
+            ctx.fillStyle = isBeat ? '#10b981' : '#ef4444';
+            ctx.font = 'bold 10px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(surpriseText, x + barWidth / 2, surpriseY + 3);
+            
+            // Beat/Miss icon
+            ctx.font = '12px sans-serif';
+            const iconY = surpriseY - 12;
+            if (isBeat) {
+                ctx.fillText('▲', x + barWidth / 2, iconY);
+            } else if (isMiss) {
+                ctx.fillText('▼', x + barWidth / 2, iconY);
+            }
+        }
         
         // X label
         ctx.fillStyle = '#94a3b8';
@@ -1305,6 +1418,81 @@ function drawPEChart(data, priceHistory = null) {
         ctx.textAlign = 'center';
         ctx.fillText(d.fiscal_date.slice(0, 7), x, padding.top + chartHeight + 20);
     });
+}
+
+function drawSparklines(earnings) {
+    if (!earnings || earnings.length < 2) return;
+    
+    // Sort by date (oldest first)
+    const sorted = [...earnings].sort((a, b) => new Date(a.fiscal_date) - new Date(b.fiscal_date));
+    
+    // Draw P/E sparkline
+    const peCanvas = document.getElementById('peSparkline');
+    if (peCanvas) {
+        const peData = sorted.map(e => e.pe_ratio).filter(v => v != null);
+        if (peData.length >= 2) {
+            drawSparkline(peCanvas, peData, '#3b82f6');
+        }
+    }
+    
+    // Draw Revenue Growth sparkline
+    const revCanvas = document.getElementById('revenueSparkline');
+    if (revCanvas) {
+        const revData = sorted.map(e => e.revenue_growth).filter(v => v != null);
+        if (revData.length >= 2) {
+            drawSparkline(revCanvas, revData, '#10b981');
+        }
+    }
+    
+    // Draw FCF sparkline
+    const fcfCanvas = document.getElementById('fcfSparkline');
+    if (fcfCanvas) {
+        const fcfData = sorted.map(e => e.free_cash_flow).filter(v => v != null);
+        if (fcfData.length >= 2) {
+            // Normalize FCF data for better visualization
+            const maxFCF = Math.max(...fcfData.map(Math.abs));
+            const normalizedFCF = fcfData.map(v => v / maxFCF);
+            drawSparkline(fcfCanvas, normalizedFCF, '#8b5cf6');
+        }
+    }
+}
+
+function drawSparkline(canvas, data, color) {
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+    
+    ctx.clearRect(0, 0, width, height);
+    
+    const minVal = Math.min(...data);
+    const maxVal = Math.max(...data);
+    const range = maxVal - minVal || 1;
+    
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    
+    ctx.beginPath();
+    data.forEach((val, i) => {
+        const x = (i / (data.length - 1)) * width;
+        const y = height - ((val - minVal) / range) * height * 0.8 - height * 0.1;
+        
+        if (i === 0) {
+            ctx.moveTo(x, y);
+        } else {
+            ctx.lineTo(x, y);
+        }
+    });
+    ctx.stroke();
+    
+    // Draw end dot
+    const lastX = width;
+    const lastY = height - ((data[data.length - 1] - minVal) / range) * height * 0.8 - height * 0.1;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(lastX - 3, lastY, 3, 0, Math.PI * 2);
+    ctx.fill();
 }
 
 function drawPriceChart(data) {
