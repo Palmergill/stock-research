@@ -983,12 +983,20 @@ document.addEventListener('DOMContentLoaded', () => {
     function openChartModal() {
         if (!window.lastPriceHistory && !window.lastChartData) return;
         
+        // Use bottom sheet on mobile
+        const isMobile = window.innerWidth <= 768;
+        if (isMobile) {
+            chartModal.classList.add('bottom-sheet');
+        } else {
+            chartModal.classList.remove('bottom-sheet');
+        }
+        
         chartModal.classList.remove('hidden');
         document.body.classList.add('chart-modal-open');
         document.body.style.overflow = 'hidden'; // Prevent background scrolling
         
-        // Try to lock to landscape on mobile
-        if (screen.orientation && screen.orientation.lock) {
+        // Try to lock to landscape on mobile (only for non-bottom-sheet)
+        if (!isMobile && screen.orientation && screen.orientation.lock) {
             originalOrientation = screen.orientation.type;
             screen.orientation.lock('landscape').catch(() => {
                 // Lock not supported or failed, CSS rotation will handle it
@@ -1102,14 +1110,49 @@ function drawEPSChart(data) {
         const isMiss = surprise && surprise < 0;
         
         // Bar color based on beat/miss
+        let barColor;
         if (isBeat) {
-            ctx.fillStyle = '#10b981'; // Green for beat
+            barColor = '#10b981'; // Green for beat
         } else if (isMiss) {
-            ctx.fillStyle = '#ef4444'; // Red for miss
+            barColor = '#ef4444'; // Red for miss
         } else {
-            ctx.fillStyle = '#3b82f6'; // Blue for neutral
+            barColor = '#3b82f6'; // Blue for neutral
         }
+        ctx.fillStyle = barColor;
         ctx.fillRect(x, y, barWidth, barHeight);
+        
+        // Add pattern overlay for accessibility (color blindness)
+        if (isBeat) {
+            // Diagonal stripes for beat
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(x, y, barWidth, barHeight);
+            ctx.clip();
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.lineWidth = 2;
+            for (let i = -barHeight; i < barWidth; i += 6) {
+                ctx.beginPath();
+                ctx.moveTo(x + i, y + barHeight);
+                ctx.lineTo(x + i + barHeight, y);
+                ctx.stroke();
+            }
+            ctx.restore();
+        } else if (isMiss) {
+            // Dots for miss
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(x, y, barWidth, barHeight);
+            ctx.clip();
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            for (let dx = 4; dx < barWidth; dx += 8) {
+                for (let dy = 4; dy < barHeight; dy += 8) {
+                    ctx.beginPath();
+                    ctx.arc(x + dx, y + dy, 1.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            ctx.restore();
+        }
         
         // Add surprise indicator above bar
         if (surprise !== null) {
@@ -1490,6 +1533,27 @@ function drawPEChart(data, priceHistory = null) {
     
     const maxPE = Math.max(...pes) * 1.1;
     const minPE = Math.min(...pes) * 0.9;
+    
+    // Industry average P/E reference line (S&P 500 ~20-25)
+    const industryAvgPE = 22;
+    if (industryAvgPE >= minPE && industryAvgPE <= maxPE) {
+        const avgY = padding.top + chartHeight - ((industryAvgPE - minPE) / (maxPE - minPE)) * chartHeight;
+        ctx.save();
+        ctx.strokeStyle = '#f59e0b'; // Orange for benchmark
+        ctx.lineWidth = 2;
+        ctx.setLineDash([8, 4]);
+        ctx.beginPath();
+        ctx.moveTo(padding.left, avgY);
+        ctx.lineTo(padding.left + chartWidth, avgY);
+        ctx.stroke();
+        
+        // Label
+        ctx.fillStyle = '#f59e0b';
+        ctx.font = '11px sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText('S&P 500 Avg (~22)', padding.left + chartWidth, avgY - 5);
+        ctx.restore();
+    }
     
     // Grid
     ctx.strokeStyle = '#334155';
