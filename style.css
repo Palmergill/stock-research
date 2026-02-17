@@ -135,6 +135,62 @@ form {
     width: 100%;
 }
 
+/* Input loading spinner */
+.input-spinner {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 20px;
+}
+
+.input-spinner.hidden {
+    display: none;
+}
+
+.spinner-ring {
+    width: 100%;
+    height: 100%;
+    border: 2px solid transparent;
+    border-top-color: var(--accent-blue);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Button loading state */
+#searchBtn {
+    position: relative;
+    min-width: 100px;
+}
+
+#searchBtn .btn-text,
+#searchBtn .btn-spinner {
+    display: inline-block;
+    transition: opacity 0.2s ease;
+}
+
+#searchBtn .btn-spinner {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+}
+
+#searchBtn .btn-spinner.hidden {
+    display: none;
+}
+
+#searchBtn.loading .btn-text {
+    opacity: 0;
+}
+
 /* Suggestions with slide-down animation */
 .suggestions {
     position: absolute;
@@ -818,6 +874,12 @@ button .ripple {
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s;
+    position: relative;
+    min-width: 90px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
 }
 
 .refresh-btn:hover {
@@ -826,8 +888,28 @@ button .ripple {
 }
 
 .refresh-btn:disabled {
-    opacity: 0.5;
+    opacity: 0.7;
     cursor: not-allowed;
+}
+
+.refresh-btn .refresh-icon,
+.refresh-btn .refresh-text {
+    transition: opacity 0.2s ease;
+}
+
+.refresh-btn .refresh-spinner {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+}
+
+.refresh-btn .refresh-spinner.hidden {
+    display: none;
+}
+
+.refresh-btn.loading .refresh-icon,
+.refresh-btn.loading .refresh-text {
+    opacity: 0;
 }
 
 /* Tabs */
@@ -1226,10 +1308,16 @@ canvas {
     display: flex;
     align-items: center;
     justify-content: center;
+    opacity: 1;
+    transition: opacity 0.3s ease;
 }
 
 .chart-modal.hidden {
     display: none;
+}
+
+.chart-modal.closing {
+    opacity: 0;
 }
 
 .chart-modal-backdrop {
@@ -1240,6 +1328,14 @@ canvas {
     bottom: 0;
     background: rgba(0, 0, 0, 0.85);
     cursor: pointer;
+    backdrop-filter: blur(0px);
+    -webkit-backdrop-filter: blur(0px);
+    transition: backdrop-filter 0.3s ease, -webkit-backdrop-filter 0.3s ease;
+}
+
+.chart-modal:not(.closing) .chart-modal-backdrop {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 
 .chart-modal-content {
@@ -1252,18 +1348,73 @@ canvas {
     display: flex;
     flex-direction: column;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-    animation: modalSlideIn 0.2s ease-out;
+    animation: modalSlideIn 0.4s var(--ease-spring);
+}
+
+.chart-modal.closing .chart-modal-content {
+    animation: modalSlideOut 0.2s ease-in forwards;
 }
 
 @keyframes modalSlideIn {
-    from {
+    0% {
         opacity: 0;
-        transform: scale(0.95);
+        transform: scale(0.9) translateY(20px);
     }
-    to {
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+@keyframes modalSlideOut {
+    0% {
         opacity: 1;
         transform: scale(1);
     }
+    100% {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+}
+
+/* Staggered content animation */
+.chart-modal-header {
+    animation: fadeSlideDown 0.3s var(--ease-out) 0.1s both;
+}
+
+.chart-modal-body {
+    animation: fadeSlideUp 0.3s var(--ease-out) 0.2s both;
+}
+
+.close-modal-btn {
+    animation: fadeIn 0.2s var(--ease-out) 0.3s both;
+}
+
+@keyframes fadeSlideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 .chart-modal-header {

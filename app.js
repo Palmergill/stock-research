@@ -373,13 +373,17 @@ document.addEventListener('DOMContentLoaded', () => {
     if (refreshBtn) {
         refreshBtn.addEventListener('click', async () => {
             if (currentTicker) {
+                const spinner = refreshBtn.querySelector('.refresh-spinner');
                 refreshBtn.disabled = true;
-                refreshBtn.textContent = 'Refreshing...';
+                refreshBtn.classList.add('loading');
+                if (spinner) spinner.classList.remove('hidden');
+                
                 try {
                     await loadStock(currentTicker, true); // force refresh
                 } finally {
                     refreshBtn.disabled = false;
-                    refreshBtn.textContent = '↻ Refresh';
+                    refreshBtn.classList.remove('loading');
+                    if (spinner) spinner.classList.add('hidden');
                 }
             }
         });
@@ -479,6 +483,13 @@ document.addEventListener('DOMContentLoaded', () => {
         results.classList.add('hidden');
         searchBtn.disabled = true;
         
+        // Show loading spinners
+        const inputSpinner = document.getElementById('inputSpinner');
+        const btnSpinner = document.querySelector('#searchBtn .btn-spinner');
+        if (inputSpinner) inputSpinner.classList.remove('hidden');
+        if (btnSpinner) btnSpinner.classList.remove('hidden');
+        searchBtn.classList.add('loading');
+        
         const url = `${API_BASE}/stocks/${ticker}?refresh=${forceRefresh}`;
         
         try {
@@ -522,6 +533,13 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Load error:', err);
         } finally {
             searchBtn.disabled = false;
+            
+            // Hide loading spinners
+            const inputSpinner = document.getElementById('inputSpinner');
+            const btnSpinner = document.querySelector('#searchBtn .btn-spinner');
+            if (inputSpinner) inputSpinner.classList.add('hidden');
+            if (btnSpinner) btnSpinner.classList.add('hidden');
+            searchBtn.classList.remove('loading');
         }
     }
 
@@ -815,15 +833,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function closeChartModal() {
-        chartModal.classList.add('hidden');
-        document.body.classList.remove('chart-modal-open');
-        document.body.style.overflow = ''; // Restore scrolling
+        // Add closing class for exit animation
+        chartModal.classList.add('closing');
         
-        // Unlock orientation if we locked it
-        if (screen.orientation && screen.orientation.unlock && originalOrientation) {
-            screen.orientation.unlock();
-            originalOrientation = null;
-        }
+        // Wait for animation to complete before hiding
+        setTimeout(() => {
+            chartModal.classList.add('hidden');
+            chartModal.classList.remove('closing');
+            document.body.classList.remove('chart-modal-open');
+            document.body.style.overflow = ''; // Restore scrolling
+            
+            // Unlock orientation if we locked it
+            if (screen.orientation && screen.orientation.unlock && originalOrientation) {
+                screen.orientation.unlock();
+                originalOrientation = null;
+            }
+        }, 200);
     }
 
     // Chart drawing functions

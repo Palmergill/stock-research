@@ -22,12 +22,20 @@
                             placeholder="Search ticker or company name..." 
                             autocomplete="off"
                         >
+                        <div class="input-spinner hidden" id="inputSpinner">
+                            <div class="spinner-ring"></div>
+                        </div>
                         <div class="input-underline"></div>
                         <div class="input-underline-focus"></div>
                     </div>
                     <div id="searchSuggestions" class="suggestions hidden"></div>
                 </div>
-                <button type="submit" id="searchBtn">Search</button>
+                <button type="submit" id="searchBtn">
+                    <span class="btn-text">Search</span>
+                    <span class="btn-spinner hidden">
+                        <div class="spinner-ring"></div>
+                    </span>
+                </button>
             </form>
         </header>
 
@@ -161,7 +169,11 @@
                             <span id="companyTicker" class="ticker"></span>
                         </div>
                         <button id="refreshBtn" class="refresh-btn" title="Refresh data">
-                            ↻ Refresh
+                            <span class="refresh-icon">↻</span>
+                            <span class="refresh-text">Refresh</span>
+                            <span class="refresh-spinner hidden">
+                                <div class="spinner-ring"></div>
+                            </span>
                         </button>
                     </div>
                 </div>
