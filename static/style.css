@@ -521,6 +521,57 @@ button .ripple {
     min-height: 400px;
 }
 
+/* Category Color Coding for Metric Sections */
+.metrics-key h3 {
+    /* Key Metrics - Blue accent */
+    color: var(--accent-blue);
+}
+
+.metrics-key .metric:hover {
+    background: rgba(59, 130, 246, 0.08);
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.15);
+}
+
+.metrics-valuation h3 {
+    /* Valuation Metrics - Purple accent */
+    color: var(--accent-purple);
+}
+
+.metrics-valuation .metric:hover {
+    background: rgba(139, 92, 246, 0.08);
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.15);
+}
+
+.metrics-profitability h3 {
+    /* Profitability - Green accent */
+    color: var(--accent-green);
+}
+
+.metrics-profitability .metric:hover {
+    background: rgba(16, 185, 129, 0.08);
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.15);
+}
+
+.metrics-health h3 {
+    /* Financial Health - Cyan accent */
+    color: var(--accent-cyan);
+}
+
+.metrics-health .metric:hover {
+    background: rgba(6, 182, 212, 0.08);
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0.15);
+}
+
+.metrics-market h3 {
+    /* Market Data - Orange accent */
+    color: var(--accent-orange);
+}
+
+.metrics-market .metric:hover {
+    background: rgba(245, 158, 11, 0.08);
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.15);
+}
+
 /* Mobile adjustments for tab indicator */
 @media (max-width: 768px) {
     .tab-indicator {
