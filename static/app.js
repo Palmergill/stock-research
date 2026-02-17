@@ -1922,4 +1922,106 @@ function drawFullScreenPriceChart(data) {
         ctx.fillText(`${changeSymbol}${change.toFixed(2)}%`, padding.left + (isMobile ? 70 : 100), isMobile ? 26 : 30);
     }
 }
+
+    // Pull-to-refresh for mobile
+    function initPullToRefresh() {
+        const pullThreshold = 100;
+        let startY = 0;
+        let currentY = 0;
+        let isPulling = false;
+        let refreshIndicator = null;
+        
+        // Only enable on mobile
+        if (window.innerWidth > 768) return;
+        
+        // Create refresh indicator
+        refreshIndicator = document.createElement('div');
+        refreshIndicator.className = 'pull-refresh-indicator';
+        refreshIndicator.innerHTML = '<div class="pull-refresh-spinner"></div><span>Pull to refresh</span>';
+        refreshIndicator.style.cssText = `
+            position: fixed;
+            top: -60px;
+            left: 0;
+            right: 0;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--bg-tertiary);
+            transition: transform 0.2s ease;
+            z-index: 100;
+            font-size: 13px;
+            color: var(--text-muted);
+        `;
+        document.body.appendChild(refreshIndicator);
+        
+        const main = document.getElementById('main');
+        
+        main.addEventListener('touchstart', (e) => {
+            // Only trigger if at top of page
+            if (window.scrollY > 0) return;
+            
+            startY = e.touches[0].clientY;
+            isPulling = true;
+        }, { passive: true });
+        
+        main.addEventListener('touchmove', (e) => {
+            if (!isPulling) return;
+            
+            currentY = e.touches[0].clientY;
+            const diff = currentY - startY;
+            
+            if (diff > 0 && window.scrollY === 0) {
+                // Prevent default scroll when pulling down at top
+                if (diff < pullThreshold) {
+                    e.preventDefault();
+                }
+                
+                // Move indicator
+                const translateY = Math.min(diff * 0.5, pullThreshold);
+                refreshIndicator.style.transform = `translateY(${translateY}px)`;
+                
+                // Update text based on pull distance
+                const span = refreshIndicator.querySelector('span');
+                if (translateY >= pullThreshold * 0.7) {
+                    span.textContent = 'Release to refresh';
+                    refreshIndicator.querySelector('.pull-refresh-spinner').style.animation = 'spin 0.5s linear infinite';
+                } else {
+                    span.textContent = 'Pull to refresh';
+                    refreshIndicator.querySelector('.pull-refresh-spinner').style.animation = 'none';
+                }
+            }
+        }, { passive: false });
+        
+        main.addEventListener('touchend', () => {
+            if (!isPulling) return;
+            
+            const diff = currentY - startY;
+            
+            if (diff > pullThreshold * 0.7 && currentTicker) {
+                // Trigger refresh
+                refreshIndicator.querySelector('span').textContent = 'Refreshing...';
+                refreshIndicator.style.transform = 'translateY(0)';
+                
+                loadStock(currentTicker, true).then(() => {
+                    // Reset after refresh
+                    setTimeout(() => {
+                        refreshIndicator.style.transform = 'translateY(-60px)';
+                    }, 500);
+                });
+            } else {
+                // Reset without refreshing
+                refreshIndicator.style.transform = 'translateY(-60px)';
+            }
+            
+            isPulling = false;
+            startY = 0;
+            currentY = 0;
+        });
+    }
+    
+    // Initialize pull-to-refresh on mobile
+    initPullToRefresh();
 });
