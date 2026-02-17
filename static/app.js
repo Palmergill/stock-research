@@ -1291,7 +1291,7 @@ function drawPriceChart(data) {
             if (p < prices[lowIdx]) lowIdx = i;
         });
 
-        // Draw high point marker
+        // Draw high point marker on canvas
         const highX = getX(highIdx);
         const highY = getY(prices[highIdx]);
 
@@ -1302,6 +1302,33 @@ function drawPriceChart(data) {
         ctx.strokeStyle = '#1e293b';
         ctx.lineWidth = 2;
         ctx.stroke();
+        
+        // Position HTML overlay markers
+        const highMarker = document.getElementById('highMarker');
+        const lowMarker = document.getElementById('lowMarker');
+        const dpr = window.devicePixelRatio || 1;
+        
+        if (highMarker) {
+            const canvasRect = canvas.getBoundingClientRect();
+            const scaleX = canvasRect.width / canvas.width;
+            const scaleY = canvasRect.height / canvas.height;
+            
+            highMarker.style.left = `${(highX / dpr) * scaleX}px`;
+            highMarker.style.top = `${(highY / dpr) * scaleY}px`;
+            highMarker.classList.add('visible');
+        }
+        
+        if (lowMarker) {
+            const canvasRect = canvas.getBoundingClientRect();
+            const scaleX = canvasRect.width / canvas.width;
+            const scaleY = canvasRect.height / canvas.height;
+            const lowX = getX(lowIdx);
+            const lowY = getY(prices[lowIdx]);
+            
+            lowMarker.style.left = `${(lowX / dpr) * scaleX}px`;
+            lowMarker.style.top = `${(lowY / dpr) * scaleY}px`;
+            lowMarker.classList.add('visible');
+        }
 
         // High label
         ctx.fillStyle = '#22c55e';
@@ -1388,15 +1415,19 @@ function setupChartTooltip(canvas, data, points, values, getX, padding, chartWid
     const ctx = newCanvas.getContext('2d');
     const dpr = window.devicePixelRatio || 1;
     
+    // Get indicator line element
+    const indicatorLine = document.getElementById('chartIndicatorLine');
+    
     newCanvas.addEventListener('mousemove', (e) => {
         const rect = newCanvas.getBoundingClientRect();
-        const x = (e.clientX - rect.left) * dpr;
-        const y = (e.clientY - rect.top) * dpr;
+        const mouseX = (e.clientX - rect.left) * dpr;
+        const mouseY = (e.clientY - rect.top) * dpr;
         
         // Check if within chart area
-        if (x < padding.left || x > padding.left + chartWidth ||
-            y < padding.top || y > padding.top + chartHeight) {
+        if (mouseX < padding.left || mouseX > padding.left + chartWidth ||
+            mouseY < padding.top || mouseY > padding.top + chartHeight) {
             tooltip.classList.add('hidden');
+            if (indicatorLine) indicatorLine.classList.add('hidden');
             return;
         }
         
@@ -1405,7 +1436,7 @@ function setupChartTooltip(canvas, data, points, values, getX, padding, chartWid
         let minDist = Infinity;
         
         points.forEach((point, i) => {
-            const dist = Math.abs(point.x - x);
+            const dist = Math.abs(point.x - mouseX);
             if (dist < minDist) {
                 minDist = dist;
                 nearestIdx = i;
@@ -1415,6 +1446,7 @@ function setupChartTooltip(canvas, data, points, values, getX, padding, chartWid
         // Only show if close enough (within 30px)
         if (minDist > 30 * dpr) {
             tooltip.classList.add('hidden');
+            if (indicatorLine) indicatorLine.classList.add('hidden');
             return;
         }
         
@@ -1434,12 +1466,18 @@ function setupChartTooltip(canvas, data, points, values, getX, padding, chartWid
         tooltip.style.top = `${tooltipY}px`;
         tooltip.classList.remove('hidden');
         
-        // Redraw chart with highlight line
-        // Note: This would need the full redraw function, simplified here
+        // Position vertical indicator line
+        if (indicatorLine) {
+            const pointX = points[nearestIdx].x;
+            const scaleX = rect.width / canvas.width;
+            indicatorLine.style.left = `${(pointX / dpr) * scaleX}px`;
+            indicatorLine.classList.remove('hidden');
+        }
     });
     
     newCanvas.addEventListener('mouseleave', () => {
         tooltip.classList.add('hidden');
+        if (indicatorLine) indicatorLine.classList.add('hidden');
     });
 }
 
