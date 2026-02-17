@@ -142,6 +142,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // Debug: Show that JS is loaded
     console.log('App.js loaded successfully');
     
+    // Debug status display
+    const debugStatus = document.getElementById('debugStatus');
+    function showStatus(msg) {
+        if (debugStatus) {
+            debugStatus.style.display = 'block';
+            debugStatus.textContent = msg;
+        }
+        console.log(msg);
+    }
+    showStatus('JS loaded');
+    
     // Add ripple effect to all buttons
     function createRipple(event) {
         const button = event.currentTarget;
@@ -506,11 +517,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Search handler
     async function handleSearch(e) {
         if (e) e.preventDefault();
-        console.log('Search triggered');
+        showStatus('Search triggered');
         const ticker = tickerInput.value.trim().toUpperCase();
-        console.log('Ticker:', ticker);
+        showStatus('Ticker: ' + ticker);
         if (!ticker) {
-            alert('Please enter a ticker symbol');
+            showStatus('Error: No ticker entered');
             return;
         }
         
@@ -524,8 +535,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             await loadStock(ticker);
         } catch (err) {
-            console.error('Error in loadStock:', err);
-            alert('Error loading stock: ' + err.message);
+            showStatus('Error: ' + err.message);
         } finally {
             if (btnText) btnText.classList.remove('hidden');
             if (btnSpinner) btnSpinner.classList.add('hidden');
@@ -631,7 +641,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function loadStock(ticker, forceRefresh = false, attempt = 1) {
-        console.log('loadStock called with ticker:', ticker);
+        showStatus('Loading ' + ticker + '...');
         currentTicker = ticker;
         
         // Show loading
@@ -771,9 +781,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function displayResults(data) {
-        console.log('displayResults called with:', data);
-        console.log('loading element:', loading);
-        console.log('results element:', results);
+        showStatus('Displaying results for ' + data.ticker);
         
         // Validate data structure
         if (!data || !data.summary) {
@@ -786,6 +794,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         loading.classList.add('hidden');
         results.classList.remove('hidden');
+        
+        // Hide debug status
+        if (debugStatus) debugStatus.style.display = 'none';
         
         // Trigger slide-up animation
         requestAnimationFrame(() => {
