@@ -778,6 +778,111 @@ canvas.dataset.tooltipSetup = 'true';
 
 **Lesson Learned:** Cloning a canvas copies the DOM element but not the rendered bitmap. Use flags to prevent duplicate listeners instead of cloning.
 
+### ✅ Custom Styled Tooltips for Metrics
+
+**Status:** Completed and deployed
+
+**Changes Made:**
+1. Created new `metric-tooltip` element with custom styling
+2. Extract title attributes from metric cards on init
+3. Show custom tooltip on hover with metric name and description
+4. Removed browser default title tooltips
+5. Tooltip positioned intelligently (above by default, below if no space)
+
+**CSS Added:**
+```css
+.metric-tooltip {
+    position: fixed;
+    background: rgba(15, 23, 42, 0.95);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: 8px;
+    padding: 12px 16px;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    max-width: 280px;
+}
+
+.metric-tooltip .tooltip-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent-blue);
+    text-transform: uppercase;
+}
+```
+
+**Visual Impact:**
+- Professional styled tooltips match app theme
+- Smooth fade-in animation
+- Better than browser default tooltips
+- Clear metric name + detailed description
+
+### ✅ Improved Empty State with Trending Stocks
+
+**Status:** Completed and deployed
+
+**Changes Made:**
+1. Added animated chart doodle SVG (line drawing animation)
+2. New headline "Discover Your Next Investment"
+3. Better descriptive text
+4. Added "Trending Now" section with 6 quick-pick stock buttons
+5. Animated dots appear sequentially on the chart doodle
+
+**CSS Animations:**
+```css
+.doodle-line {
+    stroke-dasharray: 200;
+    stroke-dashoffset: 200;
+    animation: draw-line 2s ease-out forwards;
+}
+
+.doodle-dot {
+    opacity: 0;
+    animation: fade-in-dot 0.3s ease-out forwards;
+}
+/* Each dot has staggered delay */
+```
+
+**Visual Impact:**
+- Much more engaging first impression
+- Quick access to popular stocks
+- Animated illustration draws attention
+- Professional onboarding experience
+
+### ✅ Error State Improvements
+
+**Status:** Completed and deployed
+
+**Changes Made:**
+1. Added shake animation when error appears
+2. Added error icon (⚠️) in circular background
+3. Increased padding and improved styling
+4. Better retry button styling
+
+**CSS Added:**
+```css
+.error {
+    animation: shake-error 0.5s ease;
+}
+
+@keyframes shake-error {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+    20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+
+.error-icon {
+    width: 48px;
+    height: 48px;
+    background: rgba(239, 68, 68, 0.2);
+    border-radius: 50%;
+}
+```
+
+**Visual Impact:**
+- Shake animation draws attention to errors
+- Icon makes error state more recognizable
+- More polished error presentation
+
 ---
 
 ## Summary of Completed Work (While Palmer Sleeps)

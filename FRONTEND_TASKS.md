@@ -199,7 +199,7 @@
 - Preview animations
 
 **Tasks:**
-- [ ] Replace title tooltips with custom styled tooltips
+- [x] ~~Replace title tooltips with custom styled tooltips~~ ✓ Completed - see [COMPLETED_TASKS.md](./COMPLETED_TASKS.md)
 - [ ] Add metric card flip animation for extended explanation
 - [ ] Implement peek animation on chart hover
 
@@ -244,8 +244,8 @@
 - Popular stocks quick-pick
 
 **Tasks:**
-- [ ] Add animated illustration (stock chart doodle)
-- [ ] Create trending stocks quick-pick grid
+- [x] ~~Add animated illustration (stock chart doodle)~~ ✓ Completed - see [COMPLETED_TASKS.md](./COMPLETED_TASKS.md)
+- [x] ~~Create trending stocks quick-pick grid~~ ✓ Completed - see [COMPLETED_TASKS.md](./COMPLETED_TASKS.md)
 - [ ] Add feature callouts with icons
 
 ### 6.2 Error States
@@ -256,8 +256,8 @@
 - Retry animation
 
 **Tasks:**
-- [ ] Add error illustration (broken chart icon)
-- [ ] Implement shake animation on error
+- [x] ~~Add error illustration (broken chart icon)~~ ✓ Completed (warning icon instead) - see [COMPLETED_TASKS.md](./COMPLETED_TASKS.md)
+- [x] ~~Implement shake animation on error~~ ✓ Completed - see [COMPLETED_TASKS.md](./COMPLETED_TASKS.md)
 - [ ] Add auto-retry countdown
 
 ### 6.3 Loading States
