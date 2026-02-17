@@ -503,10 +503,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // Search handler
     searchForm.addEventListener('submit', async (e) => {
         e.preventDefault();
+        console.log('Search form submitted');
         const ticker = tickerInput.value.trim().toUpperCase();
+        console.log('Ticker:', ticker);
         if (!ticker) return;
         
-        await loadStock(ticker);
+        try {
+            await loadStock(ticker);
+        } catch (err) {
+            console.error('Error in loadStock:', err);
+        }
     });
 
     // Retry handler
@@ -599,6 +605,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function loadStock(ticker, forceRefresh = false, attempt = 1) {
+        console.log('loadStock called with ticker:', ticker);
         currentTicker = ticker;
         
         // Show loading
@@ -623,9 +630,11 @@ document.addEventListener('DOMContentLoaded', () => {
         updateLoadingProgress(1);
         
         const url = `${API_BASE}/stocks/${ticker}?refresh=${forceRefresh}`;
+        console.log('Fetching URL:', url);
         
         try {
             const response = await fetch(url);
+            console.log('Response status:', response.status);
             
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
@@ -659,6 +668,7 @@ document.addEventListener('DOMContentLoaded', () => {
             displayResults(data);
             
         } catch (err) {
+            console.error('Error in loadStock fetch:', err);
             loading.classList.add('hidden');
             error.classList.remove('hidden');
             
@@ -736,6 +746,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function displayResults(data) {
         console.log('displayResults called with:', data);
+        console.log('loading element:', loading);
+        console.log('results element:', results);
         
         // Validate data structure
         if (!data || !data.summary) {
