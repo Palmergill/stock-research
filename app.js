@@ -1424,81 +1424,71 @@ function setupChartTooltip(canvas, data, points, values, getX, padding, chartWid
     // Use existing canvas - don't clone to preserve drawing
     const dpr = window.devicePixelRatio || 1;
     
-    // Remove existing listeners to prevent duplicates (by replacing with clone)
-    // But first, copy the canvas content to preserve the drawing
-    const canvasData = canvas.toDataURL();
-    const img = new Image();
-    img.onload = () => {
-        const newCanvas = canvas.cloneNode(true);
-        canvas.parentNode.replaceChild(newCanvas, canvas);
-        newCanvas.getContext('2d').drawImage(img, 0, 0);
-        setupChartListeners(newCanvas);
-    };
-    img.src = canvasData;
+    // Check if we already set up listeners on this canvas
+    if (canvas.dataset.tooltipSetup === 'true') return;
+    canvas.dataset.tooltipSetup = 'true';
     
-    function setupChartListeners(chartCanvas) {
-        chartCanvas.addEventListener('mousemove', (e) => {
-            const rect = chartCanvas.getBoundingClientRect();
-            const mouseX = (e.clientX - rect.left) * dpr;
-            const mouseY = (e.clientY - rect.top) * dpr;
-            
-            // Check if within chart area
-            if (mouseX < padding.left || mouseX > padding.left + chartWidth ||
-                mouseY < padding.top || mouseY > padding.top + chartHeight) {
-                tooltip.classList.add('hidden');
-                if (indicatorLine) indicatorLine.classList.add('hidden');
-                return;
-            }
-            
-            // Find nearest data point
-            let nearestIdx = 0;
-            let minDist = Infinity;
-            
-            points.forEach((point, i) => {
-                const dist = Math.abs(point.x - mouseX);
-                if (dist < minDist) {
-                    minDist = dist;
-                    nearestIdx = i;
-                }
-            });
-            
-            // Only show if close enough (within 30px)
-            if (minDist > 30 * dpr) {
-                tooltip.classList.add('hidden');
-                if (indicatorLine) indicatorLine.classList.add('hidden');
-                return;
-            }
-            
-            const dataPoint = data[nearestIdx];
-            const dateStr = dataPoint.date || dataPoint.fiscal_date;
-            const value = dataPoint.close || dataPoint.price;
-            
-            // Update tooltip content
-            tooltipDate.textContent = dateStr;
-            tooltipValue.textContent = `$${value.toFixed(2)}`;
-            
-            // Position tooltip
-            const tooltipX = e.clientX + 15;
-            const tooltipY = e.clientY - 10;
-            
-            tooltip.style.left = `${tooltipX}px`;
-            tooltip.style.top = `${tooltipY}px`;
-            tooltip.classList.remove('hidden');
-            
-            // Position vertical indicator line
-            if (indicatorLine) {
-                const pointX = points[nearestIdx].x;
-                const scaleX = rect.width / chartCanvas.width;
-                indicatorLine.style.left = `${(pointX / dpr) * scaleX}px`;
-                indicatorLine.classList.remove('hidden');
+    canvas.addEventListener('mousemove', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = (e.clientX - rect.left) * dpr;
+        const mouseY = (e.clientY - rect.top) * dpr;
+        
+        // Check if within chart area
+        if (mouseX < padding.left || mouseX > padding.left + chartWidth ||
+            mouseY < padding.top || mouseY > padding.top + chartHeight) {
+            tooltip.classList.add('hidden');
+            if (indicatorLine) indicatorLine.classList.add('hidden');
+            return;
+        }
+        
+        // Find nearest data point
+        let nearestIdx = 0;
+        let minDist = Infinity;
+        
+        points.forEach((point, i) => {
+            const dist = Math.abs(point.x - mouseX);
+            if (dist < minDist) {
+                minDist = dist;
+                nearestIdx = i;
             }
         });
         
-        chartCanvas.addEventListener('mouseleave', () => {
+        // Only show if close enough (within 30px)
+        if (minDist > 30 * dpr) {
             tooltip.classList.add('hidden');
             if (indicatorLine) indicatorLine.classList.add('hidden');
-        });
-    }
+            return;
+        }
+        
+        const dataPoint = data[nearestIdx];
+        const dateStr = dataPoint.date || dataPoint.fiscal_date;
+        const value = dataPoint.close || dataPoint.price;
+        
+        // Update tooltip content
+        tooltipDate.textContent = dateStr;
+        tooltipValue.textContent = `$${value.toFixed(2)}`;
+        
+        // Position tooltip
+        const tooltipX = e.clientX + 15;
+        const tooltipY = e.clientY - 10;
+        
+        tooltip.style.left = `${tooltipX}px`;
+        tooltip.style.top = `${tooltipY}px`;
+        tooltip.classList.remove('hidden');
+        
+        // Position vertical indicator line
+        if (indicatorLine) {
+            const pointX = points[nearestIdx].x;
+            const scaleX = rect.width / canvas.width;
+            indicatorLine.style.left = `${(pointX / dpr) * scaleX}px`;
+            indicatorLine.classList.remove('hidden');
+        }
+    });
+    
+    canvas.addEventListener('mouseleave', () => {
+        tooltip.classList.add('hidden');
+        if (indicatorLine) indicatorLine.classList.add('hidden');
+    });
 }
 
 function drawFullScreenPriceChart(data) {
