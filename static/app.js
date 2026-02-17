@@ -1151,20 +1151,39 @@ function drawFullScreenPriceChart(data) {
     
     // Detect mobile for responsive sizing
     const isMobile = window.innerWidth <= 768;
+    const isPortrait = window.innerHeight > window.innerWidth;
     
-    // Responsive canvas size
-    const canvasWidth = isMobile ? 800 : 1200;
-    const canvasHeight = isMobile ? 500 : 600;
+    // Use smaller dimensions that fit on mobile screens
+    // In portrait: make it a wide but short chart
+    // In landscape: use more of the available space
+    let canvasWidth, canvasHeight;
+    if (isMobile) {
+        if (isPortrait) {
+            // Portrait: landscape-oriented chart (wide, not tall)
+            canvasWidth = Math.min(window.innerWidth * 1.5, 900);
+            canvasHeight = Math.min(window.innerHeight * 0.5, 350);
+        } else {
+            // Landscape
+            canvasWidth = Math.min(window.innerWidth * 0.95, 1000);
+            canvasHeight = Math.min(window.innerHeight * 0.75, 500);
+        }
+    } else {
+        // Desktop
+        canvasWidth = 1000;
+        canvasHeight = 500;
+    }
 
     canvas.width = canvasWidth * dpr;
     canvas.height = canvasHeight * dpr;
     ctx.scale(dpr, dpr);
     canvas.style.width = '100%';
-    canvas.style.height = 'auto';
+    canvas.style.height = '100%';
+    canvas.style.maxWidth = '100%';
+    canvas.style.maxHeight = '100%';
 
     const padding = isMobile 
-        ? { top: 50, right: 50, bottom: 60, left: 60 }
-        : { top: 60, right: 80, bottom: 80, left: 80 };
+        ? { top: 40, right: 50, bottom: 50, left: 60 }
+        : { top: 50, right: 70, bottom: 70, left: 70 };
     const chartWidth = canvasWidth - padding.left - padding.right;
     const chartHeight = canvasHeight - padding.top - padding.bottom;
 
@@ -1311,7 +1330,8 @@ function drawFullScreenPriceChart(data) {
     ctx.fillStyle = '#ef4444';
     ctx.font = isMobile ? 'bold 12px sans-serif' : 'bold 14px sans-serif';
     ctx.textAlign = lowIdx < data.length / 2 ? 'left' : 'right';
-    ctx.fillText(`Low: $${prices[lowIdx].toFixed(2)}`, lowX + (lowIdx < data.length / 2 ? 15 : -15), lowY + 25);
+    const lowLabelOffset = isMobile ? 10 : 15;
+    ctx.fillText(`Low: $${prices[lowIdx].toFixed(2)}`, lowX + (lowIdx < data.length / 2 ? lowLabelOffset : -lowLabelOffset), lowY + (isMobile ? 20 : 25));
 
     // X-axis labels - monthly for more detail (skip some on mobile if too crowded)
     let lastMonth = '';
