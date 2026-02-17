@@ -446,12 +446,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const chartModalBackdrop = document.querySelector('.chart-modal-backdrop');
     const chartModalTitle = document.getElementById('chartModalTitle');
 
-    // Open modal when clicking price chart
-    document.addEventListener('click', (e) => {
-        if (e.target.id === 'priceChart') {
+    // Open modal when clicking price chart (mouse and touch)
+    const priceChartCanvas = document.getElementById('priceChart');
+    if (priceChartCanvas) {
+        priceChartCanvas.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             openChartModal();
-        }
-    });
+        });
+        
+        // Touch support for mobile
+        priceChartCanvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            openChartModal();
+        }, { passive: false });
+    }
 
     // Close modal handlers
     closeChartModalBtn?.addEventListener('click', closeChartModal);
@@ -1104,6 +1113,13 @@ function drawPriceChart(data) {
     ctx.font = '12px sans-serif';
     ctx.textAlign = 'left';
     ctx.fillText('Price', padding.left + 18, 26);
+    
+    // Click/tap hint
+    ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'right';
+    const hintText = window.innerWidth <= 768 ? 'Tap to expand' : 'Click to expand';
+    ctx.fillText(hintText, padding.left + chartWidth, 26);
 }
 
 function drawFullScreenPriceChart(data) {
@@ -1112,27 +1128,35 @@ function drawFullScreenPriceChart(data) {
 
     const ctx = canvas.getContext('2d');
     const dpr = window.devicePixelRatio || 1;
+    
+    // Detect mobile for responsive sizing
+    const isMobile = window.innerWidth <= 768;
+    
+    // Responsive canvas size
+    const canvasWidth = isMobile ? 800 : 1200;
+    const canvasHeight = isMobile ? 500 : 600;
 
-    // Larger canvas for full screen
-    canvas.width = 1200 * dpr;
-    canvas.height = 600 * dpr;
+    canvas.width = canvasWidth * dpr;
+    canvas.height = canvasHeight * dpr;
     ctx.scale(dpr, dpr);
     canvas.style.width = '100%';
     canvas.style.height = 'auto';
 
-    const padding = { top: 60, right: 80, bottom: 80, left: 80 };
-    const chartWidth = 1200 - padding.left - padding.right;
-    const chartHeight = 600 - padding.top - padding.bottom;
+    const padding = isMobile 
+        ? { top: 50, right: 50, bottom: 60, left: 60 }
+        : { top: 60, right: 80, bottom: 80, left: 80 };
+    const chartWidth = canvasWidth - padding.left - padding.right;
+    const chartHeight = canvasHeight - padding.top - padding.bottom;
 
-    ctx.clearRect(0, 0, 1200, 600);
+    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
     // Handle both formats: price_history (close) and earnings (price)
     const prices = data.map(d => d.close || d.price).filter(v => v != null);
     if (prices.length === 0) {
         ctx.fillStyle = '#94a3b8';
-        ctx.font = '16px sans-serif';
+        ctx.font = isMobile ? '14px sans-serif' : '16px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('No price data available', 600, 300);
+        ctx.fillText('No price data available', canvasWidth / 2, canvasHeight / 2);
         return;
     }
 
@@ -1167,9 +1191,9 @@ function drawFullScreenPriceChart(data) {
         ctx.stroke();
 
         ctx.fillStyle = '#64748b';
-        ctx.font = '13px sans-serif';
+        ctx.font = isMobile ? '11px sans-serif' : '13px sans-serif';
         ctx.textAlign = 'right';
-        ctx.fillText(`$${val.toFixed(2)}`, padding.left - 15, y + 5);
+        ctx.fillText(`$${val.toFixed(2)}`, padding.left - 12, y + 4);
     }
 
     ctx.setLineDash([]);
@@ -1234,20 +1258,22 @@ function drawFullScreenPriceChart(data) {
     // Draw high point marker - larger for full screen
     const highX = getX(highIdx);
     const highY = getY(prices[highIdx]);
+    const markerSize = isMobile ? 6 : 7;
+    const labelOffset = isMobile ? 10 : 15;
 
     ctx.fillStyle = '#22c55e';
     ctx.beginPath();
-    ctx.arc(highX, highY, 7, 0, Math.PI * 2);
+    ctx.arc(highX, highY, markerSize, 0, Math.PI * 2);
     ctx.fill();
     ctx.strokeStyle = '#1e293b';
-    ctx.lineWidth = 3;
+    ctx.lineWidth = isMobile ? 2 : 3;
     ctx.stroke();
 
     // High label with background
     ctx.fillStyle = '#22c55e';
-    ctx.font = 'bold 14px sans-serif';
+    ctx.font = isMobile ? 'bold 12px sans-serif' : 'bold 14px sans-serif';
     ctx.textAlign = highIdx < data.length / 2 ? 'left' : 'right';
-    ctx.fillText(`High: $${prices[highIdx].toFixed(2)}`, highX + (highIdx < data.length / 2 ? 15 : -15), highY - 15);
+    ctx.fillText(`High: $${prices[highIdx].toFixed(2)}`, highX + (highIdx < data.length / 2 ? labelOffset : -labelOffset), highY - labelOffset);
 
     // Draw low point marker
     const lowX = getX(lowIdx);
@@ -1255,31 +1281,37 @@ function drawFullScreenPriceChart(data) {
 
     ctx.fillStyle = '#ef4444';
     ctx.beginPath();
-    ctx.arc(lowX, lowY, 7, 0, Math.PI * 2);
+    ctx.arc(lowX, lowY, markerSize, 0, Math.PI * 2);
     ctx.fill();
     ctx.strokeStyle = '#1e293b';
-    ctx.lineWidth = 3;
+    ctx.lineWidth = isMobile ? 2 : 3;
     ctx.stroke();
 
     // Low label
     ctx.fillStyle = '#ef4444';
-    ctx.font = 'bold 14px sans-serif';
+    ctx.font = isMobile ? 'bold 12px sans-serif' : 'bold 14px sans-serif';
     ctx.textAlign = lowIdx < data.length / 2 ? 'left' : 'right';
     ctx.fillText(`Low: $${prices[lowIdx].toFixed(2)}`, lowX + (lowIdx < data.length / 2 ? 15 : -15), lowY + 25);
 
-    // X-axis labels - monthly for more detail
+    // X-axis labels - monthly for more detail (skip some on mobile if too crowded)
     let lastMonth = '';
+    let labelCount = 0;
+    const skipInterval = isMobile && data.length > 100 ? 2 : 1; // Skip every other label on mobile
     data.forEach((d, i) => {
         const dateStr = d.date || d.fiscal_date;
         const month = dateStr.slice(0, 7);  // YYYY-MM
         if (month === lastMonth) return;
         lastMonth = month;
+        labelCount++;
+        
+        // Skip labels to prevent crowding on mobile
+        if (skipInterval > 1 && labelCount % skipInterval !== 0) return;
 
         const x = getX(i);
         ctx.fillStyle = '#64748b';
-        ctx.font = '12px sans-serif';
+        ctx.font = isMobile ? '10px sans-serif' : '12px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(month, x, padding.top + chartHeight + 30);
+        ctx.fillText(month, x, padding.top + chartHeight + (isMobile ? 20 : 30));
     });
 
     // Current price label at end
@@ -1288,17 +1320,18 @@ function drawFullScreenPriceChart(data) {
     const lastY = points[points.length - 1].y;
 
     ctx.fillStyle = '#10b981';
-    ctx.font = 'bold 14px sans-serif';
+    ctx.font = isMobile ? 'bold 12px sans-serif' : 'bold 14px sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText(`$${lastPrice.toFixed(2)}`, lastX + 12, lastY + 5);
+    ctx.fillText(`$${lastPrice.toFixed(2)}`, lastX + 10, lastY + 4);
 
     // Legend
+    const legendSize = isMobile ? 12 : 16;
     ctx.fillStyle = '#10b981';
-    ctx.fillRect(padding.left, 20, 16, 16);
+    ctx.fillRect(padding.left, 16, legendSize, legendSize);
     ctx.fillStyle = '#e2e8f0';
-    ctx.font = '14px sans-serif';
+    ctx.font = isMobile ? '12px sans-serif' : '14px sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText('Price', padding.left + 24, 33);
+    ctx.fillText('Price', padding.left + legendSize + 8, isMobile ? 26 : 30);
 
     // Stats box
     const firstPrice = data[0]?.close || data[0]?.price;
@@ -1308,9 +1341,9 @@ function drawFullScreenPriceChart(data) {
         const changeSymbol = change >= 0 ? '+' : '';
         
         ctx.fillStyle = changeColor;
-        ctx.font = 'bold 14px sans-serif';
+        ctx.font = isMobile ? 'bold 12px sans-serif' : 'bold 14px sans-serif';
         ctx.textAlign = 'left';
-        ctx.fillText(`${changeSymbol}${change.toFixed(2)}%`, padding.left + 100, 33);
+        ctx.fillText(`${changeSymbol}${change.toFixed(2)}%`, padding.left + (isMobile ? 70 : 100), isMobile ? 26 : 30);
     }
 }
 });
