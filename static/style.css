@@ -2175,6 +2175,44 @@ button,
     }
 }
 
+/* Metrics Row Styling */
+.metrics-row-header {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    margin: 16px 0 12px;
+    padding-left: 4px;
+}
+
+.metrics-row-header:first-child {
+    margin-top: 0;
+}
+
+.metrics-row-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(148, 163, 184, 0.2), transparent);
+    margin: 16px 0;
+}
+
+.metrics-row {
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 8px;
+    padding: 12px;
+    margin: 0 -12px;
+}
+
+.metrics-key .metric {
+    background: rgba(59, 130, 246, 0.05);
+    border-radius: 6px;
+    padding: 12px;
+}
+
+.metrics-key .metric:hover {
+    background: rgba(59, 130, 246, 0.1);
+}
+
 /* Pull-to-refresh indicator styles */
 .pull-refresh-spinner {
     width: 20px;

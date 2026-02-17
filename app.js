@@ -1170,26 +1170,92 @@ function drawEPSChart(data) {
         ctx.fill();
     });
     
-    // Legend
-    ctx.fillStyle = '#3b82f6';
-    ctx.fillRect(padding.left, 15, 15, 15);
-    ctx.fillStyle = '#e2e8f0';
-    ctx.font = '12px sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText('Actual EPS', padding.left + 20, 27);
+    // Interactive Legend with click to toggle
+    const legendItems = [
+        { label: 'Actual EPS', color: '#3b82f6', type: 'bar', key: 'actual', visible: true },
+        { label: 'Estimated EPS', color: '#f59e0b', type: 'line', key: 'estimated', visible: true }
+    ];
     
-    ctx.strokeStyle = '#f59e0b';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(padding.left + 100, 22);
-    ctx.lineTo(padding.left + 115, 22);
-    ctx.stroke();
-    ctx.fillStyle = '#f59e0b';
-    ctx.beginPath();
-    ctx.arc(padding.left + 107, 22, 4, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#e2e8f0';
-    ctx.fillText('Estimated EPS', padding.left + 125, 27);
+    // Store legend state on canvas
+    canvas.dataset.legendState = JSON.stringify(legendItems);
+    
+    function drawLegend() {
+        const state = JSON.parse(canvas.dataset.legendState || '[]');
+        let xOffset = padding.left;
+        
+        state.forEach((item, index) => {
+            const alpha = item.visible ? 1 : 0.3;
+            
+            if (item.type === 'bar') {
+                ctx.fillStyle = item.color;
+                ctx.globalAlpha = alpha;
+                ctx.fillRect(xOffset, 15, 15, 15);
+                ctx.globalAlpha = 1;
+            } else {
+                ctx.strokeStyle = item.color;
+                ctx.lineWidth = 3;
+                ctx.globalAlpha = alpha;
+                ctx.beginPath();
+                ctx.moveTo(xOffset, 22);
+                ctx.lineTo(xOffset + 15, 22);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(xOffset + 7, 22, 4, 0, Math.PI * 2);
+                ctx.fillStyle = item.color;
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            }
+            
+            ctx.fillStyle = '#e2e8f0';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'left';
+            ctx.globalAlpha = alpha;
+            ctx.fillText(item.label, xOffset + 20, 27);
+            ctx.globalAlpha = 1;
+            
+            // Store click area for this legend item
+            item.clickArea = { x: xOffset, y: 10, width: 90, height: 25 };
+            
+            xOffset += 110;
+        });
+        
+        canvas.dataset.legendState = JSON.stringify(state);
+    }
+    
+    drawLegend();
+    
+    // Add click handler for legend
+    if (!canvas.dataset.legendClickSetup) {
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const y = (e.clientY - rect.top) * (canvas.height / rect.height);
+            
+            // Check if click is in legend area
+            if (y < 40) {
+                const state = JSON.parse(canvas.dataset.legendState || '[]');
+                let changed = false;
+                
+                state.forEach(item => {
+                    if (item.clickArea && 
+                        x >= item.clickArea.x && 
+                        x <= item.clickArea.x + item.clickArea.width &&
+                        y >= item.clickArea.y && 
+                        y <= item.clickArea.y + item.clickArea.height) {
+                        item.visible = !item.visible;
+                        changed = true;
+                    }
+                });
+                
+                if (changed) {
+                    canvas.dataset.legendState = JSON.stringify(state);
+                    // Redraw chart with new visibility
+                    drawEPSChart(data);
+                }
+            }
+        });
+        canvas.dataset.legendClickSetup = 'true';
+    }
 }
 
 function drawRevenueChart(data) {
@@ -1531,6 +1597,55 @@ function drawSparklines(earnings) {
             drawSparkline(fcfCanvas, normalizedFCF, '#8b5cf6');
         }
     }
+}
+
+// Pattern fill helpers for accessibility
+function createStripePattern(ctx, color) {
+    const patternCanvas = document.createElement('canvas');
+    patternCanvas.width = 8;
+    patternCanvas.height = 8;
+    const pctx = patternCanvas.getContext('2d');
+    
+    pctx.strokeStyle = color;
+    pctx.lineWidth = 1;
+    pctx.beginPath();
+    pctx.moveTo(0, 8);
+    pctx.lineTo(8, 0);
+    pctx.stroke();
+    
+    return ctx.createPattern(patternCanvas, 'repeat');
+}
+
+function createDotPattern(ctx, color) {
+    const patternCanvas = document.createElement('canvas');
+    patternCanvas.width = 8;
+    patternCanvas.height = 8;
+    const pctx = patternCanvas.getContext('2d');
+    
+    pctx.fillStyle = color;
+    pctx.beginPath();
+    pctx.arc(4, 4, 1.5, 0, Math.PI * 2);
+    pctx.fill();
+    
+    return ctx.createPattern(patternCanvas, 'repeat');
+}
+
+// Draw reference line on chart
+function drawReferenceLine(ctx, y, label, color = '#94a3b8') {
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    ctx.moveTo(padding.left, y);
+    ctx.lineTo(padding.left + chartWidth, y);
+    ctx.stroke();
+    
+    ctx.fillStyle = color;
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(label, padding.left + chartWidth, y - 5);
+    ctx.restore();
 }
 
 function drawSparkline(canvas, data, color) {
@@ -1926,6 +2041,45 @@ function setupChartTooltip(canvas, data, points, values, getX, padding, chartWid
         tooltip.classList.add('hidden');
         if (indicatorLine) indicatorLine.classList.add('hidden');
     });
+    
+    // Add swipe gesture support for mobile
+    if (window.innerWidth <= 768 && !canvas.dataset.swipeSetup) {
+        let touchStartX = 0;
+        let touchEndX = 0;
+        let isSwiping = false;
+        
+        canvas.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+            isSwiping = true;
+        }, { passive: true });
+        
+        canvas.addEventListener('touchmove', (e) => {
+            if (!isSwiping) return;
+            touchEndX = e.changedTouches[0].screenX;
+        }, { passive: true });
+        
+        canvas.addEventListener('touchend', () => {
+            if (!isSwiping) return;
+            isSwiping = false;
+            
+            const swipeThreshold = 50;
+            const diff = touchStartX - touchEndX;
+            
+            if (Math.abs(diff) > swipeThreshold) {
+                // Swipe detected - could trigger chart type change or time range
+                // For now, just show a subtle feedback
+                canvas.style.transform = 'scale(0.98)';
+                setTimeout(() => {
+                    canvas.style.transform = '';
+                }, 150);
+            }
+            
+            touchStartX = 0;
+            touchEndX = 0;
+        });
+        
+        canvas.dataset.swipeSetup = 'true';
+    }
 }
 
 function drawFullScreenPriceChart(data) {
