@@ -139,6 +139,9 @@ function animateCountUp(element, start, end, duration = 500, prefix = '', suffix
 
 // Wait for DOM to be ready
 document.addEventListener('DOMContentLoaded', () => {
+    // Debug: Show that JS is loaded
+    console.log('App.js loaded successfully');
+    
     // Add ripple effect to all buttons
     function createRipple(event) {
         const button = event.currentTarget;
@@ -506,12 +509,21 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('Search form submitted');
         const ticker = tickerInput.value.trim().toUpperCase();
         console.log('Ticker:', ticker);
-        if (!ticker) return;
+        if (!ticker) {
+            alert('Please enter a ticker symbol');
+            return;
+        }
+        
+        // Visual feedback
+        searchBtn.textContent = 'Loading...';
         
         try {
             await loadStock(ticker);
         } catch (err) {
             console.error('Error in loadStock:', err);
+            alert('Error loading stock: ' + err.message);
+        } finally {
+            searchBtn.textContent = 'Search';
         }
     });
 

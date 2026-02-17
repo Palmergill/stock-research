@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Test</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #0f172a; color: white; }
+        input { padding: 10px; font-size: 16px; width: 200px; }
+        button { padding: 10px 20px; font-size: 16px; background: #10b981; border: none; color: white; border-radius: 4px; }
+        #result { margin-top: 20px; padding: 15px; background: #1e293b; border-radius: 8px; white-space: pre-wrap; }
+        .error { color: #ef4444; }
+        .success { color: #10b981; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Search Test</h1>
+    <p>Type a ticker and hit Search:</p>
+    <form id="testForm">
+        <input type="text" id="testInput" placeholder="TSLA" value="TSLA">
+        <button type="submit">Search</button>
+    </form>
+    <div id="result">Results will appear here...</div>
+    
+    <script>
+        const API_BASE = 'https://stock-research-production-b3ac.up.railway.app/api';
+        
+        document.getElementById('testForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const ticker = document.getElementById('testInput').value.trim().toUpperCase();
+            const resultDiv = document.getElementById('result');
+            
+            resultDiv.textContent = 'Loading...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/stocks/${ticker}`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `<span class="success">✓ Success!</span>\n\nCompany: ${data.name}\nTicker: ${data.ticker}\nPrice: $${data.summary?.current_price || 'N/A'}`;
+                } else {
+                    resultDiv.innerHTML = `<span class="error">✗ Error ${response.status}</span>\n\n${JSON.stringify(data, null, 2)}`;
+                }
+            } catch (err) {
+                resultDiv.innerHTML = `<span class="error">✗ Fetch Error</span>\n\n${err.message}`;
+            }
+        });
+    </script>
+</body>
+</html>
