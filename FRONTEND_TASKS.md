@@ -16,10 +16,10 @@
 - Professional polish
 
 **Tasks:**
-- [ ] Add subtle gradients to cards (linear-gradient from bg-secondary to slightly lighter)
+- [x] ~~Add subtle gradients to cards (linear-gradient from bg-secondary to slightly lighter)~~ ✓ Completed - see [COMPLETED_TASKS.md](./COMPLETED_TASKS.md)
 - [ ] Implement glassmorphism effect on header (backdrop-filter: blur)
-- [ ] Add subtle box-shadows with color accents (glow effect on hover)
-- [ ] Create tiered card system - featured cards (price) should stand out more
+- [x] ~~Add subtle box-shadows with color accents (glow effect on hover)~~ ✓ Completed (included with card hover effects)
+- [x] ~~Create tiered card system - featured cards (price) should stand out more~~ ✓ Completed (company-header has special styling)
 - [ ] Add border accents (left border with accent colors on metric cards)
 
 ### 1.2 Color System Too Flat

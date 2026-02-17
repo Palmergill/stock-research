@@ -324,6 +324,42 @@ document.querySelectorAll('button').forEach(btn => {
 - Easier to scan and distinguish sections
 - Professional color-coded organization
 
+### ✅ Gradient Backgrounds on Cards
+
+**Status:** Completed and deployed
+
+**Changes Made:**
+1. Changed card background from solid color to subtle gradient (145deg angle)
+2. Added top border highlight (1px gradient line) for depth
+3. Featured company header card with blue-tinted gradient
+4. Added subtle border transparency for layering effect
+
+**CSS Added:**
+```css
+.card {
+    background: linear-gradient(145deg, var(--bg-secondary) 0%, rgba(30, 41, 59, 0.8) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.card::before {
+    /* Top highlight line */
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+}
+
+.card.company-header {
+    background: linear-gradient(145deg, 
+        var(--bg-secondary) 0%, 
+        rgba(59, 130, 246, 0.08) 50%,
+        var(--bg-secondary) 100%);
+}
+```
+
+**Visual Impact:**
+- Cards have subtle depth instead of looking flat
+- Top border highlight creates "light from above" effect
+- Company header stands out as featured element
+- More premium, polished appearance
+
 ---
 
 ## Summary of Completed Work (While Palmer Sleeps)
