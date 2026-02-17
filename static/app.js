@@ -168,6 +168,34 @@ document.addEventListener('DOMContentLoaded', () => {
     // Tab switching
     const tabBtns = document.querySelectorAll('.tab-btn');
     const tabContents = document.querySelectorAll('.tab-content');
+    const tabIndicator = document.querySelector('.tab-indicator');
+    const tabsContainer = document.querySelector('.tabs');
+    
+    // Function to update sliding indicator position
+    function updateTabIndicator(activeBtn) {
+        if (!tabIndicator || !activeBtn) return;
+        
+        const tabsRect = tabsContainer.getBoundingClientRect();
+        const btnRect = activeBtn.getBoundingClientRect();
+        
+        const left = btnRect.left - tabsRect.left;
+        const width = btnRect.width;
+        
+        tabIndicator.style.transform = `translateX(${left}px)`;
+        tabIndicator.style.width = `${width}px`;
+    }
+    
+    // Initialize indicator on page load
+    const initialActiveTab = document.querySelector('.tab-btn.active');
+    if (initialActiveTab) {
+        setTimeout(() => updateTabIndicator(initialActiveTab), 0);
+    }
+    
+    // Update indicator on window resize
+    window.addEventListener('resize', () => {
+        const activeTab = document.querySelector('.tab-btn.active');
+        updateTabIndicator(activeTab);
+    });
     
     tabBtns.forEach(btn => {
         btn.addEventListener('click', () => {
@@ -179,6 +207,9 @@ document.addEventListener('DOMContentLoaded', () => {
             
             btn.classList.add('active');
             document.getElementById(tabId).classList.add('active');
+            
+            // Update sliding indicator
+            updateTabIndicator(btn);
             
             // Redraw charts in the active tab (they might not render properly when hidden)
             if (window.lastChartData) {

@@ -299,6 +299,7 @@ button:disabled {
     background: var(--bg-secondary);
     border-radius: 12px;
     overflow-x: auto;
+    position: relative;
 }
 
 .tab-btn {
@@ -312,27 +313,67 @@ button:disabled {
     background: transparent;
     color: var(--text-muted);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: color 0.2s;
     white-space: nowrap;
+    position: relative;
+    z-index: 2;
 }
 
 .tab-btn:hover {
     color: var(--text-secondary);
-    background: rgba(255,255,255,0.05);
 }
 
 .tab-btn.active {
-    background: var(--accent-blue);
     color: white;
+}
+
+/* Sliding tab indicator */
+.tab-indicator {
+    position: absolute;
+    bottom: 4px;
+    left: 4px;
+    height: calc(100% - 8px);
+    background: var(--accent-blue);
+    border-radius: 8px;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
 }
 
 /* Tab Content */
 .tab-content {
-    display: none;
+    opacity: 0;
+    visibility: hidden;
+    position: absolute;
+    width: 100%;
+    transform: translateX(20px);
+    transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s;
+    pointer-events: none;
 }
 
 .tab-content.active {
-    display: block;
+    opacity: 1;
+    visibility: visible;
+    position: relative;
+    transform: translateX(0);
+    pointer-events: auto;
+}
+
+/* Container for tab content to maintain layout */
+.tab-content-container {
+    position: relative;
+    min-height: 400px;
+}
+
+/* Mobile adjustments for tab indicator */
+@media (max-width: 768px) {
+    .tab-indicator {
+        display: none; /* Hide sliding indicator on mobile, use default active state */
+    }
+    
+    .tab-btn.active {
+        background: var(--accent-blue);
+    }
 }
 
 /* Compact Metrics Grid */
