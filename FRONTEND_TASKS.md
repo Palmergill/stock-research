@@ -60,7 +60,7 @@
 - Fade/slide transitions
 
 **Tasks:**
-- [ ] Add skeleton loader for stock data (shimmer effect on placeholder cards)
+- [x] ~~Add skeleton loader for stock data (shimmer effect on placeholder cards)~~ ✓ Completed - see [COMPLETED_TASKS.md](./COMPLETED_TASKS.md)
 - [x] ~~Implement staggered card entrance (0.1s delay between each card)~~ ✓ Completed - see [COMPLETED_TASKS.md](./COMPLETED_TASKS.md)
 - [ ] Add slide-up animation on results container
 - [ ] Create loading state for charts (animated line drawing)
