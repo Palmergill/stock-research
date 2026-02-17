@@ -20,7 +20,7 @@
 - [x] ~~Implement glassmorphism effect on header (backdrop-filter: blur)~~ ✓ Completed - see [COMPLETED_TASKS.md](./COMPLETED_TASKS.md)
 - [x] ~~Add subtle box-shadows with color accents (glow effect on hover)~~ ✓ Completed (included with card hover effects)
 - [x] ~~Create tiered card system - featured cards (price) should stand out more~~ ✓ Completed (company-header has special styling)
-- [ ] Add border accents (left border with accent colors on metric cards)
+- [x] ~~Add border accents (left border with accent colors on metric cards)~~ ✓ Completed - see [COMPLETED_TASKS.md](./COMPLETED_TASKS.md)
 
 ### 1.2 Color System Too Flat
 **Current:** Solid dark backgrounds, no variation
@@ -44,8 +44,8 @@
 
 **Tasks:**
 - [x] ~~Add monospaced font (SF Mono, JetBrains Mono) for all numeric values~~ ✓ Completed - see [COMPLETED_TASKS.md](./COMPLETED_TASKS.md)
-- [ ] Increase contrast between label (11px muted) and value (18px)
-- [ ] Add text-transform and letter-spacing to section headers
+- [x] ~~Increase contrast between label (11px muted) and value (18px)~~ ✓ Completed - see [COMPLETED_TASKS.md](./COMPLETED_TASKS.md)
+- [x] ~~Add text-transform and letter-spacing to section headers~~ ✓ Completed - see [COMPLETED_TASKS.md](./COMPLETED_TASKS.md)
 - [x] ~~Implement tabular-nums for aligned number display~~ ✓ Completed (included with monospace fonts)
 
 ---
@@ -62,8 +62,8 @@
 **Tasks:**
 - [x] ~~Add skeleton loader for stock data (shimmer effect on placeholder cards)~~ ✓ Completed - see [COMPLETED_TASKS.md](./COMPLETED_TASKS.md)
 - [x] ~~Implement staggered card entrance (0.1s delay between each card)~~ ✓ Completed - see [COMPLETED_TASKS.md](./COMPLETED_TASKS.md)
-- [ ] Add slide-up animation on results container
-- [ ] Create loading state for charts (animated line drawing)
+- [x] ~~Add slide-up animation on results container~~ ✓ Completed - see [COMPLETED_TASKS.md](./COMPLETED_TASKS.md)
+- [x] ~~Create loading state for charts (animated line drawing)~~ ✓ Completed - see [COMPLETED_TASKS.md](./COMPLETED_TASKS.md)
 
 ### 2.2 Card Interactions - Static
 **Current:** Cards don't respond to interaction
@@ -76,7 +76,7 @@
 - [x] ~~Add transform: translateY(-4px) on card hover~~ ✓ Completed - see [COMPLETED_TASKS.md](./COMPLETED_TASKS.md)
 - [x] ~~Implement box-shadow expansion on hover~~ ✓ Completed - see [COMPLETED_TASKS.md](./COMPLETED_TASKS.md)
 - [x] ~~Add subtle glow pulse on metric cards with accent colors~~ ✓ Completed - see [COMPLETED_TASKS.md](./COMPLETED_TASKS.md)
-- [ ] Create magnetic button effect on primary buttons
+- [x] ~~Create magnetic button effect on primary buttons~~ ✓ Completed - see [COMPLETED_TASKS.md](./COMPLETED_TASKS.md)
 
 ### 2.3 Tab Switching - Abrupt
 **Current:** Instant content swap
