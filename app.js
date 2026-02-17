@@ -410,6 +410,22 @@ document.addEventListener('DOMContentLoaded', () => {
         if (activeTab === 'valuation') {
             drawPEChart(chartData, window.lastPriceHistory);
         }
+        
+        // Trigger card entrance animations
+        const cards = document.querySelectorAll('#results .card');
+        cards.forEach(card => card.classList.remove('animate-in'));
+        
+        // Force reflow to ensure animation restarts
+        void document.body.offsetHeight;
+        
+        // Add animate-in class with slight delay for stagger effect
+        setTimeout(() => {
+            cards.forEach((card, index) => {
+                setTimeout(() => {
+                    card.classList.add('animate-in');
+                }, index * 50); // 50ms stagger between cards
+            });
+        }, 50);
     }
 
     // ============================================
