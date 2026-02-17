@@ -1149,35 +1149,36 @@ function drawFullScreenPriceChart(data) {
     const ctx = canvas.getContext('2d');
     const dpr = window.devicePixelRatio || 1;
     
-    // Detect mobile for responsive sizing
+    // Detect mobile and orientation
     const isMobile = window.innerWidth <= 768;
     const isPortrait = window.innerHeight > window.innerWidth;
     
-    // Use smaller dimensions that fit on mobile screens
-    // In portrait: make it a wide but short chart
-    // In landscape: use more of the available space
+    // For the rotated modal in portrait, we need to size the canvas 
+    // to fit the rotated viewport (width = vh, height = vw)
     let canvasWidth, canvasHeight;
-    if (isMobile) {
-        if (isPortrait) {
-            // Portrait: landscape-oriented chart (wide, not tall)
-            canvasWidth = Math.min(window.innerWidth * 1.5, 900);
-            canvasHeight = Math.min(window.innerHeight * 0.5, 350);
-        } else {
-            // Landscape
-            canvasWidth = Math.min(window.innerWidth * 0.95, 1000);
-            canvasHeight = Math.min(window.innerHeight * 0.75, 500);
-        }
+    if (isMobile && isPortrait) {
+        // In portrait with rotated modal: use viewport dimensions swapped
+        // The modal is rotated 90deg, so available space is roughly:
+        // width = viewport height, height = viewport width - header
+        const vh = window.innerHeight;
+        const vw = window.innerWidth;
+        canvasWidth = Math.min(vh * 0.95, 700);
+        canvasHeight = Math.min(vw * 0.75, 450);
+    } else if (isMobile) {
+        // Device is already in landscape
+        canvasWidth = Math.min(window.innerWidth * 0.9, 800);
+        canvasHeight = Math.min(window.innerHeight * 0.7, 400);
     } else {
         // Desktop
-        canvasWidth = 1000;
-        canvasHeight = 500;
+        canvasWidth = 900;
+        canvasHeight = 450;
     }
 
     canvas.width = canvasWidth * dpr;
     canvas.height = canvasHeight * dpr;
     ctx.scale(dpr, dpr);
     canvas.style.width = '100%';
-    canvas.style.height = '100%';
+    canvas.style.height = 'auto';
     canvas.style.maxWidth = '100%';
     canvas.style.maxHeight = '100%';
 
