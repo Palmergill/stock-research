@@ -484,8 +484,16 @@
                 debug.textContent = 'JS starting...';
             }
         });
+        
+        // Catch any errors
+        window.onerror = function(msg, url, line) {
+            var debug = document.getElementById('debugStatus');
+            if (debug) {
+                debug.textContent = 'ERROR: ' + msg + ' (line ' + line + ')';
+            }
+        };
     </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" onerror="console.warn('Chart.js CDN failed')"></script>
-    <script src="app.js?v=4"></script>
+    <script src="app.js?v=5" onerror="document.getElementById('debugStatus').textContent='ERROR: app.js failed to load'"></script>
 </body>
 </html>
