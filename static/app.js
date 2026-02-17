@@ -866,28 +866,25 @@ function drawPEChart(data, priceHistory = null) {
         ctx.font = '11px sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText(d.fiscal_date.slice(0, 7), x, padding.top + chartHeight + 20);
-    });
-}
-
 function drawPriceChart(data) {
     const canvas = document.getElementById('priceChart');
     if (!canvas) return;
-    
+
     const ctx = canvas.getContext('2d');
     const dpr = window.devicePixelRatio || 1;
-    
+
     canvas.width = 800 * dpr;
     canvas.height = 300 * dpr;
     ctx.scale(dpr, dpr);
     canvas.style.width = '100%';
     canvas.style.height = 'auto';
-    
-    const padding = { top: 40, right: 40, bottom: 60, left: 70 };
+
+    const padding = { top: 50, right: 50, bottom: 50, left: 60 };
     const chartWidth = 800 - padding.left - padding.right;
     const chartHeight = 300 - padding.top - padding.bottom;
-    
+
     ctx.clearRect(0, 0, 800, 300);
-    
+
     // Handle both formats: price_history (close) and earnings (price)
     const prices = data.map(d => d.close || d.price).filter(v => v != null);
     if (prices.length === 0) {
@@ -897,120 +894,164 @@ function drawPriceChart(data) {
         ctx.fillText('No price data available', 400, 150);
         return;
     }
-    
-    const maxPrice = Math.max(...prices) * 1.05;
-    const minPrice = Math.min(...prices) * 0.95;
+
+    const maxPrice = Math.max(...prices);
+    const minPrice = Math.min(...prices);
     const priceRange = maxPrice - minPrice;
-    
-    // Grid
+
+    // Add padding to min/max for visual breathing room
+    const chartMax = maxPrice + priceRange * 0.1;
+    const chartMin = Math.max(0, minPrice - priceRange * 0.1);
+    const chartRange = chartMax - chartMin;
+
+    const spacing = chartWidth / (data.length - 1);
+
+    // Helper to get Y coordinate for a price
+    const getY = (price) => padding.top + chartHeight - ((price - chartMin) / chartRange) * chartHeight;
+    const getX = (i) => padding.left + spacing * i;
+
+    // Subtle grid - only 3 horizontal lines (min, mid, max)
     ctx.strokeStyle = '#334155';
     ctx.lineWidth = 1;
-    ctx.setLineDash([5, 5]);
-    
-    for (let i = 0; i <= 5; i++) {
-        const y = padding.top + (chartHeight * i / 5);
+    ctx.setLineDash([]);
+
+    [chartMax, (chartMax + chartMin) / 2, chartMin].forEach((val, i) => {
+        const y = getY(val);
         ctx.beginPath();
         ctx.moveTo(padding.left, y);
         ctx.lineTo(padding.left + chartWidth, y);
         ctx.stroke();
-        
-        const val = maxPrice - priceRange * i / 5;
-        ctx.fillStyle = '#94a3b8';
-        ctx.font = '12px sans-serif';
+
+        ctx.fillStyle = '#64748b';
+        ctx.font = '11px sans-serif';
         ctx.textAlign = 'right';
         ctx.fillText(`$${val.toFixed(0)}`, padding.left - 10, y + 4);
-    }
-    
-    ctx.setLineDash([]);
-    
-    // Area under line
-    const spacing = chartWidth / (data.length - 1);
-    
+    });
+
+    // Area under line with smooth gradient
+    const gradient = ctx.createLinearGradient(0, padding.top, 0, padding.top + chartHeight);
+    gradient.addColorStop(0, 'rgba(16, 185, 129, 0.25)');
+    gradient.addColorStop(1, 'rgba(16, 185, 129, 0.02)');
+
     ctx.beginPath();
     ctx.moveTo(padding.left, padding.top + chartHeight);
-    
-    data.forEach((d, i) => {
-        const price = d.close || d.price;
-        const x = padding.left + spacing * i;
-        const y = padding.top + chartHeight - ((price - minPrice) / priceRange) * chartHeight;
-        ctx.lineTo(x, y);
-    });
-    
+
+    // Build smooth curve using bezier
+    const points = data.map((d, i) => ({
+        x: getX(i),
+        y: getY(d.close || d.price)
+    }));
+
+    ctx.lineTo(points[0].x, points[0].y);
+
+    for (let i = 0; i < points.length - 1; i++) {
+        const curr = points[i];
+        const next = points[i + 1];
+        const cp1x = curr.x + (next.x - curr.x) * 0.3;
+        const cp1y = curr.y;
+        const cp2x = next.x - (next.x - curr.x) * 0.3;
+        const cp2y = next.y;
+        ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, next.x, next.y);
+    }
+
     ctx.lineTo(padding.left + chartWidth, padding.top + chartHeight);
     ctx.closePath();
-    
-    ctx.fillStyle = 'rgba(16, 185, 129, 0.15)';  // Green with opacity
+    ctx.fillStyle = gradient;
     ctx.fill();
-    
-    // Price line
-    ctx.strokeStyle = '#10b981';  // Green
-    ctx.lineWidth = 3;
+
+    // Smooth price line
+    ctx.strokeStyle = '#10b981';
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
     ctx.beginPath();
-    
-    data.forEach((d, i) => {
-        const price = d.close || d.price;
-        const x = padding.left + spacing * i;
-        const y = padding.top + chartHeight - ((price - minPrice) / priceRange) * chartHeight;
-        
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-    });
+    ctx.moveTo(points[0].x, points[0].y);
+
+    for (let i = 0; i < points.length - 1; i++) {
+        const curr = points[i];
+        const next = points[i + 1];
+        const cp1x = curr.x + (next.x - curr.x) * 0.3;
+        const cp1y = curr.y;
+        const cp2x = next.x - (next.x - curr.x) * 0.3;
+        const cp2y = next.y;
+        ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, next.x, next.y);
+    }
     ctx.stroke();
-    
-    // Data points (only show every ~20th point to avoid clutter)
-    data.forEach((d, i) => {
-        if (i % 20 !== 0) return;  // Show every 20th point
-        const price = d.close || d.price;
-        const x = padding.left + spacing * i;
-        const y = padding.top + chartHeight - ((price - minPrice) / priceRange) * chartHeight;
-        
-        ctx.fillStyle = '#10b981';
-        ctx.beginPath();
-        ctx.arc(x, y, 4, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // White border on dots
-        ctx.strokeStyle = '#1e293b';
-        ctx.lineWidth = 2;
-        ctx.stroke();
+
+    // Find high and low points
+    let highIdx = 0, lowIdx = 0;
+    prices.forEach((p, i) => {
+        if (p > prices[highIdx]) highIdx = i;
+        if (p < prices[lowIdx]) lowIdx = i;
     });
-    
-    // X labels (show monthly labels)
-    let lastMonth = '';
+
+    // Draw high point marker
+    const highX = getX(highIdx);
+    const highY = getY(prices[highIdx]);
+
+    ctx.fillStyle = '#22c55e';
+    ctx.beginPath();
+    ctx.arc(highX, highY, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // High label
+    ctx.fillStyle = '#22c55e';
+    ctx.font = 'bold 11px sans-serif';
+    ctx.textAlign = highIdx < data.length / 2 ? 'left' : 'right';
+    ctx.fillText(`High: $${prices[highIdx].toFixed(2)}`, highX + (highIdx < data.length / 2 ? 10 : -10), highY - 10);
+
+    // Draw low point marker
+    const lowX = getX(lowIdx);
+    const lowY = getY(prices[lowIdx]);
+
+    ctx.fillStyle = '#ef4444';
+    ctx.beginPath();
+    ctx.arc(lowX, lowY, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Low label
+    ctx.fillStyle = '#ef4444';
+    ctx.font = 'bold 11px sans-serif';
+    ctx.textAlign = lowIdx < data.length / 2 ? 'left' : 'right';
+    ctx.fillText(`Low: $${prices[lowIdx].toFixed(2)}`, lowX + (lowIdx < data.length / 2 ? 10 : -10), lowY + 18);
+
+    // X-axis labels - quarterly only
+    let lastLabel = '';
     data.forEach((d, i) => {
         const dateStr = d.date || d.fiscal_date;
-        const month = dateStr.slice(0, 7);  // YYYY-MM
-        if (month === lastMonth) return;  // Skip if same month
-        lastMonth = month;
-        
-        const x = padding.left + spacing * i;
-        ctx.fillStyle = '#94a3b8';
+        const label = dateStr.slice(0, 4) + ' Q' + Math.ceil(parseInt(dateStr.slice(5, 7)) / 3);
+        if (label === lastLabel) return;
+        lastLabel = label;
+
+        const x = getX(i);
+        ctx.fillStyle = '#64748b';
         ctx.font = '10px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(month, x, padding.top + chartHeight + 20);
+        ctx.fillText(label, x, padding.top + chartHeight + 20);
     });
-    
+
+    // Current price label at end
+    const lastPrice = prices[prices.length - 1];
+    const lastX = points[points.length - 1].x;
+    const lastY = points[points.length - 1].y;
+
+    ctx.fillStyle = '#10b981';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(`$${lastPrice.toFixed(2)}`, lastX + 8, lastY + 4);
+
     // Legend
     ctx.fillStyle = '#10b981';
-    ctx.fillRect(padding.left, 15, 15, 15);
+    ctx.fillRect(padding.left, 15, 12, 12);
     ctx.fillStyle = '#e2e8f0';
     ctx.font = '12px sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText('Stock Price', padding.left + 20, 27);
-    
-    // Calculate and show change
-    const firstPrice = data[0]?.close || data[0]?.price;
-    const lastPrice = data[data.length - 1]?.close || data[data.length - 1]?.price;
-    if (firstPrice && lastPrice) {
-        const change = ((lastPrice - firstPrice) / firstPrice) * 100;
-        const changeColor = change >= 0 ? '#22c55e' : '#ef4444';
-        const changeSymbol = change >= 0 ? '+' : '';
-        const periodLabel = data.length > 100 ? '1Y' : '8Q';  // Show 1Y for daily data
-        
-        ctx.fillStyle = changeColor;
-        ctx.font = 'bold 12px sans-serif';
-        ctx.textAlign = 'left';
-        ctx.fillText(`${changeSymbol}${change.toFixed(1)}% (${periodLabel})`, padding.left + 110, 27);
-    }
+    ctx.fillText('Price', padding.left + 18, 26);
 }
 });
