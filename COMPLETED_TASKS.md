@@ -6,8 +6,8 @@
 **Version:** v2.0.0-beta1  
 **Last Updated:** 2026-02-17  
 
-**Tasks Completed:** 46  
-**Remaining:** ~12 tasks  
+**Tasks Completed:** 49  
+**Remaining:** ~9 tasks  
 
 ---
 
@@ -63,7 +63,7 @@
 37. ✅ **Monospaced Fonts for Numbers** - Tabular nums prevent jumping
 38. ✅ **Removed Chart Click Popup** - Hover tooltips only, no click-to-expand
 
-### New Additions (4 tasks)
+### New Additions (7 tasks)
 
 39. ✅ **Earnings Surprise Indicators** - Color-coded bars with beat/miss percentages on EPS chart
 40. ✅ **Mini Sparklines** - Inline trend charts for P/E, Revenue Growth, FCF
@@ -73,6 +73,16 @@
 44. ✅ **Retry Attempt Display** - Shows "Attempt X of 3" during auto-retry
 45. ✅ **Feature Callouts** - Icon+text features in empty state (4 features)
 46. ✅ **Chart Background Gradients** - Subtle radial gradient overlays on charts
+47. ✅ **Interactive Chart Legend** - Click to toggle data series visibility
+48. ✅ **Key Metrics Layout** - 2 rows with visual separation
+49. ✅ **Chart Swipe Gestures** - Mobile swipe detection with visual feedback
+43. ✅ **Rotating Stock Tips** - Educational tips during loading (8 tips, 4-second rotation)
+44. ✅ **Retry Attempt Display** - Shows "Attempt X of 3" during auto-retry
+45. ✅ **Feature Callouts** - Icon+text features in empty state (4 features)
+46. ✅ **Chart Background Gradients** - Subtle radial gradient overlays on charts
+47. ✅ **Interactive Chart Legend** - Click to toggle data series (Actual/Estimated EPS)
+48. ✅ **Key Metrics Layout** - 2 rows with visual separation (Valuation & Growth, Profitability)
+49. ✅ **Chart Swipe Gestures** - Mobile swipe detection with visual feedback
 
 ---
 
