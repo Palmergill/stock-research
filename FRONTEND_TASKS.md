@@ -30,10 +30,10 @@
 - Subtle background patterns or textures
 
 **Tasks:**
-- [ ] Assign color themes to each metric section (valuation = purple, profitability = green/yellow, health = blue)
+- [x] ~~Assign color themes to each metric section (valuation = purple, profitability = green/yellow, health = blue)~~ ✓ Completed - see [COMPLETED_TASKS.md](./COMPLETED_TASKS.md)
 - [ ] Add gradient overlays on chart backgrounds
 - [ ] Implement subtle glow effects on positive/negative values
-- [ ] Create color-coded category headers
+- [x] ~~Create color-coded category headers~~ ✓ Completed (included with color themes)
 
 ### 1.3 Typography Hierarchy Weak
 **Current:** Only 3 sizes (h1, h2, h3), basic sans-serif stack
