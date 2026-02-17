@@ -101,8 +101,8 @@
 **Tasks:**
 - [x] ~~Add hover tooltip showing exact value and date~~ ✓ Completed - see [COMPLETED_TASKS.md](./COMPLETED_TASKS.md)
 - [x] ~~Implement animated line draw on first render~~ ✓ Completed - see [COMPLETED_TASKS.md](./COMPLETED_TASKS.md)
-- [ ] Add pulsing animation on high/low markers
-- [ ] Highlight data point on hover with vertical indicator line
+- [x] ~~Add pulsing animation on high/low markers~~ ✓ Completed - see [COMPLETED_TASKS.md](./COMPLETED_TASKS.md)
+- [x] ~~Highlight data point on hover with vertical indicator line~~ ✓ Completed - see [COMPLETED_TASKS.md](./COMPLETED_TASKS.md)
 - [ ] Create interactive legend (click to toggle data series)
 
 ### 2.5 Search/Autocomplete - Basic
@@ -113,9 +113,9 @@
 - Keyboard navigation visual feedback
 
 **Tasks:**
-- [ ] Add expanding underline on search input focus
-- [ ] Implement slide-down animation for suggestions (0.2s ease-out)
-- [ ] Add highlight animation on keyboard navigation
+- [x] ~~Add expanding underline on search input focus~~ ✓ Completed - see [COMPLETED_TASKS.md](./COMPLETED_TASKS.md)
+- [x] ~~Implement slide-down animation for suggestions (0.2s ease-out)~~ ✓ Completed - see [COMPLETED_TASKS.md](./COMPLETED_TASKS.md)
+- [x] ~~Add highlight animation on keyboard navigation~~ ✓ Completed - see [COMPLETED_TASKS.md](./COMPLETED_TASKS.md)
 - [ ] Create loading spinner in input while fetching
 
 ### 2.6 Modal Transitions - Present but Basic
