@@ -176,7 +176,7 @@
 **Missing:** Count-up animation
 
 **Tasks:**
-- [ ] Add count-up animation for price, market cap, metrics (0.5s duration)
+- [x] ~~Add count-up animation for price, market cap, metrics (0.5s duration)~~ ✓ Completed - see [COMPLETED_TASKS.md](./COMPLETED_TASKS.md)
 - [ ] Implement color flash (green/red) on value change after refresh
 - [ ] Add +/- prefix animation for percentage changes
 
