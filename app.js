@@ -21,6 +21,39 @@ function formatNumber(value, decimals = 2) {
     return value.toFixed(decimals);
 }
 
+// Count-up animation helper
+function animateCountUp(element, start, end, duration = 500, prefix = '', suffix = '', decimals = 2) {
+    if (start === end || isNaN(start) || isNaN(end)) {
+        element.textContent = `${prefix}${end.toFixed(decimals)}${suffix}`;
+        return;
+    }
+    
+    const range = end - start;
+    const minTimer = 50;
+    let stepTime = Math.abs(Math.floor(duration / range));
+    stepTime = Math.max(stepTime, minTimer);
+    
+    let startTime = new Date().getTime();
+    let endTime = startTime + duration;
+    let timer;
+    
+    function run() {
+        let now = new Date().getTime();
+        let remaining = Math.max((endTime - now) / duration, 0);
+        let value = Math.round(end - (remaining * range));
+        let displayValue = decimals > 0 ? (start + (end - start) * (1 - remaining)).toFixed(decimals) : value;
+        element.textContent = `${prefix}${displayValue}${suffix}`;
+        
+        if (value == end) {
+            clearInterval(timer);
+            element.textContent = `${prefix}${end.toFixed(decimals)}${suffix}`;
+        }
+    }
+    
+    timer = setInterval(run, stepTime);
+    run();
+}
+
 // Wait for DOM to be ready
 document.addEventListener('DOMContentLoaded', () => {
     // DOM elements
@@ -322,22 +355,57 @@ document.addEventListener('DOMContentLoaded', () => {
         // Safely get summary values
         const summary = data.summary || {};
         
-        // Update basic metrics
+        // Update basic metrics (with count-up animation)
         document.getElementById('companyName').textContent = data.name || data.ticker || 'Unknown';
         document.getElementById('companyTicker').textContent = data.ticker || '';
-        document.getElementById('currentPrice').textContent = summary.current_price 
-            ? `$${summary.current_price.toFixed(2)}` 
-            : 'N/A';
-        document.getElementById('marketCap').textContent = formatMarketCap(summary.market_cap);
-        document.getElementById('peRatio').textContent = formatNumber(summary.pe_ratio);
         
-        // Update key financial metrics
-        document.getElementById('revenueGrowth').textContent = formatPercent(summary.revenue_growth);
+        // Animate key metrics with count-up effect
+        if (summary.current_price) {
+            animateCountUp(document.getElementById('currentPrice'), 0, summary.current_price, 600, '$', '', 2);
+        } else {
+            document.getElementById('currentPrice').textContent = 'N/A';
+        }
+        
+        document.getElementById('marketCap').textContent = formatMarketCap(summary.market_cap);
+        
+        if (summary.pe_ratio != null) {
+            animateCountUp(document.getElementById('peRatio'), 0, summary.pe_ratio, 500, '', '', 2);
+        } else {
+            document.getElementById('peRatio').textContent = 'N/A';
+        }
+        
+        // Update key financial metrics with animations
+        if (summary.revenue_growth != null) {
+            animateCountUp(document.getElementById('revenueGrowth'), 0, summary.revenue_growth, 500, '', '%', 2);
+        } else {
+            document.getElementById('revenueGrowth').textContent = 'N/A';
+        }
+        
         document.getElementById('freeCashFlow').textContent = formatMarketCap(summary.free_cash_flow);
-        document.getElementById('debtToEquity').textContent = formatNumber(summary.debt_to_equity);
-        document.getElementById('roe').textContent = formatPercent(summary.roe);
-        document.getElementById('profitMargin').textContent = formatPercent(summary.profit_margin);
-        document.getElementById('operatingMargin').textContent = formatPercent(summary.operating_margin);
+        
+        if (summary.debt_to_equity != null) {
+            animateCountUp(document.getElementById('debtToEquity'), 0, summary.debt_to_equity, 500, '', '', 2);
+        } else {
+            document.getElementById('debtToEquity').textContent = 'N/A';
+        }
+        
+        if (summary.roe != null) {
+            animateCountUp(document.getElementById('roe'), 0, summary.roe, 500, '', '%', 2);
+        } else {
+            document.getElementById('roe').textContent = 'N/A';
+        }
+        
+        if (summary.profit_margin != null) {
+            animateCountUp(document.getElementById('profitMargin'), 0, summary.profit_margin, 500, '', '%', 2);
+        } else {
+            document.getElementById('profitMargin').textContent = 'N/A';
+        }
+        
+        if (summary.operating_margin != null) {
+            animateCountUp(document.getElementById('operatingMargin'), 0, summary.operating_margin, 500, '', '%', 2);
+        } else {
+            document.getElementById('operatingMargin').textContent = 'N/A';
+        }
         
         // Valuation Metrics
         document.getElementById('psRatio').textContent = formatNumber(summary.ps_ratio);
