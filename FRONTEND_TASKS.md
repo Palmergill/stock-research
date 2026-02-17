@@ -86,9 +86,9 @@
 - Content slide direction
 
 **Tasks:**
-- [ ] Add sliding indicator under active tab
-- [ ] Implement crossfade transition between tab contents (0.3s)
-- [ ] Add slide-in-from-right for forward navigation, left for back
+- [x] ~~Add sliding indicator under active tab~~ ✓ Completed - see [COMPLETED_TASKS.md](./COMPLETED_TASKS.md)
+- [x] ~~Implement crossfade transition between tab contents (0.3s)~~ ✓ Completed - see [COMPLETED_TASKS.md](./COMPLETED_TASKS.md)
+- [ ] Add slide-in-from-right for forward navigation, left for back (partial - basic crossfade done)
 
 ### 2.4 Chart Interactions - Minimal
 **Current:** Static canvas rendering, only click to expand
