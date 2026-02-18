@@ -774,9 +774,6 @@ document.addEventListener('DOMContentLoaded', () => {
         loading.classList.add('hidden');
         results.classList.remove('hidden');
         
-        // Hide debug status
-        if (debugStatus) debugStatus.style.display = 'none';
-        
         // Trigger slide-up animation
         requestAnimationFrame(() => {
             results.classList.add('visible');
