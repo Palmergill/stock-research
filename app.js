@@ -139,19 +139,6 @@ function animateCountUp(element, start, end, duration = 500, prefix = '', suffix
 
 // Wait for DOM to be ready
 document.addEventListener('DOMContentLoaded', () => {
-    // Debug: Show that JS is loaded
-    console.log('App.js loaded successfully');
-    
-    // Debug status display
-    const debugStatus = document.getElementById('debugStatus');
-    function showStatus(msg) {
-        if (debugStatus) {
-            debugStatus.style.display = 'block';
-            debugStatus.textContent = msg;
-        }
-        console.log(msg);
-    }
-    showStatus('JS loaded');
     
     // Add ripple effect to all buttons
     function createRipple(event) {
@@ -289,11 +276,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Verify critical elements exist
     if (!searchForm || !tickerInput || !searchBtn) {
-        showStatus('ERROR: Critical elements missing');
         console.error('Missing elements:', { searchForm, tickerInput, searchBtn });
         return;
     }
-    showStatus('Elements found, setting up...');
     
     // Initialize trending stock buttons
     function initTrendingStocks() {
@@ -525,13 +510,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Search handler
     async function handleSearch(e) {
         if (e) e.preventDefault();
-        showStatus('Search triggered');
         const ticker = tickerInput.value.trim().toUpperCase();
-        showStatus('Ticker: ' + ticker);
-        if (!ticker) {
-            showStatus('Error: No ticker entered');
-            return;
-        }
+        if (!ticker) return;
         
         // Visual feedback
         const btnText = searchBtn.querySelector('.btn-text');
@@ -543,7 +523,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             await loadStock(ticker);
         } catch (err) {
-            showStatus('Error: ' + err.message);
+            console.error('Error loading stock:', err);
         } finally {
             if (btnText) btnText.classList.remove('hidden');
             if (btnSpinner) btnSpinner.classList.add('hidden');
@@ -551,13 +531,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    try {
-        searchForm.addEventListener('submit', handleSearch);
-        showStatus('Search form listener attached');
-    } catch (err) {
-        showStatus('ERROR: Failed to attach submit listener');
-        console.error(err);
-    }
+    searchForm.addEventListener('submit', handleSearch);
 
     // Retry handler
     retryBtn.addEventListener('click', () => {
@@ -649,7 +623,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function loadStock(ticker, forceRefresh = false, attempt = 1) {
-        showStatus('Loading ' + ticker + '...');
         currentTicker = ticker;
         
         // Show loading
@@ -789,8 +762,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function displayResults(data) {
-        showStatus('Displaying results for ' + data.ticker);
-        
         // Validate data structure
         if (!data || !data.summary) {
             console.error('Invalid data structure:', data);
@@ -972,8 +943,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // ============================================
     // AUTO-LOAD TSLA ON HOMEPAGE
     // ============================================
-    showStatus('Auto-loading TSLA...');
-    console.log('Initializing auto-load for TSLA...');
     tickerInput.value = 'TSLA';
     empty.classList.add('hidden');
     loading.classList.remove('hidden');
@@ -981,13 +950,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Small delay to ensure everything is ready
     setTimeout(async () => {
         try {
-            showStatus('Loading TSLA...');
-            console.log('Auto-loading TSLA...');
             await loadStock('TSLA');
-            showStatus('TSLA loaded!');
-            console.log('TSLA loaded successfully');
         } catch (err) {
-            showStatus('ERROR loading TSLA: ' + err.message);
             console.error('Failed to load TSLA:', err);
             loading.classList.add('hidden');
             error.classList.remove('hidden');
