@@ -786,6 +786,26 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('companyName').textContent = data.name || data.ticker || 'Unknown';
         document.getElementById('companyTicker').textContent = data.ticker || '';
         
+        // Update header price and change
+        const headerPriceEl = document.getElementById('headerPrice');
+        const headerChangeEl = document.getElementById('headerChange');
+        if (headerPriceEl && summary.current_price) {
+            headerPriceEl.textContent = '$' + summary.current_price.toFixed(2);
+        }
+        if (headerChangeEl && window.lastPriceHistory && window.lastPriceHistory.length >= 2) {
+            const prices = window.lastPriceHistory.map(d => d.close || d.price).filter(v => v != null);
+            if (prices.length >= 2) {
+                const currentPrice = prices[prices.length - 1];
+                const priorClose = prices[prices.length - 2];
+                const change = currentPrice - priorClose;
+                const changePercent = (change / priorClose) * 100;
+                const isPositive = change >= 0;
+                const changeSymbol = isPositive ? '+' : '';
+                headerChangeEl.textContent = `${changeSymbol}$${change.toFixed(2)} (${changeSymbol}${changePercent.toFixed(2)}%)`;
+                headerChangeEl.className = 'header-change ' + (isPositive ? 'positive' : 'negative');
+            }
+        }
+        
         // Animate key metrics with count-up effect
         if (summary.current_price) {
             const currentPriceEl = document.getElementById('currentPrice');
