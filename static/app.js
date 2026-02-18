@@ -1807,6 +1807,14 @@ function drawPriceChart(data) {
     const prices = data.map(d => d.close || d.price).filter(v => v != null);
     if (prices.length === 0) return;
     
+    // Calculate percent change for the period
+    const startPrice = prices[0];
+    const endPrice = prices[prices.length - 1];
+    const percentChange = ((endPrice - startPrice) / startPrice) * 100;
+    const isPositive = percentChange >= 0;
+    const changeColor = isPositive ? '#10b981' : '#ef4444';
+    const changeSymbol = isPositive ? '+' : '';
+    
     // Format labels (show every ~15th date)
     const labels = data.map((d, i) => {
         if (i % 15 === 0 || i === data.length - 1) {
@@ -1818,8 +1826,8 @@ function drawPriceChart(data) {
     
     // Create gradient
     const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-    gradient.addColorStop(0, 'rgba(16, 185, 129, 0.3)');
-    gradient.addColorStop(1, 'rgba(16, 185, 129, 0.02)');
+    gradient.addColorStop(0, isPositive ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)');
+    gradient.addColorStop(1, isPositive ? 'rgba(16, 185, 129, 0.02)' : 'rgba(239, 68, 68, 0.02)');
     
     // Create Chart.js chart
     priceChartInstance = new Chart(ctx, {
@@ -1829,14 +1837,14 @@ function drawPriceChart(data) {
             datasets: [{
                 label: 'Price',
                 data: prices,
-                borderColor: '#10b981',
+                borderColor: changeColor,
                 backgroundColor: gradient,
                 borderWidth: 2.5,
                 fill: true,
                 tension: 0.4,
                 pointRadius: 0,
                 pointHoverRadius: 6,
-                pointHoverBackgroundColor: '#10b981',
+                pointHoverBackgroundColor: changeColor,
                 pointHoverBorderColor: '#fff',
                 pointHoverBorderWidth: 2
             }]
@@ -1851,6 +1859,19 @@ function drawPriceChart(data) {
             plugins: {
                 legend: {
                     display: false
+                },
+                title: {
+                    display: true,
+                    text: `${changeSymbol}${percentChange.toFixed(2)}%`,
+                    color: changeColor,
+                    font: {
+                        size: 18,
+                        weight: 'bold'
+                    },
+                    padding: {
+                        top: 10,
+                        bottom: 10
+                    }
                 },
                 tooltip: {
                     backgroundColor: 'rgba(15, 23, 42, 0.95)',
