@@ -568,6 +568,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let progress = 0;
         const duration = 3000; // 3 seconds to draw
         const startTime = performance.now();
+        let heartsStarted = false;
         
         function drawHeart(p) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -634,13 +635,17 @@ document.addEventListener('DOMContentLoaded', () => {
             
             drawHeart(progress);
             
+            // Start hearts early (at 30% progress)
+            if (progress > 0.3 && !heartsStarted) {
+                heartsStarted = true;
+                startFloatingHearts();
+            }
+            
             if (progress < 1) {
                 requestAnimationFrame(animate);
             } else {
-                // Show message
+                // Show message when heart is complete
                 message.classList.add('visible');
-                // Start floating hearts
-                startFloatingHearts();
                 // Show hint
                 setTimeout(() => hint.classList.add('visible'), 2000);
             }
