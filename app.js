@@ -560,10 +560,10 @@ document.addEventListener('DOMContentLoaded', () => {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
         
-        // Heart drawing animation
+        // Heart drawing animation - positioned below the text
         const centerX = canvas.width / 2;
-        const centerY = canvas.height / 2 - 50;
-        const size = Math.min(canvas.width, canvas.height) * 0.25;
+        const centerY = canvas.height / 2 + 80; // Moved down to make room for text
+        const size = Math.min(canvas.width, canvas.height) * 0.22; // Slightly smaller
         
         let progress = 0;
         const duration = 3000; // 3 seconds to draw

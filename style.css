@@ -2372,7 +2372,10 @@ button,
 }
 
 .shelby-message {
-    position: relative;
+    position: absolute;
+    top: 15%;
+    left: 50%;
+    transform: translateX(-50%) scale(0.8);
     z-index: 10;
     font-family: 'Georgia', 'Times New Roman', serif;
     font-size: 48px;
@@ -2380,15 +2383,15 @@ button,
     color: #ff1744;
     text-shadow: 0 0 30px rgba(255, 23, 68, 0.5), 0 0 60px rgba(255, 23, 68, 0.3);
     opacity: 0;
-    transform: scale(0.8);
     transition: all 1s ease;
     text-align: center;
     padding: 20px;
+    white-space: nowrap;
 }
 
 .shelby-message.visible {
     opacity: 1;
-    transform: scale(1);
+    transform: translateX(-50%) scale(1);
 }
 
 .shelby-hearts {
