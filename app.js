@@ -1234,6 +1234,7 @@ function drawEPSChart(data) {
     
     // Get shares outstanding for total earnings calculation
     const sharesOutstanding = window.sharesOutstanding || 1;
+    console.log('Drawing EPS chart, sharesOutstanding:', sharesOutstanding, 'sample EPS:', chartData[0]?.reported_eps);
     
     // Convert EPS to total earnings (in billions) and FCF to billions
     const convertedData = chartData.map(d => ({
@@ -1242,6 +1243,7 @@ function drawEPSChart(data) {
         estimated_eps: d.estimated_eps ? (d.estimated_eps * sharesOutstanding) / 1e9 : null,
         fcf: d.free_cash_flow ? d.free_cash_flow / 1e9 : null
     }));
+    console.log('Converted values:', convertedData.map(d => ({ eps: d.reported_eps?.toFixed(2), fcf: d.fcf?.toFixed(2) })));
     
     const ctx = canvas.getContext('2d');
     const dpr = window.devicePixelRatio || 1;
@@ -1404,12 +1406,12 @@ function drawEPSChart(data) {
         ctx.fillText(d.fiscal_date.slice(0, 7), groupX + groupWidth / 2, padding.top + chartHeight + 20);
     });
     
-    // Draw line (estimated EPS)
+    // Draw line (estimated earnings)
     ctx.strokeStyle = '#f59e0b';
     ctx.lineWidth = 3;
     ctx.beginPath();
     
-    chartData.forEach((d, i) => {
+    convertedData.forEach((d, i) => {
         const x = padding.left + spacing * i + spacing / 2;
         const y = padding.top + chartHeight - ((d.estimated_eps - minVal) / (maxVal - minVal)) * chartHeight;
         
