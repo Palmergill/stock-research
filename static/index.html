@@ -9,9 +9,15 @@
 <body>
     <div class="container">
         <header>
-            <div class="header-content">
+            <div class="header-content" id="headerLogo">
                 <h1>🦞 Stock Research</h1>
                 <span id="version" class="version">v2.0.0</span>
+            </div>
+            <div class="header-stock-info hidden" id="headerStockInfo">
+                <span id="headerStockTicker" class="header-ticker"></span>
+                <span id="headerStockName" class="header-name"></span>
+                <span id="headerStockPrice" class="header-price-top"></span>
+                <span id="headerStockChange" class="header-change-top"></span>
             </div>
             <button id="searchIconBtn" class="search-icon-btn" title="Search">🔍</button>
         </header>

@@ -72,11 +72,74 @@ header {
     gap: 12px;
 }
 
+.header-content.hidden {
+    display: none;
+}
+
 header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 16px 20px;
+    min-height: 72px;
+}
+
+.header-stock-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+}
+
+.header-stock-info.hidden {
+    display: none;
+}
+
+.header-ticker {
+    font-size: 18px;
+    font-weight: 700;
+    color: #f8fafc;
+    font-family: 'SF Mono', Monaco, monospace;
+}
+
+.header-name {
+    font-size: 14px;
+    color: #94a3b8;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.header-price-top {
+    font-size: 18px;
+    font-weight: 700;
+    color: #f8fafc;
+    font-family: 'SF Mono', Monaco, monospace;
+    margin-left: auto;
+}
+
+.header-change-top {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 4px;
+}
+
+.header-change-top.positive {
+    color: #10b981;
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.header-change-top.negative {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+}
+
+@media (max-width: 768px) {
+    .header-name {
+        display: none;
+    }
 }
 
 .version {

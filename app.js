@@ -984,6 +984,13 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
+        // Update header to show stock info instead of logo
+        const headerLogo = document.getElementById('headerLogo');
+        const headerStockInfo = document.getElementById('headerStockInfo');
+        if (headerLogo) headerLogo.classList.add('hidden');
+        if (headerStockInfo) headerStockInfo.classList.remove('hidden');
+        }
+        
         loading.classList.add('hidden');
         results.classList.remove('hidden');
         
@@ -999,7 +1006,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('companyName').textContent = data.name || data.ticker || 'Unknown';
         document.getElementById('companyTicker').textContent = data.ticker || '';
         
-        // Update header price and change
+        // Update header price and change (in company header card)
         const headerPriceEl = document.getElementById('headerPrice');
         const headerChangeEl = document.getElementById('headerChange');
         if (headerPriceEl && summary.current_price) {
@@ -1016,6 +1023,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 const changeSymbol = isPositive ? '+' : '';
                 headerChangeEl.textContent = `${changeSymbol}$${change.toFixed(2)} (${changeSymbol}${changePercent.toFixed(2)}%)`;
                 headerChangeEl.className = 'header-change ' + (isPositive ? 'positive' : 'negative');
+            }
+        }
+        
+        // Update top header bar with stock info
+        const headerStockTicker = document.getElementById('headerStockTicker');
+        const headerStockName = document.getElementById('headerStockName');
+        const headerStockPrice = document.getElementById('headerStockPrice');
+        const headerStockChange = document.getElementById('headerStockChange');
+        
+        if (headerStockTicker) headerStockTicker.textContent = data.ticker || '';
+        if (headerStockName) headerStockName.textContent = data.name || '';
+        if (headerStockPrice && summary.current_price) {
+            headerStockPrice.textContent = '$' + summary.current_price.toFixed(2);
+        }
+        if (headerStockChange && window.lastPriceHistory && window.lastPriceHistory.length >= 2) {
+            const prices = window.lastPriceHistory.map(d => d.close || d.price).filter(v => v != null);
+            if (prices.length >= 2) {
+                const currentPrice = prices[prices.length - 1];
+                const priorClose = prices[prices.length - 2];
+                const changePercent = ((currentPrice - priorClose) / priorClose) * 100;
+                const isPositive = changePercent >= 0;
+                const changeSymbol = isPositive ? '+' : '';
+                headerStockChange.textContent = `${changeSymbol}${changePercent.toFixed(2)}%`;
+                headerStockChange.className = 'header-change-top ' + (isPositive ? 'positive' : 'negative');
             }
         }
         
@@ -1201,6 +1232,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             // Show empty state again on error
             empty.classList.remove('hidden');
+            
+            // Reset header to show logo
+            const headerLogo = document.getElementById('headerLogo');
+            const headerStockInfo = document.getElementById('headerStockInfo');
+            if (headerLogo) headerLogo.classList.remove('hidden');
+            if (headerStockInfo) headerStockInfo.classList.add('hidden');
         }
     }, 100);
 
