@@ -1235,11 +1235,12 @@ function drawEPSChart(data) {
     // Get shares outstanding for total earnings calculation
     const sharesOutstanding = window.sharesOutstanding || 1;
     
-    // Convert EPS to total earnings (in billions)
+    // Convert EPS to total earnings (in billions) and FCF to billions
     const convertedData = chartData.map(d => ({
         ...d,
         reported_eps: d.reported_eps ? (d.reported_eps * sharesOutstanding) / 1e9 : null,
-        estimated_eps: d.estimated_eps ? (d.estimated_eps * sharesOutstanding) / 1e9 : null
+        estimated_eps: d.estimated_eps ? (d.estimated_eps * sharesOutstanding) / 1e9 : null,
+        fcf: d.free_cash_flow ? d.free_cash_flow / 1e9 : null
     }));
     
     const ctx = canvas.getContext('2d');
@@ -1260,7 +1261,11 @@ function drawEPSChart(data) {
     ctx.clearRect(0, 0, 800, 300);
     
     // Check if we have data
-    const allValues = [...convertedData.map(d => d.reported_eps), ...convertedData.map(d => d.estimated_eps)].filter(v => v != null);
+    const allValues = [
+        ...convertedData.map(d => d.reported_eps), 
+        ...convertedData.map(d => d.estimated_eps),
+        ...convertedData.map(d => d.fcf)
+    ].filter(v => v != null);
     if (allValues.length === 0) {
         ctx.fillStyle = '#94a3b8';
         ctx.font = '14px sans-serif';
@@ -1294,14 +1299,17 @@ function drawEPSChart(data) {
     
     ctx.setLineDash([]);
     
-    // Draw bars (actual earnings)
-    const barWidth = chartWidth / convertedData.length * 0.6;
+    // Draw bars (actual earnings and FCF)
+    const groupWidth = chartWidth / convertedData.length * 0.7;
     const spacing = chartWidth / convertedData.length;
+    const barWidth = groupWidth / 2;
     
     convertedData.forEach((d, i) => {
-        const x = padding.left + spacing * i + (spacing - barWidth) / 2;
-        const barHeight = ((d.reported_eps - minVal) / (maxVal - minVal)) * chartHeight;
-        const y = padding.top + chartHeight - barHeight;
+        const groupX = padding.left + spacing * i + (spacing - groupWidth) / 2;
+        
+        // Earnings bar (left)
+        const earningsHeight = ((d.reported_eps - minVal) / (maxVal - minVal)) * chartHeight;
+        const earningsY = padding.top + chartHeight - earningsHeight;
         
         // Determine if beat or miss
         const surprise = d.reported_eps && d.estimated_eps ? 
@@ -1309,17 +1317,25 @@ function drawEPSChart(data) {
         const isBeat = surprise && surprise > 0;
         const isMiss = surprise && surprise < 0;
         
-        // Bar color based on beat/miss
-        let barColor;
+        // Earnings bar color based on beat/miss
+        let earningsColor;
         if (isBeat) {
-            barColor = '#10b981'; // Green for beat
+            earningsColor = '#10b981'; // Green for beat
         } else if (isMiss) {
-            barColor = '#ef4444'; // Red for miss
+            earningsColor = '#ef4444'; // Red for miss
         } else {
-            barColor = '#3b82f6'; // Blue for neutral
+            earningsColor = '#3b82f6'; // Blue for neutral
         }
-        ctx.fillStyle = barColor;
-        ctx.fillRect(x, y, barWidth, barHeight);
+        ctx.fillStyle = earningsColor;
+        ctx.fillRect(groupX, earningsY, barWidth, earningsHeight);
+        
+        // FCF bar (right) - purple color
+        if (d.fcf !== null) {
+            const fcfHeight = ((d.fcf - minVal) / (maxVal - minVal)) * chartHeight;
+            const fcfY = padding.top + chartHeight - fcfHeight;
+            ctx.fillStyle = '#8b5cf6'; // Purple for FCF
+            ctx.fillRect(groupX + barWidth + 2, fcfY, barWidth, fcfHeight);
+        }
         
         // Add pattern overlay for accessibility (color blindness)
         if (isBeat) {
@@ -1381,11 +1397,11 @@ function drawEPSChart(data) {
             }
         }
         
-        // X label
+        // X label (centered under the group)
         ctx.fillStyle = '#94a3b8';
         ctx.font = '11px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(d.fiscal_date.slice(0, 7), x + barWidth / 2, padding.top + chartHeight + 20);
+        ctx.fillText(d.fiscal_date.slice(0, 7), groupX + groupWidth / 2, padding.top + chartHeight + 20);
     });
     
     // Draw line (estimated EPS)
@@ -1416,6 +1432,7 @@ function drawEPSChart(data) {
     // Interactive Legend with click to toggle
     const legendItems = [
         { label: 'Actual Earnings', color: '#3b82f6', type: 'bar', key: 'actual', visible: true },
+        { label: 'FCF', color: '#8b5cf6', type: 'bar', key: 'fcf', visible: true },
         { label: 'Estimated Earnings', color: '#f59e0b', type: 'line', key: 'estimated', visible: true }
     ];
     
