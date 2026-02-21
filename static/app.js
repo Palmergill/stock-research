@@ -1005,30 +1005,20 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('revenueGrowth').textContent = 'N/A';
         }
         
-        document.getElementById('freeCashFlow').textContent = formatMarketCap(summary.free_cash_flow);
+        // Calculate TTM Earnings and Revenue from last 4 quarters
+        const earnings = data.earnings || [];
+        const last4Quarters = earnings.slice(0, 4);
+        const ttmEarnings = last4Quarters.reduce((sum, e) => sum + (e.reported_eps || 0), 0);
+        const ttmRevenue = last4Quarters.reduce((sum, e) => sum + (e.revenue || 0), 0);
         
-        if (summary.debt_to_equity != null) {
-            animateCountUp(document.getElementById('debtToEquity'), 0, summary.debt_to_equity, 500, '', '', 2);
-        } else {
-            document.getElementById('debtToEquity').textContent = 'N/A';
+        const ttmEarningsEl = document.getElementById('ttmEarnings');
+        if (ttmEarningsEl) {
+            ttmEarningsEl.textContent = '$' + ttmEarnings.toFixed(2) + '/share';
         }
         
-        if (summary.roe != null) {
-            animateCountUp(document.getElementById('roe'), 0, summary.roe, 500, '', '%', 2);
-        } else {
-            document.getElementById('roe').textContent = 'N/A';
-        }
-        
-        if (summary.profit_margin != null) {
-            animateCountUp(document.getElementById('profitMargin'), 0, summary.profit_margin, 500, '', '%', 2);
-        } else {
-            document.getElementById('profitMargin').textContent = 'N/A';
-        }
-        
-        if (summary.operating_margin != null) {
-            animateCountUp(document.getElementById('operatingMargin'), 0, summary.operating_margin, 500, '', '%', 2);
-        } else {
-            document.getElementById('operatingMargin').textContent = 'N/A';
+        const ttmRevenueEl = document.getElementById('ttmRevenue');
+        if (ttmRevenueEl) {
+            ttmRevenueEl.textContent = formatMarketCap(ttmRevenue);
         }
         
         // Calculate and display trends based on earnings data

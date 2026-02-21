@@ -250,61 +250,31 @@
                     <div class="card metrics-overview metrics-key">
                         <h3>Key Metrics</h3>
                         <div class="metrics-grid-compact metrics-row">
-                            <div class="metric" data-trend="neutral" title="What you're paying for each dollar of earnings. Compare to industry peers and historical averages to gauge if the stock is cheap or expensive.">
+                            <div class="metric" data-trend="neutral" title="What you're paying for each dollar of earnings. Compare to industry peers and historical averages.">
                                 <span class="metric-label">P/E Ratio</span>
-                                <div class="metric-value-row">
-                                    <div class="metric-value-container">
-                                        <span id="peRatio" class="metric-value"></span>
-                                        <span class="metric-trend"></span>
-                                    </div>
-                                    <canvas class="sparkline" id="peSparkline" width="60" height="20"></canvas>
+                                <div class="metric-value-container">
+                                    <span id="peRatio" class="metric-value"></span>
+                                    <span class="metric-trend"></span>
                                 </div>
                             </div>
-                            <div class="metric" data-trend="neutral" title="Year-over-year growth in revenue. Shows whether the business is expanding. Top-line growth is harder to fake than earnings.">
+                            <div class="metric" data-trend="neutral" title="Total earnings over the past 12 months.">
+                                <span class="metric-label">Earnings</span>
+                                <div class="metric-value-container">
+                                    <span id="ttmEarnings" class="metric-value"></span>
+                                    <span class="metric-trend"></span>
+                                </div>
+                            </div>
+                            <div class="metric" data-trend="neutral" title="Total revenue over the past 12 months.">
+                                <span class="metric-label">Revenue</span>
+                                <div class="metric-value-container">
+                                    <span id="ttmRevenue" class="metric-value"></span>
+                                    <span class="metric-trend"></span>
+                                </div>
+                            </div>
+                            <div class="metric" data-trend="neutral" title="Year-over-year growth in revenue. Shows whether the business is expanding.">
                                 <span class="metric-label">Revenue Growth (YoY)</span>
-                                <div class="metric-value-row">
-                                    <div class="metric-value-container">
-                                        <span id="revenueGrowth" class="metric-value"></span>
-                                        <span class="metric-trend"></span>
-                                    </div>
-                                    <canvas class="sparkline" id="revenueSparkline" width="60" height="20"></canvas>
-                                </div>
-                            </div>
-                            <div class="metric" data-trend="neutral" title="Cash left after running the business and capital expenditures. Available for dividends, buybacks, debt reduction, or reinvestment. More reliable than net income.">
-                                <span class="metric-label">Free Cash Flow</span>
-                                <div class="metric-value-row">
-                                    <div class="metric-value-container">
-                                        <span id="freeCashFlow" class="metric-value"></span>
-                                        <span class="metric-trend"></span>
-                                    </div>
-                                    <canvas class="sparkline" id="fcfSparkline" width="60" height="20"></canvas>
-                                </div>
-                            </div>
-                            <div class="metric" data-trend="neutral" title="How leveraged the company is. High debt amplifies returns in good times but can be fatal in downturns. Shows financial risk and flexibility.">
-                                <span class="metric-label">Debt-to-Equity</span>
                                 <div class="metric-value-container">
-                                    <span id="debtToEquity" class="metric-value"></span>
-                                    <span class="metric-trend"></span>
-                                </div>
-                            </div>
-                            <div class="metric" data-trend="neutral" title="How effectively management converts shareholder capital into profits. Consistently high ROE (15%+) often signals a durable competitive advantage.">
-                                <span class="metric-label">Return on Equity</span>
-                                <div class="metric-value-container">
-                                    <span id="roe" class="metric-value"></span>
-                                    <span class="metric-trend"></span>
-                                </div>
-                            </div>
-                            <div class="metric" data-trend="neutral" title="Net income as a percentage of revenue. Shows how much profit the company keeps from each dollar of sales.">
-                                <span class="metric-label">Profit Margin</span>
-                                <div class="metric-value-container">
-                                    <span id="profitMargin" class="metric-value"></span>
-                                    <span class="metric-trend"></span>
-                                </div>
-                            </div>
-                            <div class="metric" data-trend="neutral" title="Operating income as a percentage of revenue. Measures efficiency of core business operations.">
-                                <span class="metric-label">Operating Margin</span>
-                                <div class="metric-value-container">
-                                    <span id="operatingMargin" class="metric-value"></span>
+                                    <span id="revenueGrowth" class="metric-value"></span>
                                     <span class="metric-trend"></span>
                                 </div>
                             </div>
