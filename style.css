@@ -2473,3 +2473,71 @@ button,
         font-size: 32px;
     }
 }
+
+/* ============================================
+   KEY METRICS - OPTION B STYLE
+   ============================================ */
+
+.metrics-key-simple {
+    padding: 16px;
+}
+
+.key-metrics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.key-metric {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 10px;
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.2s ease;
+}
+
+.key-metric:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.key-metric-left {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.key-metric-label {
+    font-size: 12px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.key-metric-value {
+    font-size: 22px;
+    font-weight: 700;
+    color: #f8fafc;
+    font-family: 'SF Mono', Monaco, monospace;
+}
+
+.key-metric-change {
+    font-size: 14px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 6px;
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+}
+
+.key-metric-change.negative {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+
+@media (max-width: 768px) {
+    .key-metrics-grid {
+        grid-template-columns: 1fr;
+    }
+}
