@@ -1049,28 +1049,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('cash').textContent = formatMarketCap(summary.cash);
         document.getElementById('workingCapital').textContent = formatMarketCap(summary.working_capital);
         
-        // Market Data
-        document.getElementById('price52wHigh').textContent = summary.price_52w_high 
-            ? `$${summary.price_52w_high.toFixed(2)}` 
-            : '-';
-        document.getElementById('price52wLow').textContent = summary.price_52w_low 
-            ? `$${summary.price_52w_low.toFixed(2)}` 
-            : '-';
-        
-        // Calculate 52-week position
-        if (summary.current_price && summary.price_52w_high && summary.price_52w_low) {
-            const range = summary.price_52w_high - summary.price_52w_low;
-            const position = ((summary.current_price - summary.price_52w_low) / range) * 100;
-            document.getElementById('price52wPosition').textContent = `${position.toFixed(1)}%`;
-        } else {
-            document.getElementById('price52wPosition').textContent = '-';
-        }
-        
-        document.getElementById('beta').textContent = formatNumber(summary.beta);
-        document.getElementById('avgVolume').textContent = summary.avg_volume 
-            ? formatNumber(summary.avg_volume / 1e6) + 'M' 
-            : '-';
-        
         // Draw charts (reverse data for chronological order)
         const chartData = [...data.earnings].reverse();
         window.lastChartData = chartData;  // Store for tab switching
