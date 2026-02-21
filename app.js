@@ -1052,6 +1052,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Draw charts (reverse data for chronological order)
         const chartData = [...data.earnings].reverse();
         window.lastChartData = chartData;  // Store for tab switching
+        window.sharesOutstanding = summary.shares_outstanding; // Store for total earnings calc
         
         // Get active tab safely
         const activeTabEl = document.querySelector('.tab-content.active');
@@ -1231,6 +1232,16 @@ function drawEPSChart(data) {
     // Show only last 4 quarters for cleaner chart
     const chartData = data.slice(-4);
     
+    // Get shares outstanding for total earnings calculation
+    const sharesOutstanding = window.sharesOutstanding || 1;
+    
+    // Convert EPS to total earnings (in billions)
+    const convertedData = chartData.map(d => ({
+        ...d,
+        reported_eps: d.reported_eps ? (d.reported_eps * sharesOutstanding) / 1e9 : null,
+        estimated_eps: d.estimated_eps ? (d.estimated_eps * sharesOutstanding) / 1e9 : null
+    }));
+    
     const ctx = canvas.getContext('2d');
     const dpr = window.devicePixelRatio || 1;
     
@@ -1249,12 +1260,12 @@ function drawEPSChart(data) {
     ctx.clearRect(0, 0, 800, 300);
     
     // Check if we have data
-    const allValues = [...chartData.map(d => d.reported_eps), ...chartData.map(d => d.estimated_eps)].filter(v => v != null);
+    const allValues = [...convertedData.map(d => d.reported_eps), ...convertedData.map(d => d.estimated_eps)].filter(v => v != null);
     if (allValues.length === 0) {
         ctx.fillStyle = '#94a3b8';
         ctx.font = '14px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('No EPS data available', 400, 150);
+        ctx.fillText('No earnings data available', 400, 150);
         return;
     }
     
@@ -1273,21 +1284,21 @@ function drawEPSChart(data) {
         ctx.lineTo(padding.left + chartWidth, y);
         ctx.stroke();
         
-        // Y-axis labels
+        // Y-axis labels (in billions)
         const val = maxVal - (maxVal - minVal) * i / 5;
         ctx.fillStyle = '#94a3b8';
         ctx.font = '12px sans-serif';
         ctx.textAlign = 'right';
-        ctx.fillText(`$${val.toFixed(2)}`, padding.left - 10, y + 4);
+        ctx.fillText(`$${val.toFixed(1)}B`, padding.left - 10, y + 4);
     }
     
     ctx.setLineDash([]);
     
-    // Draw bars (actual EPS)
-    const barWidth = chartWidth / chartData.length * 0.6;
-    const spacing = chartWidth / chartData.length;
+    // Draw bars (actual earnings)
+    const barWidth = chartWidth / convertedData.length * 0.6;
+    const spacing = chartWidth / convertedData.length;
     
-    chartData.forEach((d, i) => {
+    convertedData.forEach((d, i) => {
         const x = padding.left + spacing * i + (spacing - barWidth) / 2;
         const barHeight = ((d.reported_eps - minVal) / (maxVal - minVal)) * chartHeight;
         const y = padding.top + chartHeight - barHeight;
@@ -1392,7 +1403,7 @@ function drawEPSChart(data) {
     ctx.stroke();
     
     // Draw dots for estimates
-    chartData.forEach((d, i) => {
+    convertedData.forEach((d, i) => {
         const x = padding.left + spacing * i + spacing / 2;
         const y = padding.top + chartHeight - ((d.estimated_eps - minVal) / (maxVal - minVal)) * chartHeight;
         
@@ -1404,8 +1415,8 @@ function drawEPSChart(data) {
     
     // Interactive Legend with click to toggle
     const legendItems = [
-        { label: 'Actual EPS', color: '#3b82f6', type: 'bar', key: 'actual', visible: true },
-        { label: 'Estimated EPS', color: '#f59e0b', type: 'line', key: 'estimated', visible: true }
+        { label: 'Actual Earnings', color: '#3b82f6', type: 'bar', key: 'actual', visible: true },
+        { label: 'Estimated Earnings', color: '#f59e0b', type: 'line', key: 'estimated', visible: true }
     ];
     
     // Store legend state on canvas
