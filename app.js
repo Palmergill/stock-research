@@ -1046,6 +1046,23 @@ document.addEventListener('DOMContentLoaded', () => {
             revenueChangeEl.className = 'metric-change ' + (revenueChange >= 0 ? 'positive' : 'negative');
         }
         
+        // Calculate TTM FCF and YoY change
+        const ttmFCF = last4Quarters.reduce((sum, e) => sum + (e.free_cash_flow || 0), 0);
+        const prevTTMFCF = prev4Quarters.reduce((sum, e) => sum + (e.free_cash_flow || 0), 0);
+        
+        const ttmFCFEl = document.getElementById('ttmFCF');
+        if (ttmFCFEl) {
+            ttmFCFEl.textContent = formatMarketCap(ttmFCF);
+        }
+        
+        const fcfChangeEl = document.getElementById('ttmFCFChange');
+        if (fcfChangeEl && prevTTMFCF > 0) {
+            const fcfChange = ((ttmFCF - prevTTMFCF) / prevTTMFCF) * 100;
+            const changeSymbol = fcfChange >= 0 ? '+' : '';
+            fcfChangeEl.textContent = `${changeSymbol}${fcfChange.toFixed(1)}%`;
+            fcfChangeEl.className = 'metric-change ' + (fcfChange >= 0 ? 'positive' : 'negative');
+        }
+        
         // Calculate and display trends based on earnings data
         calculateAndDisplayTrends(data.earnings || []);
         
