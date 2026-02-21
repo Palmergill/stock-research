@@ -564,12 +564,12 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        // Visual feedback
-        const btnText = searchBtn.querySelector('.btn-text');
-        const btnSpinner = searchBtn.querySelector('.btn-spinner');
+        // Visual feedback (only if button has spinner elements)
+        const btnText = searchBtn?.querySelector?.('.btn-text');
+        const btnSpinner = searchBtn?.querySelector?.('.btn-spinner');
         if (btnText) btnText.classList.add('hidden');
         if (btnSpinner) btnSpinner.classList.remove('hidden');
-        searchBtn.disabled = true;
+        if (searchBtn) searchBtn.disabled = true;
         
         try {
             await loadStock(ticker);
@@ -960,14 +960,14 @@ document.addEventListener('DOMContentLoaded', () => {
             errorMessage.innerHTML = `<strong>Error:</strong> ${displayError}<br><br><button onclick="document.getElementById('retryBtn').click()" class="retry-btn">Try Again</button>`;
             console.error('Load error:', err);
         } finally {
-            searchBtn.disabled = false;
+            if (searchBtn) searchBtn.disabled = false;
             
-            // Hide loading spinners
+            // Hide loading spinners (only if they exist)
             const inputSpinner = document.getElementById('inputSpinner');
             const btnSpinner = document.querySelector('#searchBtn .btn-spinner');
             if (inputSpinner) inputSpinner.classList.add('hidden');
             if (btnSpinner) btnSpinner.classList.add('hidden');
-            searchBtn.classList.remove('loading');
+            if (searchBtn) searchBtn.classList.remove('loading');
             
             // Stop stock tips
             stopStockTips();
