@@ -1008,12 +1008,15 @@ document.addEventListener('DOMContentLoaded', () => {
         // Calculate TTM Earnings and Revenue from last 4 quarters
         const earnings = data.earnings || [];
         const last4Quarters = earnings.slice(0, 4);
-        const ttmEarnings = last4Quarters.reduce((sum, e) => sum + (e.reported_eps || 0), 0);
+        const ttmEPS = last4Quarters.reduce((sum, e) => sum + (e.reported_eps || 0), 0);
         const ttmRevenue = last4Quarters.reduce((sum, e) => sum + (e.revenue || 0), 0);
+        
+        // Convert to total earnings using shares outstanding
+        const ttmTotalEarnings = summary.shares_outstanding ? (ttmEPS * summary.shares_outstanding) / 1e9 : 0;
         
         const ttmEarningsEl = document.getElementById('ttmEarnings');
         if (ttmEarningsEl) {
-            ttmEarningsEl.textContent = '$' + ttmEarnings.toFixed(2) + '/share';
+            ttmEarningsEl.textContent = '$' + ttmTotalEarnings.toFixed(2) + 'B';
         }
         
         const ttmRevenueEl = document.getElementById('ttmRevenue');
