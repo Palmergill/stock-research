@@ -2481,23 +2481,23 @@ button,
 }
 
 /* ============================================
-   KEY METRICS - OPTION B STYLE
+   KEY METRICS - OPTION B STYLE (Compact)
    ============================================ */
 
 .metrics-key-simple {
-    padding: 16px;
+    padding: 12px;
 }
 
 .key-metrics-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 12px;
+    gap: 8px;
 }
 
 .key-metric {
     background: rgba(255, 255, 255, 0.03);
-    border-radius: 10px;
-    padding: 16px 20px;
+    border-radius: 8px;
+    padding: 10px 14px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -2511,28 +2511,29 @@ button,
 .key-metric-left {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 2px;
 }
 
 .key-metric-label {
-    font-size: 12px;
+    font-size: 10px;
     color: #94a3b8;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    font-weight: 500;
 }
 
 .key-metric-value {
-    font-size: 22px;
-    font-weight: 700;
+    font-size: 16px;
+    font-weight: 600;
     color: #f8fafc;
     font-family: 'SF Mono', Monaco, monospace;
 }
 
 .key-metric-change {
-    font-size: 14px;
-    font-weight: 600;
-    padding: 6px 12px;
-    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 8px;
+    border-radius: 4px;
     background: rgba(16, 185, 129, 0.1);
     color: #10b981;
 }
