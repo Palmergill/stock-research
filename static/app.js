@@ -1008,6 +1008,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Calculate TTM Earnings and Revenue from last 4 quarters
         const earnings = data.earnings || [];
         const last4Quarters = earnings.slice(0, 4);
+        const prev4Quarters = earnings.slice(4, 8);
         const ttmEPS = last4Quarters.reduce((sum, e) => sum + (e.reported_eps || 0), 0);
         const ttmRevenue = last4Quarters.reduce((sum, e) => sum + (e.revenue || 0), 0);
         
@@ -1022,6 +1023,27 @@ document.addEventListener('DOMContentLoaded', () => {
         const ttmRevenueEl = document.getElementById('ttmRevenue');
         if (ttmRevenueEl) {
             ttmRevenueEl.textContent = formatMarketCap(ttmRevenue);
+        }
+        
+        // Calculate YoY changes
+        const prevTTMEPS = prev4Quarters.reduce((sum, e) => sum + (e.reported_eps || 0), 0);
+        const prevTTMRevenue = prev4Quarters.reduce((sum, e) => sum + (e.revenue || 0), 0);
+        const prevTTMTotalEarnings = summary.shares_outstanding ? (prevTTMEPS * summary.shares_outstanding) / 1e9 : 0;
+        
+        const earningsChangeEl = document.getElementById('ttmEarningsChange');
+        if (earningsChangeEl && prevTTMTotalEarnings > 0) {
+            const earningsChange = ((ttmTotalEarnings - prevTTMTotalEarnings) / prevTTMTotalEarnings) * 100;
+            const changeSymbol = earningsChange >= 0 ? '+' : '';
+            earningsChangeEl.textContent = `${changeSymbol}${earningsChange.toFixed(1)}%`;
+            earningsChangeEl.className = 'metric-change ' + (earningsChange >= 0 ? 'positive' : 'negative');
+        }
+        
+        const revenueChangeEl = document.getElementById('ttmRevenueChange');
+        if (revenueChangeEl && prevTTMRevenue > 0) {
+            const revenueChange = ((ttmRevenue - prevTTMRevenue) / prevTTMRevenue) * 100;
+            const changeSymbol = revenueChange >= 0 ? '+' : '';
+            revenueChangeEl.textContent = `${changeSymbol}${revenueChange.toFixed(1)}%`;
+            revenueChangeEl.className = 'metric-change ' + (revenueChange >= 0 ? 'positive' : 'negative');
         }
         
         // Calculate and display trends based on earnings data

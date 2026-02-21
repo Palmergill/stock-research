@@ -248,7 +248,6 @@
 
                     <!-- Key Metrics Grid -->
                     <div class="card metrics-overview metrics-key">
-                        <h3>Key Metrics</h3>
                         <div class="metrics-grid-compact metrics-row">
                             <div class="metric" data-trend="neutral" title="What you're paying for each dollar of earnings. Compare to industry peers and historical averages.">
                                 <span class="metric-label">P/E Ratio</span>
@@ -257,25 +256,18 @@
                                     <span class="metric-trend"></span>
                                 </div>
                             </div>
-                            <div class="metric" data-trend="neutral" title="Total earnings over the past 12 months.">
+                            <div class="metric" data-trend="neutral" title="Total earnings over the past 12 months with year-over-year growth.">
                                 <span class="metric-label">Earnings</span>
                                 <div class="metric-value-container">
                                     <span id="ttmEarnings" class="metric-value"></span>
-                                    <span class="metric-trend"></span>
+                                    <span id="ttmEarningsChange" class="metric-change"></span>
                                 </div>
                             </div>
-                            <div class="metric" data-trend="neutral" title="Total revenue over the past 12 months.">
+                            <div class="metric" data-trend="neutral" title="Total revenue over the past 12 months with year-over-year growth.">
                                 <span class="metric-label">Revenue</span>
                                 <div class="metric-value-container">
                                     <span id="ttmRevenue" class="metric-value"></span>
-                                    <span class="metric-trend"></span>
-                                </div>
-                            </div>
-                            <div class="metric" data-trend="neutral" title="Year-over-year growth in revenue. Shows whether the business is expanding.">
-                                <span class="metric-label">Revenue Growth (YoY)</span>
-                                <div class="metric-value-container">
-                                    <span id="revenueGrowth" class="metric-value"></span>
-                                    <span class="metric-trend"></span>
+                                    <span id="ttmRevenueChange" class="metric-change"></span>
                                 </div>
                             </div>
                         </div>

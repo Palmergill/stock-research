@@ -1461,6 +1461,25 @@ button .ripple {
     transform: translateX(0);
 }
 
+.metric-change {
+    font-size: 12px;
+    font-weight: 600;
+    margin-left: 8px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.metric-change.positive {
+    color: var(--accent-green);
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.metric-change.negative {
+    color: var(--accent-red);
+    background: rgba(239, 68, 68, 0.1);
+}
+
 .metric[data-trend="up"] .metric-trend::before {
     content: '↗';
     color: var(--accent-green);
