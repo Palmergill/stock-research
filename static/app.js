@@ -989,7 +989,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const headerStockInfo = document.getElementById('headerStockInfo');
         if (headerLogo) headerLogo.classList.add('hidden');
         if (headerStockInfo) headerStockInfo.classList.remove('hidden');
-        }
         
         loading.classList.add('hidden');
         results.classList.remove('hidden');
