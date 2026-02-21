@@ -1342,14 +1342,14 @@ function drawEPSChart(data) {
             // Diagonal stripes for beat
             ctx.save();
             ctx.beginPath();
-            ctx.rect(x, y, barWidth, barHeight);
+            ctx.rect(groupX, earningsY, barWidth, earningsHeight);
             ctx.clip();
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
             ctx.lineWidth = 2;
-            for (let i = -barHeight; i < barWidth; i += 6) {
+            for (let si = -earningsHeight; si < barWidth; si += 6) {
                 ctx.beginPath();
-                ctx.moveTo(x + i, y + barHeight);
-                ctx.lineTo(x + i + barHeight, y);
+                ctx.moveTo(groupX + si, earningsY + earningsHeight);
+                ctx.lineTo(groupX + si + earningsHeight, earningsY);
                 ctx.stroke();
             }
             ctx.restore();
@@ -1357,13 +1357,13 @@ function drawEPSChart(data) {
             // Dots for miss
             ctx.save();
             ctx.beginPath();
-            ctx.rect(x, y, barWidth, barHeight);
+            ctx.rect(groupX, earningsY, barWidth, earningsHeight);
             ctx.clip();
             ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
             for (let dx = 4; dx < barWidth; dx += 8) {
-                for (let dy = 4; dy < barHeight; dy += 8) {
+                for (let dy = 4; dy < earningsHeight; dy += 8) {
                     ctx.beginPath();
-                    ctx.arc(x + dx, y + dy, 1.5, 0, Math.PI * 2);
+                    ctx.arc(groupX + dx, earningsY + dy, 1.5, 0, Math.PI * 2);
                     ctx.fill();
                 }
             }
@@ -1372,28 +1372,28 @@ function drawEPSChart(data) {
         
         // Add surprise indicator above bar
         if (surprise !== null) {
-            const surpriseY = y - 25;
+            const surpriseY = earningsY - 25;
             const surpriseText = isBeat ? `+${surprise.toFixed(1)}%` : `${surprise.toFixed(1)}%`;
             
             // Background pill
             ctx.fillStyle = isBeat ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)';
             ctx.beginPath();
-            ctx.roundRect(x + barWidth/2 - 25, surpriseY - 8, 50, 16, 8);
+            ctx.roundRect(groupX + barWidth/2 - 25, surpriseY - 8, 50, 16, 8);
             ctx.fill();
             
             // Text
             ctx.fillStyle = isBeat ? '#10b981' : '#ef4444';
             ctx.font = 'bold 10px sans-serif';
             ctx.textAlign = 'center';
-            ctx.fillText(surpriseText, x + barWidth / 2, surpriseY + 3);
+            ctx.fillText(surpriseText, groupX + barWidth / 2, surpriseY + 3);
             
             // Beat/Miss icon
             ctx.font = '12px sans-serif';
             const iconY = surpriseY - 12;
             if (isBeat) {
-                ctx.fillText('▲', x + barWidth / 2, iconY);
+                ctx.fillText('▲', groupX + barWidth / 2, iconY);
             } else if (isMiss) {
-                ctx.fillText('▼', x + barWidth / 2, iconY);
+                ctx.fillText('▼', groupX + barWidth / 2, iconY);
             }
         }
         
