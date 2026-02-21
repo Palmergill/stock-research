@@ -13,31 +13,33 @@
                 <h1>🦞 Stock Research</h1>
                 <span id="version" class="version">v2.0.0</span>
             </div>
-            <form id="searchForm">
-                <div class="search-container">
-                    <div class="input-wrapper">
+            <button id="searchIconBtn" class="search-icon-btn" title="Search">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M9 17A8 8 0 1 0 9 1a8 8 0 0 0 0 16zM19 19l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+        </header>
+        
+        <!-- Search Modal -->
+        <div id="searchModal" class="search-modal hidden">
+            <div class="search-modal-backdrop"></div>
+            <div class="search-modal-content">
+                <form id="searchForm" class="search-modal-form">
+                    <div class="search-modal-input-wrapper">
                         <input 
                             type="text" 
                             id="tickerInput" 
                             placeholder="Search ticker or company name..." 
                             autocomplete="off"
+                            autofocus
                         >
-                        <div class="input-spinner hidden" id="inputSpinner">
-                            <div class="spinner-ring"></div>
-                        </div>
-                        <div class="input-underline"></div>
-                        <div class="input-underline-focus"></div>
+                        <button type="submit" id="searchBtn">Search</button>
                     </div>
                     <div id="searchSuggestions" class="suggestions hidden"></div>
-                </div>
-                <button type="submit" id="searchBtn">
-                    <span class="btn-text">Search</span>
-                    <span class="btn-spinner hidden">
-                        <div class="spinner-ring"></div>
-                    </span>
-                </button>
-            </form>
-        </header>
+                </form>
+                <button id="closeSearchModal" class="close-search-modal">&times;</button>
+            </div>
+        </div>
 
         <main id="main">
             <div id="loading" class="loading hidden">

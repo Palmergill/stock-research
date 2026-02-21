@@ -273,6 +273,48 @@ document.addEventListener('DOMContentLoaded', () => {
     const retryBtn = document.getElementById('retryBtn');
     const empty = document.getElementById('empty');
     const results = document.getElementById('results');
+    const searchModal = document.getElementById('searchModal');
+    const searchIconBtn = document.getElementById('searchIconBtn');
+    const closeSearchModal = document.getElementById('closeSearchModal');
+    
+    // Search Modal Functions
+    function openSearchModal() {
+        if (searchModal) {
+            searchModal.classList.remove('hidden');
+            tickerInput.focus();
+        }
+    }
+    
+    function closeSearchModalFn() {
+        if (searchModal) {
+            searchModal.classList.add('hidden');
+            searchSuggestions.classList.add('hidden');
+            tickerInput.value = '';
+        }
+    }
+    
+    if (searchIconBtn) {
+        searchIconBtn.addEventListener('click', openSearchModal);
+    }
+    
+    if (closeSearchModal) {
+        closeSearchModal.addEventListener('click', closeSearchModalFn);
+    }
+    
+    if (searchModal) {
+        searchModal.addEventListener('click', (e) => {
+            if (e.target === searchModal || e.target.classList.contains('search-modal-backdrop')) {
+                closeSearchModalFn();
+            }
+        });
+    }
+    
+    // ESC key to close modal
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && searchModal && !searchModal.classList.contains('hidden')) {
+            closeSearchModalFn();
+        }
+    });
     
     // Verify critical elements exist
     if (!searchForm || !tickerInput || !searchBtn) {
@@ -512,6 +554,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e) e.preventDefault();
         const ticker = tickerInput.value.trim().toUpperCase();
         if (!ticker) return;
+        
+        // Close modal and clear input
+        closeSearchModalFn();
         
         // Shelby Easter Egg
         if (ticker === 'SHELBY') {
