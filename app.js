@@ -274,7 +274,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const empty = document.getElementById('empty');
     const results = document.getElementById('results');
     const searchModal = document.getElementById('searchModal');
-    const searchIconBtn = document.getElementById('searchIconBtn');
+    const searchIconBtnMain = document.getElementById('searchIconBtnMain');
+    const searchIconBtnInline = document.getElementById('searchIconBtnInline');
     const closeSearchModal = document.getElementById('closeSearchModal');
     
     // Search Modal Functions
@@ -293,8 +294,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    if (searchIconBtn) {
-        searchIconBtn.addEventListener('click', openSearchModal);
+    if (searchIconBtnMain) {
+        searchIconBtnMain.addEventListener('click', openSearchModal);
+    }
+    
+    if (searchIconBtnInline) {
+        searchIconBtnInline.addEventListener('click', openSearchModal);
     }
     
     if (closeSearchModal) {
@@ -960,11 +965,11 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Update header to show stock info instead of logo
         const headerLogo = document.getElementById('headerLogo');
-        const headerStockInfo = document.getElementById('headerStockInfo');
-        const headerTabs = document.getElementById('headerTabs');
+        const headerStockContent = document.getElementById('headerStockContent');
+        const searchIconBtnMain = document.getElementById('searchIconBtnMain');
         if (headerLogo) headerLogo.classList.add('hidden');
-        if (headerStockInfo) headerStockInfo.classList.remove('hidden');
-        if (headerTabs) headerTabs.classList.remove('hidden');
+        if (headerStockContent) headerStockContent.classList.remove('hidden');
+        if (searchIconBtnMain) searchIconBtnMain.classList.add('hidden');
         
         loading.classList.add('hidden');
         results.classList.remove('hidden');
@@ -1186,11 +1191,11 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Reset header to show logo
             const headerLogo = document.getElementById('headerLogo');
-            const headerStockInfo = document.getElementById('headerStockInfo');
-            const headerTabs = document.getElementById('headerTabs');
+            const headerStockContent = document.getElementById('headerStockContent');
+            const searchIconBtnMain = document.getElementById('searchIconBtnMain');
             if (headerLogo) headerLogo.classList.remove('hidden');
-            if (headerStockInfo) headerStockInfo.classList.add('hidden');
-            if (headerTabs) headerTabs.classList.add('hidden');
+            if (headerStockContent) headerStockContent.classList.add('hidden');
+            if (searchIconBtnMain) searchIconBtnMain.classList.remove('hidden');
         }
     }, 100);
 

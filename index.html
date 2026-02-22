@@ -13,19 +13,26 @@
                 <h1>🦞 Stock Research</h1>
                 <span id="version" class="version">v2.0.0</span>
             </div>
-            <div class="header-stock-info hidden" id="headerStockInfo">
-                <span id="headerStockTicker" class="header-ticker"></span>
-                <span id="headerStockName" class="header-name"></span>
-                <span id="headerStockPrice" class="header-price-top"></span>
-                <span id="headerStockChange" class="header-change-top"></span>
+            <div class="header-stock-content hidden" id="headerStockContent">
+                <div class="header-row-1">
+                    <div class="header-stock-left">
+                        <span id="headerStockTicker" class="header-ticker-large">TSLA</span>
+                        <span id="headerStockName" class="header-name-large">Tesla, Inc.</span>
+                    </div>
+                    <div class="header-stock-right">
+                        <span id="headerStockPrice" class="header-price-large">$417.44</span>
+                        <span id="headerStockChange" class="header-change-badge positive">+5.2%</span>
+                        <button id="searchIconBtn" class="search-icon-btn-inline" title="Search">🔍</button>
+                    </div>
+                </div>
+                <div class="header-row-2">
+                    <button class="header-tab-btn active" data-tab="overview">Overview</button>
+                    <button class="header-tab-btn" data-tab="earnings">Earnings</button>
+                    <button class="header-tab-btn" data-tab="financials">Financials</button>
+                    <button class="header-tab-btn" data-tab="valuation">Valuation</button>
+                </div>
             </div>
-            <div class="header-tabs hidden" id="headerTabs">
-                <button class="header-tab-btn active" data-tab="overview">Overview</button>
-                <button class="header-tab-btn" data-tab="earnings">Earnings</button>
-                <button class="header-tab-btn" data-tab="financials">Financials</button>
-                <button class="header-tab-btn" data-tab="valuation">Valuation</button>
-            </div>
-            <button id="searchIconBtn" class="search-icon-btn" title="Search">🔍</button>
+            <button id="searchIconBtnMain" class="search-icon-btn" title="Search">🔍</button>
         </header>
         
         <!-- Search Modal -->
