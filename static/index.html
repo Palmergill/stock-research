@@ -19,6 +19,12 @@
                 <span id="headerStockPrice" class="header-price-top"></span>
                 <span id="headerStockChange" class="header-change-top"></span>
             </div>
+            <div class="header-tabs hidden" id="headerTabs">
+                <button class="header-tab-btn active" data-tab="overview">Overview</button>
+                <button class="header-tab-btn" data-tab="earnings">Earnings</button>
+                <button class="header-tab-btn" data-tab="financials">Financials</button>
+                <button class="header-tab-btn" data-tab="valuation">Valuation</button>
+            </div>
             <button id="searchIconBtn" class="search-icon-btn" title="Search">🔍</button>
         </header>
         
@@ -208,29 +214,6 @@
             </div>
 
             <div id="results" class="hidden">
-                <!-- Header with company name and price -->
-                <div class="card company-header">
-                    <div class="company-header-content">
-                        <div>
-                            <h2 id="companyName"></h2>
-                            <span id="companyTicker" class="ticker"></span>
-                        </div>
-                        <div class="company-price">
-                            <span id="headerPrice" class="header-price"></span>
-                            <span id="headerChange" class="header-change"></span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tab Navigation -->
-                <div class="tabs">
-                    <div class="tab-indicator"></div>
-                    <button class="tab-btn active" data-tab="overview">Overview</button>
-                    <button class="tab-btn" data-tab="earnings">Earnings</button>
-                    <button class="tab-btn" data-tab="financials">Financials</button>
-                    <button class="tab-btn" data-tab="valuation">Valuation</button>
-                </div>
-
                 <!-- Tab Contents Container -->
                 <div class="tab-content-container">
                 <!-- Tab Content: Overview -->

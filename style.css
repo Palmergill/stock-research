@@ -136,9 +136,54 @@ header {
     background: rgba(239, 68, 68, 0.1);
 }
 
+/* Header Tabs */
+.header-tabs {
+    display: flex;
+    gap: 4px;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 4px;
+    border-radius: 8px;
+    margin: 0 16px;
+}
+
+.header-tabs.hidden {
+    display: none;
+}
+
+.header-tab-btn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.header-tab-btn:hover {
+    color: #e2e8f0;
+}
+
+.header-tab-btn.active {
+    background: rgba(59, 130, 246, 0.2);
+    color: #3b82f6;
+}
+
 @media (max-width: 768px) {
     .header-name {
         display: none;
+    }
+    
+    .header-tabs {
+        margin: 0 8px;
+    }
+    
+    .header-tab-btn {
+        padding: 6px 8px;
+        font-size: 11px;
     }
 }
 

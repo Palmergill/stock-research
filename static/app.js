@@ -483,69 +483,43 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Tab switching
-    const tabBtns = document.querySelectorAll('.tab-btn');
     const tabContents = document.querySelectorAll('.tab-content');
-    const tabIndicator = document.querySelector('.tab-indicator');
-    const tabsContainer = document.querySelector('.tabs');
+    const headerTabBtns = document.querySelectorAll('.header-tab-btn');
     
-    // Function to update sliding indicator position
-    function updateTabIndicator(activeBtn) {
-        if (!tabIndicator || !activeBtn) return;
+    function switchTab(tabId) {
+        // Update active states for header tabs
+        headerTabBtns.forEach(b => b.classList.remove('active'));
+        headerTabBtns.forEach(b => {
+            if (b.dataset.tab === tabId) b.classList.add('active');
+        });
         
-        const tabsRect = tabsContainer.getBoundingClientRect();
-        const btnRect = activeBtn.getBoundingClientRect();
+        // Update tab contents
+        tabContents.forEach(c => c.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
         
-        const left = btnRect.left - tabsRect.left;
-        const width = btnRect.width;
-        
-        tabIndicator.style.transform = `translateX(${left}px)`;
-        tabIndicator.style.width = `${width}px`;
+        // Redraw charts in the active tab (they might not render properly when hidden)
+        if (window.lastChartData) {
+            setTimeout(() => {
+                const chartData = [...window.lastChartData].reverse();
+                if (tabId === 'overview') {
+                    drawPriceChart(window.lastPriceHistory || chartData);
+                    drawEPSChart(chartData);
+                } else if (tabId === 'earnings') {
+                    drawPriceChart(window.lastPriceHistory || chartData);
+                    drawEPSChart(chartData);
+                } else if (tabId === 'financials') {
+                    drawRevenueChart(chartData);
+                    drawFCFChart(chartData);
+                } else if (tabId === 'valuation') {
+                    drawPEChart(chartData, window.lastPriceHistory);
+                }
+            }, 10);
+        }
     }
     
-    // Initialize indicator on page load
-    const initialActiveTab = document.querySelector('.tab-btn.active');
-    if (initialActiveTab) {
-        setTimeout(() => updateTabIndicator(initialActiveTab), 0);
-    }
-    
-    // Update indicator on window resize
-    window.addEventListener('resize', () => {
-        const activeTab = document.querySelector('.tab-btn.active');
-        updateTabIndicator(activeTab);
-    });
-    
-    tabBtns.forEach(btn => {
+    headerTabBtns.forEach(btn => {
         btn.addEventListener('click', () => {
-            const tabId = btn.dataset.tab;
-            
-            // Update active states
-            tabBtns.forEach(b => b.classList.remove('active'));
-            tabContents.forEach(c => c.classList.remove('active'));
-            
-            btn.classList.add('active');
-            document.getElementById(tabId).classList.add('active');
-            
-            // Update sliding indicator
-            updateTabIndicator(btn);
-            
-            // Redraw charts in the active tab (they might not render properly when hidden)
-            if (window.lastChartData) {
-                setTimeout(() => {
-                    const chartData = [...window.lastChartData].reverse();
-                    if (tabId === 'overview') {
-                        drawPriceChart(window.lastPriceHistory || chartData);
-                        drawEPSChart(chartData);
-                    } else if (tabId === 'earnings') {
-                        drawPriceChart(window.lastPriceHistory || chartData);
-                        drawEPSChart(chartData);
-                    } else if (tabId === 'financials') {
-                        drawRevenueChart(chartData);
-                        drawFCFChart(chartData);
-                    } else if (tabId === 'valuation') {
-                        drawPEChart(chartData, window.lastPriceHistory);
-                    }
-                }, 10);
-            }
+            switchTab(btn.dataset.tab);
         });
     });
 
@@ -987,8 +961,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // Update header to show stock info instead of logo
         const headerLogo = document.getElementById('headerLogo');
         const headerStockInfo = document.getElementById('headerStockInfo');
+        const headerTabs = document.getElementById('headerTabs');
         if (headerLogo) headerLogo.classList.add('hidden');
         if (headerStockInfo) headerStockInfo.classList.remove('hidden');
+        if (headerTabs) headerTabs.classList.remove('hidden');
         
         loading.classList.add('hidden');
         results.classList.remove('hidden');
@@ -1235,8 +1211,10 @@ document.addEventListener('DOMContentLoaded', () => {
             // Reset header to show logo
             const headerLogo = document.getElementById('headerLogo');
             const headerStockInfo = document.getElementById('headerStockInfo');
+            const headerTabs = document.getElementById('headerTabs');
             if (headerLogo) headerLogo.classList.remove('hidden');
             if (headerStockInfo) headerStockInfo.classList.add('hidden');
+            if (headerTabs) headerTabs.classList.add('hidden');
         }
     }, 100);
 
