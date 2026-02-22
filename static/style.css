@@ -87,6 +87,7 @@ header {
 .header-stock-info {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 12px;
     flex: 1;
 }
@@ -116,7 +117,6 @@ header {
     font-weight: 700;
     color: #f8fafc;
     font-family: 'SF Mono', Monaco, monospace;
-    margin-left: auto;
 }
 
 .header-change-top {
