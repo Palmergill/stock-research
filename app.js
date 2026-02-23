@@ -509,13 +509,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (tabId === 'overview') {
                     drawPriceChart(window.lastPriceHistory || chartData);
                     drawEPSChart(chartData);
-                } else if (tabId === 'earnings') {
+                } else if (tabId === 'fundamentals') {
                     drawPriceChart(window.lastPriceHistory || chartData);
                     drawEPSChart(chartData);
-                } else if (tabId === 'financials') {
                     drawRevenueChart(chartData);
                     drawFCFChart(chartData);
-                } else if (tabId === 'valuation') {
                     drawPEChart(chartData, window.lastPriceHistory);
                 }
             }, 10);
@@ -1002,7 +1000,36 @@ document.addEventListener('DOMContentLoaded', () => {
                 const isPositive = changePercent >= 0;
                 const changeSymbol = isPositive ? '+' : '';
                 headerStockChange.textContent = `${changeSymbol}${changePercent.toFixed(2)}%`;
-                headerStockChange.className = 'header-change-top ' + (isPositive ? 'positive' : 'negative');
+                headerStockChange.className = 'header-change-badge ' + (isPositive ? 'positive' : 'negative');
+            }
+        }
+        
+        // Populate About section
+        const companyDescription = document.getElementById('companyDescription');
+        const companyIndustry = document.getElementById('companyIndustry');
+        const companySector = document.getElementById('companySector');
+        const companyEmployees = document.getElementById('companyEmployees');
+        const companyFounded = document.getElementById('companyFounded');
+        const companyHQ = document.getElementById('companyHQ');
+        const companyWebsite = document.getElementById('companyWebsite');
+        
+        if (companyDescription) {
+            companyDescription.textContent = data.description || `${data.name || data.ticker} is a publicly traded company. Detailed company information is being updated.`;
+        }
+        if (companyIndustry) companyIndustry.textContent = data.industry || '-';
+        if (companySector) companySector.textContent = data.sector || '-';
+        if (companyEmployees) {
+            companyEmployees.textContent = data.employees ? data.employees.toLocaleString() : '-';
+        }
+        if (companyFounded) companyFounded.textContent = data.founded || '-';
+        if (companyHQ) companyHQ.textContent = data.hq || '-';
+        if (companyWebsite) {
+            if (data.website) {
+                companyWebsite.textContent = data.website.replace(/^https?:\/\//, '');
+                companyWebsite.href = data.website;
+            } else {
+                companyWebsite.textContent = '-';
+                companyWebsite.href = '#';
             }
         }
         

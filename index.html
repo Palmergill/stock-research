@@ -27,9 +27,8 @@
                 </div>
                 <div class="header-row-2">
                     <button class="header-tab-btn active" data-tab="overview">Overview</button>
-                    <button class="header-tab-btn" data-tab="earnings">Earnings</button>
-                    <button class="header-tab-btn" data-tab="financials">Financials</button>
-                    <button class="header-tab-btn" data-tab="valuation">Valuation</button>
+                    <button class="header-tab-btn" data-tab="fundamentals">Fundamentals</button>
+                    <button class="header-tab-btn" data-tab="about">About</button>
                 </div>
             </div>
             <button id="searchIconBtnMain" class="search-icon-btn" title="Search">🔍</button>
@@ -91,7 +90,6 @@
                 
                 <!-- Skeleton Tabs -->
                 <div class="skeleton-tabs">
-                    <div class="skeleton-tab"></div>
                     <div class="skeleton-tab"></div>
                     <div class="skeleton-tab"></div>
                     <div class="skeleton-tab"></div>
@@ -268,11 +266,27 @@
                     </div>
                 </div>
 
-                <!-- Tab Content: Earnings -->
-                <div id="earnings" class="tab-content">
+                <!-- Tab Content: Fundamentals -->
+                <div id="fundamentals" class="tab-content">
+                    <!-- Charts Section -->
                     <div class="card">
                         <h3>Earnings & Free Cash Flow</h3>
                         <canvas id="epsChart" width="800" height="350"></canvas>
+                    </div>
+                    
+                    <div class="card">
+                        <h3>Revenue by Quarter</h3>
+                        <canvas id="revenueChart" width="800" height="300"></canvas>
+                    </div>
+                    
+                    <div class="card">
+                        <h3>Free Cash Flow</h3>
+                        <canvas id="fcfChart" width="800" height="300"></canvas>
+                    </div>
+                    
+                    <div class="card">
+                        <h3>P/E Ratio Over Time</h3>
+                        <canvas id="peChart" width="800" height="350"></canvas>
                     </div>
                     
                     <!-- Profitability Metrics -->
@@ -296,18 +310,6 @@
                                 <span id="roic" class="metric-value">-</span>
                             </div>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Tab Content: Financials -->
-                <div id="financials" class="tab-content">
-                    <div class="card">
-                        <h3>Revenue by Quarter</h3>
-                        <canvas id="revenueChart" width="800" height="300"></canvas>
-                    </div>
-                    <div class="card">
-                        <h3>Free Cash Flow</h3>
-                        <canvas id="fcfChart" width="800" height="300"></canvas>
                     </div>
                     
                     <!-- Financial Health -->
@@ -335,14 +337,6 @@
                                 <span id="workingCapital" class="metric-value">-</span>
                             </div>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Tab Content: Valuation -->
-                <div id="valuation" class="tab-content">
-                    <div class="card">
-                        <h3>P/E Ratio Over Time</h3>
-                        <canvas id="peChart" width="800" height="350"></canvas>
                     </div>
                     
                     <!-- Valuation Metrics -->
@@ -373,6 +367,48 @@
                                 <span class="metric-label">Shares Outstanding</span>
                                 <span id="sharesOutstanding" class="metric-value">-</span>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab Content: About -->
+                <div id="about" class="tab-content">
+                    <div class="card about-card">
+                        <h3>Company Overview</h3>
+                        <p id="companyDescription" class="company-description">Loading company information...</p>
+                        
+                        <div class="company-details-grid">
+                            <div class="company-detail">
+                                <span class="detail-label">Industry</span>
+                                <span id="companyIndustry" class="detail-value">-</span>
+                            </div>
+                            <div class="company-detail">
+                                <span class="detail-label">Sector</span>
+                                <span id="companySector" class="detail-value">-</span>
+                            </div>
+                            <div class="company-detail">
+                                <span class="detail-label">Employees</span>
+                                <span id="companyEmployees" class="detail-value">-</span>
+                            </div>
+                            <div class="company-detail">
+                                <span class="detail-label">Founded</span>
+                                <span id="companyFounded" class="detail-value">-</span>
+                            </div>
+                            <div class="company-detail">
+                                <span class="detail-label">Headquarters</span>
+                                <span id="companyHQ" class="detail-value">-</span>
+                            </div>
+                            <div class="company-detail">
+                                <span class="detail-label">Website</span>
+                                <a id="companyWebsite" class="detail-value link" href="#" target="_blank">-</a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card executives-card">
+                        <h3>Leadership</h3>
+                        <div id="executivesList" class="executives-list">
+                            <p class="placeholder-text">Executive information loading...</p>
                         </div>
                     </div>
                 </div>

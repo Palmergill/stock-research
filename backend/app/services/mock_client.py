@@ -20,7 +20,13 @@ class MockDataClient:
     MOCK_COMPANIES = {
         "TSLA": {
             "name": "Tesla, Inc.",
-            "sector": "Automotive",
+            "sector": "Consumer Cyclical",
+            "industry": "Auto Manufacturers",
+            "description": "Tesla, Inc. designs, develops, manufactures, leases, and sells electric vehicles, and energy generation and storage systems in the United States, China, and internationally. The company was founded in 2003 and is headquartered in Austin, Texas. Tesla is accelerating the world's transition to sustainable energy with electric cars, solar and integrated renewable energy solutions.",
+            "employees": 140473,
+            "founded": "2003",
+            "hq": "Austin, Texas",
+            "website": "https://www.tesla.com",
             "market_cap": 1566415207400,
             "current_price": 417.44,
             "pe_ratio": 353.76,
@@ -50,6 +56,12 @@ class MockDataClient:
         "AAPL": {
             "name": "Apple Inc.",
             "sector": "Technology",
+            "industry": "Consumer Electronics",
+            "description": "Apple Inc. designs, manufactures, and markets smartphones, personal computers, tablets, wearables, and accessories worldwide. The company was founded in 1976 and is headquartered in Cupertino, California. Apple is one of the world's most valuable companies and is known for its iPhone, Mac, iPad, and services ecosystem.",
+            "employees": 161000,
+            "founded": "1976",
+            "hq": "Cupertino, California",
+            "website": "https://www.apple.com",
             "market_cap": 3755141989200,
             "current_price": 255.78,
             "pe_ratio": 32.3,
@@ -247,6 +259,13 @@ class MockDataClient:
         return {
             "ticker": ticker,
             "name": company_data["name"],
+            "description": company_data.get("description", f"{company_data['name']} is a publicly traded company."),
+            "industry": company_data.get("industry", company_data.get("sector", "-")),
+            "sector": company_data.get("sector", "-"),
+            "employees": company_data.get("employees"),
+            "founded": company_data.get("founded", "-"),
+            "hq": company_data.get("hq", "-"),
+            "website": company_data.get("website"),
             "summary": {
                 "ticker": ticker,
                 "name": company_data["name"],
@@ -360,9 +379,18 @@ class MockDataClient:
         base_price = random.uniform(20, 800)
         market_cap = base_price * random.uniform(1000000, 10000000000)
         
+        sectors = ["Technology", "Healthcare", "Financials", "Consumer Cyclical", "Industrials", "Energy", "Utilities"]
+        sector = random.choice(sectors)
+        
         return {
             "name": f"{ticker} Corporation",
-            "sector": "Technology",
+            "sector": sector,
+            "industry": f"{sector} Services",
+            "description": f"{ticker} Corporation operates as a leading provider of {sector.lower()} solutions worldwide. The company delivers innovative products and services to customers across multiple markets.",
+            "employees": random.randint(1000, 500000),
+            "founded": str(random.randint(1950, 2015)),
+            "hq": "United States",
+            "website": f"https://www.{ticker.lower()}.com",
             "market_cap": market_cap,
             "current_price": base_price,
             "pe_ratio": random.uniform(10, 100),

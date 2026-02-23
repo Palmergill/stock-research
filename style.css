@@ -2834,3 +2834,122 @@ button,
     max-height: 300px;
     overflow-y: auto;
 }
+
+/* ============================================
+   ABOUT TAB STYLES
+   ============================================ */
+
+.about-card {
+    padding: 24px;
+}
+
+.company-description {
+    font-size: 16px;
+    line-height: 1.7;
+    color: #cbd5e1;
+    margin-bottom: 32px;
+}
+
+.company-details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    padding-top: 24px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.company-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.detail-label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.detail-value {
+    font-size: 15px;
+    color: #e2e8f0;
+    font-weight: 500;
+}
+
+.detail-value.link {
+    color: #3b82f6;
+    text-decoration: none;
+}
+
+.detail-value.link:hover {
+    text-decoration: underline;
+}
+
+.executives-card {
+    padding: 24px;
+}
+
+.executives-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.executive-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.executive-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 600;
+    color: white;
+}
+
+.executive-info {
+    flex: 1;
+}
+
+.executive-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: #f8fafc;
+    margin-bottom: 4px;
+}
+
+.executive-title {
+    font-size: 13px;
+    color: #94a3b8;
+}
+
+.placeholder-text {
+    color: #64748b;
+    font-style: italic;
+    text-align: center;
+    padding: 20px;
+}
+
+@media (max-width: 768px) {
+    .company-details-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+    }
+    
+    .company-description {
+        font-size: 15px;
+    }
+}
