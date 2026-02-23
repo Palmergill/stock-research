@@ -466,26 +466,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Refresh button handler - MOVED: auto-load at end of file
-    const refreshBtn = document.getElementById('refreshBtn');
-    if (refreshBtn) {
-        refreshBtn.addEventListener('click', async () => {
-            if (currentTicker) {
-                const spinner = refreshBtn.querySelector('.refresh-spinner');
-                refreshBtn.disabled = true;
-                refreshBtn.classList.add('loading');
-                if (spinner) spinner.classList.remove('hidden');
-                
-                try {
-                    await loadStock(currentTicker, true); // force refresh
-                } finally {
-                    refreshBtn.disabled = false;
-                    refreshBtn.classList.remove('loading');
-                    if (spinner) spinner.classList.add('hidden');
-                }
-            }
-        });
-    }
+    // Note: Refresh button removed - UI streamlined
 
     // Tab switching
     const tabContents = document.querySelectorAll('.tab-content');
@@ -823,10 +804,8 @@ document.addEventListener('DOMContentLoaded', () => {
         results.classList.add('hidden');
         searchBtn.disabled = true;
         
-        // Show loading spinners
-        const inputSpinner = document.getElementById('inputSpinner');
+        // Show loading spinner on button
         const btnSpinner = document.querySelector('#searchBtn .btn-spinner');
-        if (inputSpinner) inputSpinner.classList.remove('hidden');
         if (btnSpinner) btnSpinner.classList.remove('hidden');
         searchBtn.classList.add('loading');
         
@@ -939,10 +918,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } finally {
             if (searchBtn) searchBtn.disabled = false;
             
-            // Hide loading spinners (only if they exist)
-            const inputSpinner = document.getElementById('inputSpinner');
+            // Hide loading spinner
             const btnSpinner = document.querySelector('#searchBtn .btn-spinner');
-            if (inputSpinner) inputSpinner.classList.add('hidden');
             if (btnSpinner) btnSpinner.classList.add('hidden');
             if (searchBtn) searchBtn.classList.remove('loading');
             
@@ -1034,34 +1011,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         // Animate key metrics with count-up effect
-        if (summary.current_price) {
-            const currentPriceEl = document.getElementById('currentPrice');
-            if (currentPriceEl) {
-                animateCountUp(currentPriceEl, 0, summary.current_price, 600, '$', '', 2);
-            }
-        } else {
-            const currentPriceEl = document.getElementById('currentPrice');
-            if (currentPriceEl) {
-                currentPriceEl.textContent = 'N/A';
-            }
-        }
-        
-        const marketCapEl = document.getElementById('marketCap');
-        if (marketCapEl) {
-            marketCapEl.textContent = formatMarketCap(summary.market_cap);
-        }
-        
         if (summary.pe_ratio != null) {
             animateCountUp(document.getElementById('peRatio'), 0, summary.pe_ratio, 500, '', '', 2);
         } else {
             document.getElementById('peRatio').textContent = 'N/A';
-        }
-        
-        // Update key financial metrics with animations
-        if (summary.revenue_growth != null) {
-            animateCountUp(document.getElementById('revenueGrowth'), 0, summary.revenue_growth, 500, '', '%', 2);
-        } else {
-            document.getElementById('revenueGrowth').textContent = 'N/A';
         }
         
         // Calculate TTM Earnings and Revenue from last 4 quarters
@@ -1124,9 +1077,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Calculate and display trends based on earnings data
         calculateAndDisplayTrends(data.earnings || []);
-        
-        // Draw sparklines for key metrics
-        drawSparklines(data.earnings || []);
         
         // Valuation Metrics (with flash animation on change)
         updateValueWithFlash('psRatio', summary.ps_ratio, formatNumber);
@@ -1954,43 +1904,6 @@ function drawPEChart(data, priceHistory = null) {
     });
 }
 
-function drawSparklines(earnings) {
-    if (!earnings || earnings.length < 2) return;
-    
-    // Sort by date (oldest first)
-    const sorted = [...earnings].sort((a, b) => new Date(a.fiscal_date) - new Date(b.fiscal_date));
-    
-    // Draw P/E sparkline
-    const peCanvas = document.getElementById('peSparkline');
-    if (peCanvas) {
-        const peData = sorted.map(e => e.pe_ratio).filter(v => v != null);
-        if (peData.length >= 2) {
-            drawSparkline(peCanvas, peData, '#3b82f6');
-        }
-    }
-    
-    // Draw Revenue Growth sparkline
-    const revCanvas = document.getElementById('revenueSparkline');
-    if (revCanvas) {
-        const revData = sorted.map(e => e.revenue_growth).filter(v => v != null);
-        if (revData.length >= 2) {
-            drawSparkline(revCanvas, revData, '#10b981');
-        }
-    }
-    
-    // Draw FCF sparkline
-    const fcfCanvas = document.getElementById('fcfSparkline');
-    if (fcfCanvas) {
-        const fcfData = sorted.map(e => e.free_cash_flow).filter(v => v != null);
-        if (fcfData.length >= 2) {
-            // Normalize FCF data for better visualization
-            const maxFCF = Math.max(...fcfData.map(Math.abs));
-            const normalizedFCF = fcfData.map(v => v / maxFCF);
-            drawSparkline(fcfCanvas, normalizedFCF, '#8b5cf6');
-        }
-    }
-}
-
 // Pattern fill helpers for accessibility
 function createStripePattern(ctx, color) {
     const patternCanvas = document.createElement('canvas');
@@ -2040,46 +1953,12 @@ function drawReferenceLine(ctx, y, label, color = '#94a3b8') {
     ctx.restore();
 }
 
-function drawSparkline(canvas, data, color) {
-    const ctx = canvas.getContext('2d');
-    const width = canvas.width;
-    const height = canvas.height;
-    
-    ctx.clearRect(0, 0, width, height);
-    
-    const minVal = Math.min(...data);
-    const maxVal = Math.max(...data);
-    const range = maxVal - minVal || 1;
-    
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    
-    ctx.beginPath();
-    data.forEach((val, i) => {
-        const x = (i / (data.length - 1)) * width;
-        const y = height - ((val - minVal) / range) * height * 0.8 - height * 0.1;
-        
-        if (i === 0) {
-            ctx.moveTo(x, y);
-        } else {
-            ctx.lineTo(x, y);
-        }
-    });
-    ctx.stroke();
-    
-    // Draw end dot
-    const lastX = width;
-    const lastY = height - ((data[data.length - 1] - minVal) / range) * height * 0.8 - height * 0.1;
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.arc(lastX - 3, lastY, 3, 0, Math.PI * 2);
-    ctx.fill();
-}
-
 // Global Chart.js instances
 let priceChartInstance = null;
+let epsChartInstance = null;
+let revenueChartInstance = null;
+let fcfChartInstance = null;
+let peChartInstance = null;
 
 function drawPriceChart(data) {
     // Check if Chart.js is loaded
