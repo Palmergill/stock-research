@@ -20,8 +20,8 @@ CACHE_TTL = {
     "company_info": timedelta(hours=24),
 }
 
-# Use mock data by default - set USE_REAL_DATA=true to use Polygon
-USE_REAL_DATA = os.getenv("USE_REAL_DATA", "false").lower() == "true"
+# Use real data by default - set USE_REAL_DATA=false to use mock data
+USE_REAL_DATA = os.getenv("USE_REAL_DATA", "true").lower() == "true"
 
 
 class StockDataClient:
