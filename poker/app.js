@@ -122,6 +122,7 @@ let isRequestPending = false; // Lock to prevent race conditions
 let turnStartTime = null;
 let turnTimerId = null;
 const TURN_TIME_LIMIT = 30000; // 30 seconds per turn
+let hasVibratedThisTurn = false; // Track if we've vibrated for current turn
 
 // DOM Elements
 const screens = {
@@ -490,8 +491,14 @@ function updateGameDisplay() {
         if (!turnTimerId) {
             startTurnTimer();
         }
+        // Trigger haptic feedback when it's player's turn (once per turn)
+        if (!hasVibratedThisTurn) {
+            triggerHapticFeedback();
+            hasVibratedThisTurn = true;
+        }
     } else {
         stopTurnTimer();
+        hasVibratedThisTurn = false; // Reset when turn ends
     }
 }
 
@@ -699,6 +706,20 @@ function hideHandResult() {
 function switchScreen(screenName) {
     Object.values(screens).forEach(screen => screen.classList.remove('active'));
     screens[screenName].classList.add('active');
+    
+    // Lock orientation to portrait when entering game screen on mobile
+    if (screenName === 'game') {
+        lockOrientationPortrait();
+    }
+}
+
+// Orientation Lock Function
+function lockOrientationPortrait() {
+    if (typeof screen !== 'undefined' && screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock('portrait').catch((err) => {
+            console.log('[Orientation] Could not lock orientation:', err.message);
+        });
+    }
 }
 
 // Decision Timer Functions
@@ -757,5 +778,20 @@ function updateTimerDisplay() {
         elements.timerText.classList.add('urgent');
     } else {
         elements.timerText.classList.remove('urgent');
+    }
+}
+
+// Haptic Feedback Function
+function triggerHapticFeedback() {
+    // Check if vibration API is supported and device is mobile
+    if (typeof navigator !== 'undefined' && navigator.vibrate && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
+        try {
+            // Pattern: 50ms vibration, 100ms pause, 50ms vibration (double tap feel)
+            navigator.vibrate([50, 100, 50]);
+            console.log('[Haptic] Turn notification vibrated');
+        } catch (e) {
+            // Silently fail if vibration is blocked or fails
+            console.log('[Haptic] Vibration failed:', e.message);
+        }
     }
 }

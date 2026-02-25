@@ -27,7 +27,7 @@
 - [ ] **Player statistics** - Track win rate, biggest pot, hands played
 - [ ] **Chat feature** - Simple chat between players
 - [ ] **Sound effects** - Card deals, chips, win sounds
-- [ ] **Vibration on turn** - Mobile haptic feedback when it's your turn
+- [x] **Vibration on turn** - Fixed: Added haptic feedback via `navigator.vibrate([50, 100, 50])` when it's the player's turn, with mobile device detection and graceful fallback
 - [ ] **All-in showdown** - Show all cards immediately when all-in
 
 ### UI Improvements
@@ -90,7 +90,7 @@
 - [x] **Viewport fixes** - Fixed: Added `viewport-fit=cover` to viewport meta tag and `min-height: 100dvh` for dynamic viewport support
 - [x] **Touch targets** - Fixed: All action buttons have minimum 44px touch targets (primary buttons: 18px 32px padding, action buttons: 16px 12px padding)
 - [x] **Font scaling** - Fixed: Added `text-size-adjust: 100%` and `html { font-size: 100% }` to respect user font size preferences
-- [ ] **Orientation lock** - Lock to portrait on mobile
+- [x] **Orientation lock** - Fixed: Added `screen.orientation.lock('portrait')` call when entering game screen, with graceful fallback for unsupported devices
 - [x] **Safe area** - Fixed: Added CSS `@supports (padding-top: env(safe-area-inset-top))` rules to handle iPhone notch and safe areas
 - [ ] **Keyboard handling** - Prevent layout shift when keyboard opens
 
