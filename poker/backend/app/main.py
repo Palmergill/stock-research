@@ -15,6 +15,7 @@ from collections import defaultdict
 from .game import PokerGame
 from .ai import AIManager
 from .config import Config, get_logger, set_correlation_id, clear_correlation_id
+from .metrics import metrics_manager
 
 # Setup logging
 logger = get_logger()
@@ -166,6 +167,31 @@ class AIStatsResponse(BaseModel):
     """AI bot statistics response"""
     game_id: str = Field(..., description="Game identifier")
     bots: Dict[str, dict] = Field(..., description="Stats for each AI bot by name")
+
+
+class PlayerBehaviorEntry(BaseModel):
+    """Player behavior statistics"""
+    player_id: str = Field(..., description="Player identifier")
+    player_name: str = Field(..., description="Player display name")
+    total_actions: int = Field(..., description="Total actions taken")
+    fold_percentage: float = Field(..., description="Percentage of hands folded")
+    call_percentage: float = Field(..., description="Percentage of hands called")
+    raise_percentage: float = Field(..., description="Percentage of hands raised")
+    all_ins: int = Field(..., description="Number of all-in actions")
+    checks: int = Field(..., description="Number of check actions")
+
+
+class GameMetricsResponse(BaseModel):
+    """Game metrics and analytics response"""
+    game_id: str = Field(..., description="Game identifier")
+    session_start: str = Field(..., description="ISO timestamp when game started")
+    session_duration_minutes: float = Field(..., description="Game session duration in minutes")
+    hands_played: int = Field(..., description="Total hands played")
+    average_pot_size: float = Field(..., description="Average pot size across all hands")
+    hands_per_hour: float = Field(..., description="Calculated hands per hour")
+    total_pot_accumulated: int = Field(..., description="Sum of all pot sizes")
+    phase_distribution: Dict[str, int] = Field(..., description="Count of hands ending in each phase")
+    player_behaviors: List[PlayerBehaviorEntry] = Field(..., description="Behavior stats for each player")
 
 
 class ErrorResponse(BaseModel):
@@ -700,6 +726,43 @@ async def detailed_health_check():
         },
         "version": "1.0.5"
     }
+
+
+@app.get(
+    "/api/poker/games/{game_id}/metrics",
+    response_model=GameMetricsResponse,
+    tags=["Game State"],
+    summary="Get game metrics and analytics",
+    description="Retrieve detailed metrics for a game including hands per hour, average pot size, and player behavior statistics.",
+    responses={
+        200: {"description": "Game metrics retrieved", "model": GameMetricsResponse},
+        400: {"description": "Invalid game ID format", "model": ErrorResponse},
+        404: {"description": "Game not found", "model": ErrorResponse}
+    }
+)
+async def get_game_metrics(game_id: str):
+    """Get detailed metrics and analytics for a game"""
+    validate_game_id(game_id)
+
+    if game_id not in games:
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    metrics = metrics_manager.get_metrics(game_id)
+    if not metrics:
+        # Return empty metrics if none exist yet
+        return {
+            "game_id": game_id,
+            "session_start": datetime.utcnow().isoformat(),
+            "session_duration_minutes": 0,
+            "hands_played": 0,
+            "average_pot_size": 0,
+            "hands_per_hour": 0,
+            "total_pot_accumulated": 0,
+            "phase_distribution": {},
+            "player_behaviors": []
+        }
+
+    return metrics.get_summary()
 
 
 @app.get("/", tags=["System"], include_in_schema=False)

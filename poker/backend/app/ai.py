@@ -240,6 +240,14 @@ class PokerAI:
         # Calculate effective pot odds including implied odds
         effective_pot_odds = pot_odds * (1.0 - cfg["aggression"] * 0.2)
         
+        # Get stack size and positional factors
+        stack_factor = self._calculate_stack_factor(game, player)
+        position_factor = self._calculate_position_factor(game, player)
+        
+        # Adjust thresholds based on stack and position
+        adjusted_strength_threshold = cfg["hand_strength_threshold"] * stack_factor * position_factor
+        adjusted_call_threshold = cfg["call_threshold"] * stack_factor * position_factor
+        
         decision = None
         
         # Very strong hand - raise or all-in
@@ -261,7 +269,7 @@ class PokerAI:
         
         # Strong hand - raise or call
         if decision is None:
-            medium_strong_threshold = cfg["hand_strength_threshold"] + 0.25
+            medium_strong_threshold = adjusted_strength_threshold + 0.25
             if hand_strength > medium_strong_threshold:
                 # More likely to raise with higher aggression
                 raise_chance = cfg["aggression"] * 0.8
@@ -279,10 +287,10 @@ class PokerAI:
         
         # Medium hand - call if good pot odds, otherwise fold
         if decision is None:
-            if hand_strength > cfg["hand_strength_threshold"]:
+            if hand_strength > adjusted_strength_threshold:
                 if to_call == 0:
                     decision = {'action': 'check'}
-                elif pot_odds > cfg["call_threshold"] or hand_strength > pot_odds * 1.5:
+                elif pot_odds > adjusted_call_threshold or hand_strength > pot_odds * 1.5:
                     decision = {'action': 'call'}
                 else:
                     decision = {'action': 'fold'}
@@ -399,6 +407,83 @@ class PokerAI:
             return 1.0  # Free to check
         
         return to_call / (game.pot + to_call)
+    
+    def _calculate_stack_factor(self, game: PokerGame, player: Player) -> float:
+        """
+        Calculate stack size factor for decision adjustment.
+        Short stacks should play tighter, deep stacks can play more speculative hands.
+        Returns a multiplier between 0.7 (very short) and 1.3 (very deep).
+        """
+        # Calculate stack in big blinds
+        bb_stack = player.chips / game.big_blind if game.big_blind > 0 else player.chips / 20
+        
+        # Very short stack (< 10 BB) - desperation mode, play tighter but shove stronger hands
+        if bb_stack < 10:
+            return 0.7  # Tighten up significantly, only premium hands
+        
+        # Short stack (10-20 BB) - cautious play
+        elif bb_stack < 20:
+            return 0.85
+        
+        # Medium stack (20-50 BB) - standard play
+        elif bb_stack < 50:
+            return 1.0
+        
+        # Deep stack (50-100 BB) - can play more speculative hands
+        elif bb_stack < 100:
+            return 1.15
+        
+        # Very deep stack (> 100 BB) - lots of room for post-flop play
+        else:
+            return 1.3
+    
+    def _calculate_position_factor(self, game: PokerGame, player: Player) -> float:
+        """
+        Calculate positional factor for decision adjustment.
+        Late position (closer to button) allows looser play.
+        Returns a multiplier between 0.85 (early) and 1.25 (late position/button).
+        """
+        if not game.players:
+            return 1.0
+        
+        # Find player position relative to dealer
+        num_players = len(game.players)
+        dealer_pos = game.dealer_index
+        
+        # Find player's position
+        player_pos = -1
+        for i, p in enumerate(game.players):
+            if p.id == player.id:
+                player_pos = i
+                break
+        
+        if player_pos == -1:
+            return 1.0
+        
+        # Calculate position relative to dealer (0 = button, higher = earlier)
+        # Position 0 = dealer/button (best position)
+        # Position num_players-1 = small blind (worst position post-flop)
+        pos_from_button = (player_pos - dealer_pos) % num_players
+        
+        # Button/Dealer (0)
+        if pos_from_button == 0:
+            return 1.25  # Can play loosest from button
+        
+        # Cutoff (1 away from button)
+        elif pos_from_button == 1:
+            return 1.15
+        
+        # Hijack (2 away from button)
+        elif pos_from_button == 2:
+            return 1.05
+        
+        # Early position (3-4 away from button)
+        elif pos_from_button <= 4:
+            return 0.9  # Play tighter early
+        
+        # Blinds (worst position post-flop)
+        else:
+            return 0.85  # Play tightest from blinds
 
 
 class AIManager:

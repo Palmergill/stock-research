@@ -70,7 +70,7 @@
 - [x] **Docker** - Fixed: Added Dockerfile and docker-compose.yml for containerized deployment
 
 ### AI Improvements
-- [ ] **More sophisticated AI** - Positional awareness, stack size consideration
+- [x] **More sophisticated AI** - Fixed: Added stack size consideration (calculates stack in BB and adjusts thresholds 0.7x-1.3x based on depth) and positional awareness (early/late position multipliers 0.85x-1.25x). AI now plays tighter with short stacks and looser in late position.
 - [x] **AI tells** - Fixed: Added human-like behavioral patterns including timing tells (fast/normal/deliberate/tanker patterns), betting styles (precise/rounded/psychological), decision delay calculation based on hand strength, and bet sizing patterns. Each bot gets unique tell patterns on initialization. Added `get_decision_delay()`, `get_bet_size()`, and `get_stats()` methods to PokerAI class.
 - [ ] **Adaptive AI** - AI adjusts to player tendencies
 - [x] **AI difficulty** - Fixed: Added configurable difficulty levels (easy/medium/hard/expert) with varying aggression, bluff frequency, and hand strength thresholds
@@ -105,8 +105,8 @@
 
 ## 📊 Analytics
 
-- [ ] **Game metrics** - Track hands per hour, average pot size
-- [ ] **Player behavior** - Track fold/call/raise percentages
+- [x] **Game metrics** - Fixed: Added comprehensive metrics tracking including hands per hour (calculated from recent hand timing), average pot size, total pot accumulated, and phase distribution. New `/api/poker/games/{game_id}/metrics` endpoint returns session duration, hands played, and performance stats.
+- [x] **Player behavior** - Fixed: Added PlayerBehavior class that tracks fold/call/raise percentages, all-in frequency, and total actions per player. Integrated with game action logging to automatically record every player decision.
 - [ ] **Error tracking** - Sentry integration
 - [ ] **Performance monitoring** - Track API response times
 - [ ] **Usage analytics** - Track active users, session length

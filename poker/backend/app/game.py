@@ -8,6 +8,7 @@ import random
 from datetime import datetime
 
 from .config import Config
+from .metrics import metrics_manager
 
 # Use config values for game constants
 STARTING_CHIPS = Config.STARTING_CHIPS
@@ -185,6 +186,9 @@ class PokerGame:
             for player in self.players:
                 player.hand.extend(self.deck.deal(1))
         
+        # Record metrics for hand start
+        metrics_manager.record_hand_start(self.game_id)
+
         # Record starting state for history
         self._current_hand_start = {
             'players': [
@@ -350,6 +354,16 @@ class PokerGame:
         if amount is not None:
             action_entry['amount'] = amount
         self._current_hand_actions.append(action_entry)
+
+        # Record action in metrics for behavior tracking
+        # Find player ID from name
+        player_id = None
+        for p in self.players:
+            if p.name == player_name:
+                player_id = p.id
+                break
+        if player_id:
+            metrics_manager.record_player_action(self.game_id, player_id, player_name, action)
     
     def _next_player(self):
         for _ in range(len(self.players)):
@@ -552,18 +566,21 @@ class PokerGame:
     def _award_pot(self, winners: List[Player]):
         split_amount = self.pot // len(winners)
         remainder = self.pot % len(winners)
-        
+
         for i, winner in enumerate(winners):
             amount = split_amount + (1 if i < remainder else 0)
             winner.chips += amount
-        
+
         self.winners = [{
             'id': w.id,
             'name': w.name,
             'amount': split_amount + (1 if i < remainder else 0),
             'hand': [c.to_dict() for c in w.hand]
         } for i, w in enumerate(winners)]
-        
+
+        # Record metrics for hand end
+        metrics_manager.record_hand_end(self.game_id, self.pot, self.phase)
+
         # Save hand to history
         self._save_hand_history()
     
