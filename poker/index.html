@@ -644,6 +644,22 @@
             color: var(--app-text-secondary);
         }
 
+        .light-mode .avatar {
+            border-color: rgba(0,0,0,0.2);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        .light-mode .your-avatar-container .avatar {
+            border-color: #d97706;
+            box-shadow: 0 0 15px rgba(217,119,6,0.3);
+        }
+
+        .light-mode .gesture-feedback {
+            background: rgba(255,255,255,0.95);
+            color: #1f2937;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+
         .light-mode .community-label {
             color: var(--app-text-secondary);
         }
@@ -1025,7 +1041,137 @@
             padding: 1px 5px;
             border-radius: 8px;
         }
-        
+
+        /* Avatar Styles */
+        .avatar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-weight: 700;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            border: 2px solid rgba(255,255,255,0.2);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .avatar:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+
+        .avatar-small {
+            width: 32px;
+            height: 32px;
+            font-size: 16px;
+        }
+
+        .avatar-medium {
+            width: 48px;
+            height: 48px;
+            font-size: 20px;
+        }
+
+        .avatar-large {
+            width: 64px;
+            height: 64px;
+            font-size: 28px;
+        }
+
+        .avatar-initials {
+            font-size: 0.6em;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+
+        .opponent-avatar {
+            margin-bottom: 4px;
+        }
+
+        .opponent-avatar .avatar {
+            border-color: rgba(255,255,255,0.3);
+        }
+
+        .your-avatar-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 8px;
+        }
+
+        .your-avatar-container .avatar {
+            border: 3px solid #ffd700;
+            box-shadow: 0 0 15px rgba(255,215,0,0.3);
+        }
+
+        /* Gesture Feedback Styles */
+        .gesture-feedback {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-size: 20px;
+            font-weight: 700;
+            z-index: 9999;
+            opacity: 0;
+            transition: all 0.3s ease;
+            pointer-events: none;
+            border: 2px solid #10b981;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+
+        .gesture-feedback.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .gesture-feedback.warning {
+            border-color: #f59e0b;
+            color: #f59e0b;
+        }
+
+        .gesture-feedback.left {
+            animation: slideInLeft 0.3s ease;
+        }
+
+        .gesture-feedback.right {
+            animation: slideInRight 0.3s ease;
+        }
+
+        @keyframes slideInLeft {
+            from { transform: translate(-100%, -50%) scale(0.8); opacity: 0; }
+            to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+
+        @keyframes slideInRight {
+            from { transform: translate(0%, -50%) scale(0.8); opacity: 0; }
+            to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+
+        /* Gesture Hint for Mobile */
+        .gesture-hint {
+            display: none;
+            position: fixed;
+            bottom: 180px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            color: rgba(255,255,255,0.7);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            z-index: 100;
+            white-space: nowrap;
+        }
+
+        @media (hover: none) and (pointer: coarse) {
+            .gesture-hint {
+                display: block;
+            }
+        }
+
         /* Community Cards */
         .community-area {
             display: flex;
@@ -1500,6 +1646,9 @@
                 <span class="deck-icon">🃏</span>
                 <span id="deck-label">Classic</span>
             </button>
+
+            <!-- Gesture Hint for Mobile -->
+            <div class="gesture-hint" id="gesture-hint">👈 Swipe left to fold • Double-tap to call 👉</div>
 
             <!-- Header -->
             <div class="game-header">

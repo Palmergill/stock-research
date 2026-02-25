@@ -6,7 +6,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [1.0.6] - 2025-02-25
+
 ### Added
+- Avatar system - Visual avatars for all players
+  - Emoji-based avatars for AI opponents (10 themed sets: robots, animals, creatures, nature, elements, music, transport, food, sports)
+  - Initials-based avatars for human player
+  - Deterministic generation based on player names (same name = same avatar)
+  - Colorful background colors assigned consistently
+  - Responsive sizing (small for opponents, medium for player)
+  - Gold border highlight for player avatar
+  - Full light/dark mode support
+- Mobile gesture controls - Touch-based actions for faster gameplay
+  - Swipe left to fold
+  - Double-tap to call (or check if no bet)
+  - Swipe right to check (shows feedback if not available)
+  - Visual gesture feedback with animated overlays
+  - Gesture hint displayed on mobile devices
+  - Works with both touch events and mouse events (for desktop testing)
+  - Only active during player's turn
+
+## [1.0.5] - 2025-02-25
+
+### Added
+- Card deck themes - 5 different card styles to choose from
 - Card deck themes - 5 different card styles to choose from
   - Classic: Traditional design with subtle gradient and corner suit symbols
   - Modern: Sleek rounded cards with smooth shadows

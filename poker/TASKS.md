@@ -80,9 +80,9 @@
 
 - [x] **Dark mode toggle** - Fixed: Added light/dark mode toggle with CSS custom properties, persists preference in localStorage, smooth transitions between modes, all UI elements adapt including felt colors
 - [x] **Card deck themes** - Fixed: Added 5 card deck theme options (Classic, Modern, Minimal, Vintage, Neon). Each theme changes card appearance with unique styling - gradients, borders, shadows, and color schemes. Classic has subtle gradient with corner suit symbols; Modern has sleek rounded design; Minimal is flat and clean; Vintage has aged paper look; Neon has cyberpunk glow effect for dark mode. Toggle button in top-right with localStorage persistence.
-- [ ] **Avatar system** - Player profile pictures
+- [x] **Avatar system** - Fixed: Added visual avatar system with emoji-based AI opponent avatars (10 avatar sets across different themes) and initials-based player avatars. Avatars are deterministically generated based on player names, have colorful backgrounds, and are displayed for both opponents (small size) and player (medium size with gold border).
 - [x] **Animated backgrounds** - Fixed: Added subtle animated felt texture effects using CSS animations. Green theme has diagonal shimmer pattern; Blue theme has pulsing radial gradients; Red theme has rotating conic gradient; Purple theme has breathing opacity pulse. All animations are smooth (6-25s cycles) and non-distracting. Implemented with ::before and ::after pseudo-elements for performance.
-- [ ] **Mobile gestures** - Swipe to fold, tap to call
+- [x] **Mobile gestures** - Fixed: Implemented touch gesture system with swipe left to fold, double-tap to call/check, and swipe right for check (when available). Includes visual feedback overlays, gesture hints on mobile devices, and supports both touch and mouse events for testing on desktop.
 - [x] **Loading states** - Fixed: Added full-screen loading overlay with animated spinner and descriptive text ("Starting game...", "Dealing next hand..."). Shows during game initialization and between hands for better user feedback.
 - [x] **Empty states** - Fixed: Improved opponent folded state visualization with "FOLDED" text badge in red, dimmed chips color, grayed-out card backs, and reduced opacity for clearer game state indication.
 

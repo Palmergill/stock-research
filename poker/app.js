@@ -3,6 +3,239 @@ const API_BASE = window.location.hostname === 'localhost'
     ? 'http://localhost:8000'
     : 'https://stock-research-production-b3ac.up.railway.app';
 
+// Avatar Manager - Generates and manages player avatars
+const AvatarManager = {
+    // Emoji avatar sets for AI opponents
+    avatarSets: [
+        ['🤖', '👾', '🤡', '👽', '👻', '💀', '🎃'],
+        ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻'],
+        ['🦁', '🐯', '🐨', '🐼', '🐷', '🐸', '🐙'],
+        ['🦉', '🦇', '🐺', '🐗', '🐴', '🦄', '🐝'],
+        ['🐛', '🦋', '🐞', '🦂', '🦀', '🦐', '🦑'],
+        ['🔥', '⚡', '💎', '🌟', '🍀', '🌙', '☀️'],
+        ['🎸', '🎺', '🎻', '🎮', '🎯', '🎲', '🎳'],
+        ['🚀', '🛸', '🚁', '🛶', '⛵', '🚂', '🚲'],
+        ['🍎', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓'],
+        ['⚽', '🏀', '🏈', '⚾', '🎾', '🏐', '🏉']
+    ],
+
+    // Background colors for avatars
+    bgColors: [
+        '#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6',
+        '#1abc9c', '#e67e22', '#34495e', '#16a085', '#c0392b'
+    ],
+
+    // Generate avatar for AI bot based on name
+    getBotAvatar(name) {
+        // Use name to deterministically select avatar
+        let hash = 0;
+        for (let i = 0; i < name.length; i++) {
+            hash = name.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        const setIndex = Math.abs(hash) % this.avatarSets.length;
+        const avatarIndex = Math.abs(hash >> 4) % this.avatarSets[setIndex].length;
+        const colorIndex = Math.abs(hash >> 8) % this.bgColors.length;
+
+        return {
+            emoji: this.avatarSets[setIndex][avatarIndex],
+            bgColor: this.bgColors[colorIndex],
+            type: 'emoji'
+        };
+    },
+
+    // Get avatar for human player
+    getPlayerAvatar(name) {
+        const initials = name
+            .split(' ')
+            .map(n => n[0])
+            .join('')
+            .toUpperCase()
+            .slice(0, 2);
+
+        // Generate consistent color based on name
+        let hash = 0;
+        for (let i = 0; i < name.length; i++) {
+            hash = name.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        const colorIndex = Math.abs(hash) % this.bgColors.length;
+
+        return {
+            initials,
+            bgColor: this.bgColors[colorIndex],
+            type: 'initials'
+        };
+    },
+
+    // Render avatar HTML
+    render(avatar, size = 'medium') {
+        const sizeClass = size === 'small' ? 'avatar-small' : size === 'large' ? 'avatar-large' : 'avatar-medium';
+
+        if (avatar.type === 'emoji') {
+            return `<div class="avatar ${sizeClass}" style="background-color: ${avatar.bgColor};">${avatar.emoji}</div>`;
+        } else {
+            return `<div class="avatar ${sizeClass}" style="background-color: ${avatar.bgColor};"><span class="avatar-initials">${avatar.initials}</span></div>`;
+        }
+    }
+};
+
+// Touch Gesture Manager - Handles mobile swipe/tap gestures
+const GestureManager = {
+    touchStartX: 0,
+    touchStartY: 0,
+    touchStartTime: 0,
+    lastTapTime: 0,
+    minSwipeDistance: 50,
+    maxSwipeTime: 300,
+    doubleTapDelay: 300,
+    isEnabled: true,
+
+    init() {
+        const gameScreen = document.getElementById('game-screen');
+        if (!gameScreen) return;
+
+        // Touch events for gestures
+        gameScreen.addEventListener('touchstart', (e) => this.handleTouchStart(e), { passive: true });
+        gameScreen.addEventListener('touchend', (e) => this.handleTouchEnd(e), { passive: true });
+
+        // Mouse events for desktop testing
+        gameScreen.addEventListener('mousedown', (e) => this.handleMouseDown(e));
+        gameScreen.addEventListener('mouseup', (e) => this.handleMouseUp(e));
+
+        console.log('[Gestures] Gesture manager initialized');
+    },
+
+    handleTouchStart(e) {
+        if (!this.isEnabled) return;
+        this.touchStartX = e.changedTouches[0].screenX;
+        this.touchStartY = e.changedTouches[0].screenY;
+        this.touchStartTime = Date.now();
+    },
+
+    handleTouchEnd(e) {
+        if (!this.isEnabled) return;
+
+        const touchEndX = e.changedTouches[0].screenX;
+        const touchEndY = e.changedTouches[0].screenY;
+        const touchEndTime = Date.now();
+
+        const deltaX = touchEndX - this.touchStartX;
+        const deltaY = touchEndY - this.touchStartY;
+        const deltaTime = touchEndTime - this.touchStartTime;
+
+        // Check for double tap
+        const timeSinceLastTap = touchEndTime - this.lastTapTime;
+        if (timeSinceLastTap < this.doubleTapDelay && Math.abs(deltaX) < 10 && Math.abs(deltaY) < 10) {
+            this.lastTapTime = 0;
+            this.handleDoubleTap();
+            return;
+        }
+        this.lastTapTime = touchEndTime;
+
+        // Check for swipe
+        if (deltaTime < this.maxSwipeTime) {
+            // Horizontal swipe
+            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > this.minSwipeDistance) {
+                if (deltaX > 0) {
+                    this.handleSwipeRight();
+                } else {
+                    this.handleSwipeLeft();
+                }
+            }
+        }
+    },
+
+    handleMouseDown(e) {
+        if (!this.isEnabled) return;
+        this.touchStartX = e.screenX;
+        this.touchStartY = e.screenY;
+        this.touchStartTime = Date.now();
+    },
+
+    handleMouseUp(e) {
+        if (!this.isEnabled) return;
+
+        const deltaX = e.screenX - this.touchStartX;
+        const deltaY = e.screenY - this.touchStartY;
+        const deltaTime = Date.now() - this.touchStartTime;
+
+        // Check for swipe
+        if (deltaTime < this.maxSwipeTime) {
+            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > this.minSwipeDistance) {
+                if (deltaX > 0) {
+                    this.handleSwipeRight();
+                } else {
+                    this.handleSwipeLeft();
+                }
+            }
+        }
+    },
+
+    handleSwipeLeft() {
+        // Swipe left to fold
+        if (isMyTurn && gameState?.phase !== 'showdown') {
+            this.showGestureFeedback('👋 Fold', 'left');
+            playerAction('fold');
+        }
+    },
+
+    handleSwipeRight() {
+        // Swipe right to check (if possible) or show feedback
+        if (isMyTurn && gameState?.phase !== 'showdown') {
+            const myPlayer = gameState.players.find(p => p.id === playerId);
+            const toCall = (gameState.current_bet || 0) - (myPlayer?.bet || 0);
+
+            if (toCall === 0) {
+                this.showGestureFeedback('✓ Check', 'right');
+                playerAction('check');
+            } else {
+                this.showGestureFeedback('→ Swipe right to check (not available)', 'right', true);
+            }
+        }
+    },
+
+    handleDoubleTap() {
+        // Double tap to call
+        if (isMyTurn && gameState?.phase !== 'showdown') {
+            const myPlayer = gameState.players.find(p => p.id === playerId);
+            const toCall = (gameState.current_bet || 0) - (myPlayer?.bet || 0);
+
+            if (toCall > 0) {
+                this.showGestureFeedback('📞 Call', 'center');
+                playerAction('call');
+            } else {
+                this.showGestureFeedback('✓ Check', 'center');
+                playerAction('check');
+            }
+        }
+    },
+
+    showGestureFeedback(text, direction, isWarning = false) {
+        const feedback = document.createElement('div');
+        feedback.className = `gesture-feedback ${direction} ${isWarning ? 'warning' : ''}`;
+        feedback.textContent = text;
+        document.body.appendChild(feedback);
+
+        // Trigger animation
+        requestAnimationFrame(() => {
+            feedback.classList.add('show');
+        });
+
+        // Remove after animation
+        setTimeout(() => {
+            feedback.classList.remove('show');
+            setTimeout(() => feedback.remove(), 300);
+        }, 1000);
+    },
+
+    enable() {
+        this.isEnabled = true;
+    },
+
+    disable() {
+        this.isEnabled = false;
+    }
+};
+
 // Player Statistics Manager
 const StatsManager = {
     stats: {
@@ -989,6 +1222,18 @@ function updateGameDisplay() {
     const myPlayer = gameState.players.find(p => p.id === playerId);
     if (myPlayer) {
         elements.yourChips.innerHTML = ChipStackVisualizer.render(myPlayer.chips, true, true);
+
+        // Update player avatar
+        const playerAvatar = AvatarManager.getPlayerAvatar(elements.yourName.textContent || 'Player');
+        const avatarHTML = AvatarManager.render(playerAvatar, 'medium');
+        // Check if avatar container exists, create if not
+        let avatarContainer = document.querySelector('.your-avatar-container');
+        if (!avatarContainer) {
+            avatarContainer = document.createElement('div');
+            avatarContainer.className = 'your-avatar-container';
+            elements.yourName.parentNode.insertBefore(avatarContainer, elements.yourName);
+        }
+        avatarContainer.innerHTML = avatarHTML;
         
         // Your cards with staggered animation (deal player cards first)
         const cardsHTML = myPlayer.hand.map((card, index) => renderCard(card, true, index)).join('');
@@ -1058,9 +1303,13 @@ function updateGameDisplay() {
 function renderOpponent(player) {
     const isCurrent = gameState.current_player === player.id;
     const showCards = gameState.phase === 'showdown' && !player.folded;
+    const avatar = AvatarManager.getBotAvatar(player.name);
 
     return `
         <div class="opponent ${player.folded ? 'folded' : ''} ${isCurrent ? 'active-turn' : ''}">
+            <div class="opponent-avatar">
+                ${AvatarManager.render(avatar, 'small')}
+            </div>
             <div class="opponent-cards">
                 ${showCards
                     ? player.hand.map(c => renderCard(c)).join('')
@@ -1374,10 +1623,12 @@ function hideStats() {
 function switchScreen(screenName) {
     Object.values(screens).forEach(screen => screen.classList.remove('active'));
     screens[screenName].classList.add('active');
-    
+
     // Lock orientation to portrait when entering game screen on mobile
     if (screenName === 'game') {
         lockOrientationPortrait();
+        // Initialize gesture manager when entering game screen
+        GestureManager.init();
     }
 }
 
