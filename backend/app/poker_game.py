@@ -110,6 +110,8 @@ class PokerGame:
         self.winners: List[Dict] = []
         self.last_action: Optional[Dict] = None
         self.hand_number: int = 0
+        self.acted_this_round: set = set()  # Track who has acted in current betting round
+        self.round_start_player: int = 0  # Who started this betting round
     
     def add_player(self, name: str, is_human: bool = False) -> Player:
         player_id = f"p{len(self.players)}"
@@ -158,6 +160,8 @@ class PokerGame:
         self.current_bet = self.big_blind
         self.current_player_index = (bb_index + 1) % len(self.players)
         self.min_raise = self.big_blind
+        self.acted_this_round = set()
+        self.round_start_player = self.current_player_index
         
         return True
     
@@ -182,6 +186,7 @@ class PokerGame:
             return False
         
         player.folded = True
+        self.acted_this_round.add(player_id)
         self.last_action = {'player': player.name, 'action': 'fold'}
         
         if self._is_round_complete():
@@ -199,6 +204,7 @@ class PokerGame:
         if player.bet < self.current_bet:
             return False  # Can't check, must call or raise
         
+        self.acted_this_round.add(player_id)
         self.last_action = {'player': player.name, 'action': 'check'}
         
         if self._is_round_complete():
@@ -221,6 +227,7 @@ class PokerGame:
         player.chips -= actual_call
         player.bet += actual_call
         self.pot += actual_call
+        self.acted_this_round.add(player_id)
         
         if player.chips == 0:
             player.is_all_in = True
@@ -245,6 +252,9 @@ class PokerGame:
         
         if amount < self.min_raise and player.chips > total_needed:
             return False  # Raise too small
+        
+        # A raise resets who has acted (everyone gets to act again)
+        self.acted_this_round = {player_id}
         
         if player.chips <= total_needed:
             # All-in raise
@@ -288,17 +298,21 @@ class PokerGame:
                 break
     
     def _is_round_complete(self) -> bool:
-        active_players = [p for p in self.players if not p.folded]
+        active_players = [p for p in self.players if not p.folded and not p.is_all_in]
         if len(active_players) <= 1:
             return True
         
         # Check if all active players have matched the current bet
         for p in active_players:
-            if not p.is_all_in and p.bet < self.current_bet:
+            if p.bet < self.current_bet:
                 return False
         
-        # Check if we've gone around once (current player has acted)
-        # This is simplified - real poker tracks action more carefully
+        # Check if everyone has had a chance to act
+        # and we're back to the starting player (or they've acted)
+        for p in active_players:
+            if p.id not in self.acted_this_round:
+                return False
+        
         return True
     
     def _advance_phase(self):
@@ -330,10 +344,15 @@ class PokerGame:
             self._evaluate_hands()
             return
         
-        # Find first active player after dealer
+        # Reset round tracking
+        self.acted_this_round = set()
+        
+        # Find first active player after dealer for next round
         self.current_player_index = (self.dealer_index + 1) % len(self.players)
         while self.players[self.current_player_index].folded:
             self.current_player_index = (self.current_player_index + 1) % len(self.players)
+        
+        self.round_start_player = self.current_player_index
     
     def _evaluate_hands(self):
         active_players = [p for p in self.players if not p.folded]

@@ -96,14 +96,25 @@ async def player_action(game_id: str, request: ActionRequest):
     
     # Process AI turns
     ai_manager = ai_managers[game_id]
-    while True:
+    max_ai_turns = 50  # Safety limit to prevent infinite loops
+    ai_turns = 0
+    
+    while ai_turns < max_ai_turns:
         current = game.get_current_player()
         if not current or current.is_human:
             break
         
+        # Check if hand is over
+        if game.phase == 'showdown':
+            break
+        
         # Small delay for realism
-        await asyncio.sleep(0.5)
-        ai_manager.process_bot_turn()
+        await asyncio.sleep(0.3)
+        result = ai_manager.process_bot_turn()
+        ai_turns += 1
+        
+        if not result:
+            break
     
     return game.to_dict(for_player=request.player_id)
 
