@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from app.database_migration import init_db_with_migration
-from app.routers import stocks
+from app.routers import stocks, poker
 import os
 
 app = FastAPI(title="Stock Research API", version="0.2.0-p5")
@@ -35,6 +35,7 @@ async def startup():
     init_db_with_migration()
 
 app.include_router(stocks.router)
+app.include_router(poker.router)
 
 @app.get("/health")
 async def health():
