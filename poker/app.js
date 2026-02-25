@@ -226,8 +226,8 @@ async function nextHand() {
         });
         
         if (!response.ok) {
-            const err = await response.json();
-            throw new Error(err.detail || 'Failed to start next hand');
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.detail || err.message || 'Failed to start next hand');
         }
         
         gameState = await response.json();
@@ -236,7 +236,8 @@ async function nextHand() {
         
     } catch (error) {
         console.error('Error:', error);
-        alert(error.message || 'Failed to start next hand');
+        const message = typeof error === 'string' ? error : (error.message || 'Failed to start next hand');
+        alert(message);
     } finally {
         elements.btnNextHand.disabled = false;
         elements.btnNextHand.textContent = 'Next Hand';
