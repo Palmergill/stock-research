@@ -33,7 +33,7 @@
 ### UI Improvements
 - [ ] **Better card animations** - Deal cards one by one with animation
 - [ ] **Chip stack visualization** - Show actual chip stacks, not just numbers
-- [ ] **Hand strength indicator** - Show "Pair", "Two Pair", etc. for your hand
+- [x] **Hand strength indicator** - Added: Shows "Pair of Aces", "Flush", "Straight", etc. in gold badge below cards
 - [ ] **Pot odds calculator** - Show pot odds in real-time
 - [ ] **Timer for decisions** - Countdown timer for player actions
 - [ ] **Bet slider improvements** - Show min/max/pot on slider

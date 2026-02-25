@@ -25,6 +25,7 @@ const elements = {
     opponentsRow: document.getElementById('opponents-row'),
     communityCards: document.getElementById('community-cards'),
     yourCards: document.getElementById('your-cards'),
+    handStrength: document.getElementById('hand-strength'),
     yourName: document.getElementById('your-name'),
     yourChips: document.getElementById('your-chips'),
     actionButtons: document.getElementById('action-buttons'),
@@ -305,6 +306,14 @@ function updateGameDisplay() {
         const cardsHTML = myPlayer.hand.map(card => renderCard(card, true)).join('');
         elements.yourCards.innerHTML = cardsHTML;
         
+        // Show hand strength
+        const handStrength = evaluateHandStrength(myPlayer.hand, gameState.community_cards);
+        if (handStrength) {
+            elements.handStrength.innerHTML = `<span class="hand-strength-text">${handStrength}</span>`;
+        } else {
+            elements.handStrength.innerHTML = '';
+        }
+        
         // Add/remove active-turn class
         if (isYourTurn) {
             elements.yourCards.classList.add('active-turn');
@@ -358,6 +367,107 @@ function renderCard(card, isPlayerCard = false) {
     const rank = { 14: 'A', 13: 'K', 12: 'Q', 11: 'J' }[card.rank] || card.rank;
     
     return `<div class="card ${isRed ? '' : 'black'}">${rank}${suitSymbol}</div>`;
+}
+
+function evaluateHandStrength(playerCards, communityCards) {
+    if (!playerCards || playerCards.length < 2) return null;
+    
+    const allCards = [...playerCards, ...communityCards];
+    if (allCards.length < 5) return null; // Need at least 5 cards to evaluate
+    
+    const ranks = allCards.map(c => c.rank);
+    const suits = allCards.map(c => c.suit);
+    
+    // Count ranks
+    const rankCounts = {};
+    ranks.forEach(r => rankCounts[r] = (rankCounts[r] || 0) + 1);
+    const counts = Object.values(rankCounts).sort((a, b) => b - a);
+    
+    // Count suits
+    const suitCounts = {};
+    suits.forEach(s => suitCounts[s] = (suitCounts[s] || 0) + 1);
+    const maxSuitCount = Math.max(...Object.values(suitCounts));
+    
+    // Check for flush
+    const isFlush = maxSuitCount >= 5;
+    
+    // Check for straight
+    const uniqueRanks = [...new Set(ranks)].sort((a, b) => b - a);
+    let isStraight = false;
+    let straightHigh = 0;
+    
+    for (let i = 0; i <= uniqueRanks.length - 5; i++) {
+        if (uniqueRanks[i] - uniqueRanks[i + 4] === 4) {
+            isStraight = true;
+            straightHigh = uniqueRanks[i];
+            break;
+        }
+    }
+    // Check wheel (A-5)
+    if (!isStraight && uniqueRanks.includes(14) && uniqueRanks.includes(5) && 
+        uniqueRanks.includes(4) && uniqueRanks.includes(3) && uniqueRanks.includes(2)) {
+        isStraight = true;
+        straightHigh = 5;
+    }
+    
+    // Get rank names for display
+    const rankNames = { 14: 'Ace', 13: 'King', 12: 'Queen', 11: 'Jack' };
+    const pluralize = (rank) => {
+        const name = rankNames[rank] || rank;
+        return name + (rank !== 6 && rank !== 9 && rank !== 10 ? 's' : 'es');
+    };
+    
+    const getRankName = (rank) => rankNames[rank] || rank;
+    
+    // Find the ranks with specific counts
+    const getRanksWithCount = (n) => {
+        return Object.entries(rankCounts)
+            .filter(([r, c]) => c === n)
+            .map(([r, c]) => parseInt(r))
+            .sort((a, b) => b - a);
+    };
+    
+    // Determine hand rank
+    if (isFlush && isStraight) {
+        if (straightHigh === 14) return 'Royal Flush! 👑';
+        return `Straight Flush - ${getRankName(straightHigh)} high`;
+    }
+    
+    if (counts[0] === 4) {
+        const quadRank = getRanksWithCount(4)[0];
+        return `Four of a Kind - ${pluralize(quadRank)}`;
+    }
+    
+    if (counts[0] === 3 && counts[1] >= 2) {
+        const tripRank = getRanksWithCount(3)[0];
+        const pairRank = getRanksWithCount(2)[0];
+        return `Full House - ${pluralize(tripRank)} full of ${pluralize(pairRank)}`;
+    }
+    
+    if (isFlush) return 'Flush';
+    
+    if (isStraight) {
+        return `Straight - ${getRankName(straightHigh)} high`;
+    }
+    
+    if (counts[0] === 3) {
+        const tripRank = getRanksWithCount(3)[0];
+        return `Three of a Kind - ${pluralize(tripRank)}`;
+    }
+    
+    if (counts[0] === 2 && counts[1] === 2) {
+        const pairs = getRanksWithCount(2);
+        return `Two Pair - ${pluralize(pairs[0])} and ${pluralize(pairs[1])}`;
+    }
+    
+    if (counts[0] === 2) {
+        const pairRank = getRanksWithCount(2)[0];
+        return `Pair of ${pluralize(pairRank)}`;
+    }
+    
+    // High card - show the best card
+    const highCard = Math.max(...ranks);
+    return `${getRankName(highCard)} High`;
 }
 
 function updateActionButtons() {
