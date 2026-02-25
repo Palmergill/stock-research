@@ -24,7 +24,7 @@
 ### Game Features
 - [ ] **Tournament mode** - Sit & go tournaments with increasing blinds
 - [x] **Hand history** - Fixed: Each hand is now logged with timestamp, players, hole cards, community cards, pot size, winners, and action sequence. History accessible via `/api/poker/games/{game_id}/history` endpoint
-- [ ] **Player statistics** - Track win rate, biggest pot, hands played
+- [x] **Player statistics** - Fixed: Added StatsManager that tracks hands played, hands won, win rate, biggest pot won, net profit/loss, and best hand achieved. Data persists across sessions using localStorage. Stats view accessible via button on start screen with option to reset.
 - [ ] **Chat feature** - Simple chat between players
 - [x] **Sound effects** - Fixed: Added Web Audio API sound manager with card deal, chip, win, and loss sounds. Sounds are generated programmatically (no external files needed) and respect browser autoplay policies.
 - [x] **Vibration on turn** - Fixed: Added haptic feedback via `navigator.vibrate([50, 100, 50])` when it's the player's turn, with mobile device detection and graceful fallback

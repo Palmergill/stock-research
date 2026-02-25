@@ -7,6 +7,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- Player statistics tracking - persists across sessions using localStorage
+  - Hands played, hands won, win rate percentage
+  - Biggest pot won, net profit/loss tracking
+  - Best hand achieved tracking
+  - Stats modal accessible from start screen with reset option
 - Decision timer - countdown display when it's your turn to act
 - Changelog file to track version history
 

@@ -3,6 +3,106 @@ const API_BASE = window.location.hostname === 'localhost'
     ? 'http://localhost:8000'
     : 'https://stock-research-production-b3ac.up.railway.app';
 
+// Player Statistics Manager
+const StatsManager = {
+    stats: {
+        handsPlayed: 0,
+        handsWon: 0,
+        biggestPotWon: 0,
+        totalProfit: 0,
+        totalLoss: 0,
+        bestHand: null,
+        sessionStart: null
+    },
+
+    init() {
+        // Load saved stats from localStorage
+        const saved = localStorage.getItem('poker-stats');
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                this.stats = { ...this.stats, ...parsed };
+            } catch (e) {
+                console.log('[Stats] Failed to load saved stats');
+            }
+        }
+        this.stats.sessionStart = new Date().toISOString();
+    },
+
+    save() {
+        localStorage.setItem('poker-stats', JSON.stringify(this.stats));
+    },
+
+    recordHandPlayed() {
+        this.stats.handsPlayed++;
+        this.save();
+    },
+
+    recordHandWin(amount, handName) {
+        this.stats.handsWon++;
+        this.stats.totalProfit += amount;
+        if (amount > this.stats.biggestPotWon) {
+            this.stats.biggestPotWon = amount;
+        }
+        // Track best hand (simple hierarchy)
+        const handRankings = [
+            'High Card', 'Pair', 'Two Pair', 'Three of a Kind', 'Straight',
+            'Flush', 'Full House', 'Four of a Kind', 'Straight Flush', 'Royal Flush'
+        ];
+        if (handName) {
+            for (let i = handRankings.length - 1; i >= 0; i--) {
+                if (handName.includes(handRankings[i]) || 
+                    (handRankings[i] === 'Pair' && handName.includes('Pair')) ||
+                    (handRankings[i] === 'High Card' && handName.includes('High'))) {
+                    if (!this.stats.bestHand || i > handRankings.indexOf(this.stats.bestHand)) {
+                        this.stats.bestHand = handRankings[i];
+                    }
+                    break;
+                }
+            }
+        }
+        this.save();
+    },
+
+    recordHandLoss(amount) {
+        this.stats.totalLoss += amount;
+        this.save();
+    },
+
+    getWinRate() {
+        if (this.stats.handsPlayed === 0) return 0;
+        return ((this.stats.handsWon / this.stats.handsPlayed) * 100).toFixed(1);
+    },
+
+    getNetProfit() {
+        return this.stats.totalProfit - this.stats.totalLoss;
+    },
+
+    reset() {
+        this.stats = {
+            handsPlayed: 0,
+            handsWon: 0,
+            biggestPotWon: 0,
+            totalProfit: 0,
+            totalLoss: 0,
+            bestHand: null,
+            sessionStart: new Date().toISOString()
+        };
+        this.save();
+    },
+
+    getFormattedStats() {
+        return {
+            handsPlayed: this.stats.handsPlayed,
+            handsWon: this.stats.handsWon,
+            winRate: this.getWinRate(),
+            biggestPotWon: this.stats.biggestPotWon,
+            netProfit: this.getNetProfit(),
+            bestHand: this.stats.bestHand || 'None yet'
+        };
+    }
+};
+
 // Sound Manager - Web Audio API for game sounds
 const SoundManager = {
     audioContext: null,
@@ -252,6 +352,8 @@ let turnStartTime = null;
 let turnTimerId = null;
 const TURN_TIME_LIMIT = 30000; // 30 seconds per turn
 let hasVibratedThisTurn = false; // Track if we've vibrated for current turn
+let lastHandNumber = 0; // Track hand number for stats
+let handResultRecorded = false; // Prevent duplicate stat recording
 
 // DOM Elements
 const screens = {
@@ -296,7 +398,12 @@ const elements = {
     timerFill: document.getElementById('timer-fill'),
     loadingOverlay: document.getElementById('loading-overlay'),
     themeToggle: document.getElementById('theme-toggle'),
-    gameScreen: document.getElementById('game-screen')
+    gameScreen: document.getElementById('game-screen'),
+    statsBtn: document.getElementById('stats-btn'),
+    statsModal: document.getElementById('stats-modal'),
+    statsContent: document.getElementById('stats-content'),
+    btnCloseStats: document.getElementById('btn-close-stats'),
+    btnResetStats: document.getElementById('btn-reset-stats')
 };
 
 // Theme Manager
@@ -340,10 +447,11 @@ const ThemeManager = {
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
-    // Initialize error boundary, sound manager, and theme manager
+    // Initialize error boundary, sound manager, theme manager, and stats
     ErrorBoundary.init();
     SoundManager.init();
     ThemeManager.init();
+    StatsManager.init();
     
     // Theme toggle button
     if (elements.themeToggle) {
@@ -395,6 +503,22 @@ document.addEventListener('DOMContentLoaded', () => {
             setRaiseAmount(myPlayer.chips);
         }
     });
+
+    // Stats button listeners
+    if (elements.statsBtn) {
+        elements.statsBtn.addEventListener('click', showStats);
+    }
+    if (elements.btnCloseStats) {
+        elements.btnCloseStats.addEventListener('click', hideStats);
+    }
+    if (elements.btnResetStats) {
+        elements.btnResetStats.addEventListener('click', () => {
+            if (confirm('Reset all statistics? This cannot be undone.')) {
+                StatsManager.reset();
+                showStats();
+            }
+        });
+    }
 });
 
 function setRaiseAmount(amount) {
@@ -644,7 +768,17 @@ async function nextHand() {
 
 function updateGameDisplay() {
     if (!gameState) return;
-    
+
+    // Track new hands for stats
+    if (gameState.hand_number && gameState.hand_number !== lastHandNumber) {
+        if (lastHandNumber > 0) {
+            // Previous hand completed, record it
+            StatsManager.recordHandPlayed();
+        }
+        lastHandNumber = gameState.hand_number;
+        handResultRecorded = false; // Reset for new hand
+    }
+
     // Update header
     elements.handNumber.textContent = gameState.hand_number;
     elements.phase.textContent = gameState.phase.replace('_', ' ').toUpperCase();
@@ -916,12 +1050,27 @@ function updatePotOdds() {
 
 function showHandResult() {
     if (!gameState.winners || gameState.winners.length === 0) return;
-    
+
     // Update display one more time to show all cards
     updateGameDisplay();
-    
+
     const winner = gameState.winners[0];
     const isMe = winner.id === playerId;
+
+    // Record stats for hand result (only once per hand)
+    if (!handResultRecorded) {
+        handResultRecorded = true;
+        const myPlayer = gameState.players.find(p => p.id === playerId);
+        if (isMe) {
+            // Get hand strength text if available
+            const handStrengthEl = elements.handStrength.querySelector('.hand-strength-text');
+            const handName = handStrengthEl ? handStrengthEl.textContent : null;
+            StatsManager.recordHandWin(winner.amount, handName);
+        } else if (myPlayer) {
+            // Record loss (amount lost is player's bet this hand)
+            StatsManager.recordHandLoss(myPlayer.bet || 0);
+        }
+    }
     
     // Play win/loss sound
     if (isMe) {
@@ -949,6 +1098,43 @@ function showHandResult() {
 
 function hideHandResult() {
     elements.handResult.classList.add('hidden');
+}
+
+function showStats() {
+    const stats = StatsManager.getFormattedStats();
+    const netProfitClass = stats.netProfit >= 0 ? 'positive' : 'negative';
+
+    elements.statsContent.innerHTML = `
+        <div class="stat-row">
+            <span class="stat-label">Hands Played</span>
+            <span class="stat-value">${stats.handsPlayed}</span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-label">Hands Won</span>
+            <span class="stat-value gold">${stats.handsWon}</span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-label">Win Rate</span>
+            <span class="stat-value gold">${stats.winRate}%</span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-label">Biggest Pot Won</span>
+            <span class="stat-value gold">${stats.biggestPotWon} chips</span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-label">Net Profit/Loss</span>
+            <span class="stat-value ${netProfitClass}">${stats.netProfit >= 0 ? '+' : ''}${stats.netProfit} chips</span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-label">Best Hand</span>
+            <span class="stat-value">${stats.bestHand}</span>
+        </div>
+    `;
+    elements.statsModal.classList.remove('hidden');
+}
+
+function hideStats() {
+    elements.statsModal.classList.add('hidden');
 }
 
 function switchScreen(screenName) {

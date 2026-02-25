@@ -824,6 +824,41 @@
         .hidden {
             display: none !important;
         }
+
+        /* Stats display styles */
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .stat-row:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            color: #94a3b8;
+            font-size: 14px;
+        }
+
+        .stat-value {
+            color: #fff;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .stat-value.positive {
+            color: #10b981;
+        }
+
+        .stat-value.negative {
+            color: #ef4444;
+        }
+
+        .stat-value.gold {
+            color: #ffd700;
+        }
     </style>
 </head>
 <body>
@@ -842,6 +877,7 @@
                 <p>• 1000 Starting Chips</p>
                 <p>• Blinds 10/20</p>
             </div>
+            <button id="stats-btn" class="btn-secondary" style="margin-top: 30px; max-width: 200px;">📊 Statistics</button>
         </div>
 
         <!-- Loading Overlay -->
@@ -945,6 +981,20 @@
                     <h2 id="result-title">Hand Complete</h2>
                     <div id="result-details"></div>
                     <button id="btn-next-hand" class="btn-primary">Next Hand</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Modal -->
+        <div id="stats-modal" class="overlay hidden">
+            <div class="result-content" style="max-width: 320px;">
+                <h2>📊 Your Statistics</h2>
+                <div id="stats-content" style="text-align: left; margin: 20px 0;">
+                    <!-- Stats populated by JS -->
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button id="btn-close-stats" class="btn-primary" style="flex: 1;">Close</button>
+                    <button id="btn-reset-stats" class="btn-secondary" style="flex: 1; background: rgba(239,68,68,0.2); border-color: rgba(239,68,68,0.4);">Reset</button>
                 </div>
             </div>
         </div>
