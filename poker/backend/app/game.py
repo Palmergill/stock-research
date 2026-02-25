@@ -2,9 +2,10 @@
 Texas Hold'em Poker Game Logic
 """
 from dataclasses import dataclass, field
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 from enum import Enum
 import random
+from datetime import datetime
 
 from .config import Config
 
@@ -100,6 +101,28 @@ class Player:
             'is_human': self.is_human
         }
 
+@dataclass
+class HandHistory:
+    """Record of a completed hand"""
+    hand_number: int
+    timestamp: str
+    players: List[Dict[str, Any]]  # Player snapshots at start
+    community_cards: List[Dict[str, Any]]
+    pot: int
+    winners: List[Dict[str, Any]]
+    actions: List[Dict[str, Any]]  # Action log
+    
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            'hand_number': self.hand_number,
+            'timestamp': self.timestamp,
+            'players': self.players,
+            'community_cards': [f"{c['rank']}{c['suit']}" for c in self.community_cards],
+            'pot': self.pot,
+            'winners': self.winners,
+        }
+
+
 class PokerGame:
     def __init__(self, game_id: str):
         self.game_id = game_id
@@ -118,6 +141,11 @@ class PokerGame:
         self.winners: List[Dict] = []
         self.last_action: Optional[Dict] = None
         self.hand_number: int = 0
+        
+        # Hand history
+        self.hand_history: List[HandHistory] = []
+        self._current_hand_actions: List[Dict[str, Any]] = []
+        self._current_hand_start: Optional[Dict[str, Any]] = None
     
     def add_player(self, name: str, is_human: bool = False) -> Player:
         player_id = f"p{len(self.players)}"
@@ -143,6 +171,7 @@ class PokerGame:
         self.round_bets = {}
         self.winners = []
         self.last_action = None
+        self._current_hand_actions = []
         
         # Reset players
         for player in self.players:
@@ -155,6 +184,21 @@ class PokerGame:
         for _ in range(2):
             for player in self.players:
                 player.hand.extend(self.deck.deal(1))
+        
+        # Record starting state for history
+        self._current_hand_start = {
+            'players': [
+                {
+                    'id': p.id,
+                    'name': p.name,
+                    'chips': p.chips,
+                    'hand': [c.to_dict() for c in p.hand],
+                    'is_human': p.is_human
+                }
+                for p in self.players
+            ],
+            'dealer_index': self.dealer_index
+        }
         
         # Post blinds
         sb_index = (self.dealer_index + 1) % len(self.players)
@@ -191,6 +235,7 @@ class PokerGame:
         
         player.folded = True
         self.last_action = {'player': player.name, 'action': 'fold'}
+        self._log_action(player.name, 'fold')
         
         if self._is_round_complete():
             self._advance_phase()
@@ -208,6 +253,7 @@ class PokerGame:
             return False  # Can't check, must call or raise
         
         self.last_action = {'player': player.name, 'action': 'check'}
+        self._log_action(player.name, 'check')
         
         if self._is_round_complete():
             self._advance_phase()
@@ -233,8 +279,10 @@ class PokerGame:
         if player.chips == 0:
             player.is_all_in = True
             self.last_action = {'player': player.name, 'action': 'all-in'}
+            self._log_action(player.name, 'all-in', actual_call)
         else:
             self.last_action = {'player': player.name, 'action': 'call', 'amount': actual_call}
+            self._log_action(player.name, 'call', actual_call)
         
         if self._is_round_complete():
             self._advance_phase()
@@ -267,6 +315,7 @@ class PokerGame:
                 self.min_raise = actual_raise
             
             self.last_action = {'player': player.name, 'action': 'all-in', 'amount': player.bet}
+            self._log_action(player.name, 'all-in', player.bet)
         else:
             player.chips -= total_needed
             player.bet += total_needed
@@ -274,6 +323,7 @@ class PokerGame:
             self.current_bet = player.bet
             self.min_raise = amount
             self.last_action = {'player': player.name, 'action': 'raise', 'amount': amount}
+            self._log_action(player.name, 'raise', amount)
         
         if self._is_round_complete():
             self._advance_phase()
@@ -287,6 +337,19 @@ class PokerGame:
             if p.id == player_id:
                 return p
         return None
+    
+    def _log_action(self, player_name: str, action: str, amount: Optional[int] = None):
+        """Log an action for hand history"""
+        action_entry = {
+            'phase': self.phase,
+            'player': player_name,
+            'action': action,
+            'pot': self.pot,
+            'timestamp': datetime.utcnow().isoformat()
+        }
+        if amount is not None:
+            action_entry['amount'] = amount
+        self._current_hand_actions.append(action_entry)
     
     def _next_player(self):
         for _ in range(len(self.players)):
@@ -470,6 +533,34 @@ class PokerGame:
             'amount': split_amount + (1 if i < remainder else 0),
             'hand': [c.to_dict() for c in w.hand]
         } for i, w in enumerate(winners)]
+        
+        # Save hand to history
+        self._save_hand_history()
+    
+    def _save_hand_history(self):
+        """Save the completed hand to history"""
+        if not self._current_hand_start:
+            return
+        
+        hand_record = HandHistory(
+            hand_number=self.hand_number,
+            timestamp=datetime.utcnow().isoformat(),
+            players=self._current_hand_start['players'],
+            community_cards=[c.to_dict() for c in self.community_cards],
+            pot=self.pot,
+            winners=self.winners,
+            actions=self._current_hand_actions.copy()
+        )
+        
+        self.hand_history.append(hand_record)
+        
+        # Clear current hand data
+        self._current_hand_start = None
+        self._current_hand_actions = []
+    
+    def get_hand_history(self) -> List[Dict[str, Any]]:
+        """Get list of completed hands"""
+        return [h.to_dict() for h in self.hand_history]
     
     def to_dict(self, for_player: Optional[str] = None) -> dict:
         """Convert game state to dict for API response"""

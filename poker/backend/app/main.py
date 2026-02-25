@@ -359,13 +359,26 @@ async def create_game(request: CreateGameRequest):
     # Add human player
     human = game.add_player(request.player_name, is_human=True)
 
-    # Add AI bots with varying aggression
+    # Add AI bots with varied difficulty levels
     ai_manager = AIManager(game)
-    ai_manager.add_bot("Alex", aggression=0.3)  # Tight
-    ai_manager.add_bot("Bob", aggression=0.5)  # Balanced
-    ai_manager.add_bot("Charlie", aggression=0.7)  # Loose
-    ai_manager.add_bot("Diana", aggression=0.6)  # Aggressive
-    ai_manager.add_bot("Eve", aggression=0.4)  # Balanced
+    if Config.AI_DIFFICULTY == "mixed":
+        # Default: mix of difficulties for varied gameplay
+        ai_manager.add_default_bots()
+    elif Config.AI_DIFFICULTY == "easy":
+        for name in ["Alex", "Bob", "Charlie", "Diana", "Eve"]:
+            ai_manager.add_bot(name, difficulty="easy")
+    elif Config.AI_DIFFICULTY == "medium":
+        for name in ["Alex", "Bob", "Charlie", "Diana", "Eve"]:
+            ai_manager.add_bot(name, difficulty="medium")
+    elif Config.AI_DIFFICULTY == "hard":
+        for name in ["Alex", "Bob", "Charlie", "Diana", "Eve"]:
+            ai_manager.add_bot(name, difficulty="hard")
+    elif Config.AI_DIFFICULTY == "expert":
+        for name in ["Alex", "Bob", "Charlie", "Diana", "Eve"]:
+            ai_manager.add_bot(name, difficulty="expert")
+    else:
+        # Fallback to default mixed
+        ai_manager.add_default_bots()
 
     # Start first hand
     game.start_hand()
@@ -537,16 +550,25 @@ async def next_hand(game_id: str, player_id: str):
     response_model=HandHistoryResponse,
     tags=["Game State"],
     summary="Get game history",
-    description="Retrieve hand history for a game. (Currently returns empty list - full history logging is a planned feature.)",
+    description="Retrieve hand history for a game. Returns all completed hands with winners, pots, and community cards.",
     responses={
         200: {"description": "Game history retrieved", "model": HandHistoryResponse},
-        400: {"description": "Invalid game ID format", "model": ErrorResponse}
+        400: {"description": "Invalid game ID format", "model": ErrorResponse},
+        404: {"description": "Game not found", "model": ErrorResponse}
     }
 )
 async def get_game_history(game_id: str):
-    """Get game history (placeholder for future hand history feature)"""
+    """Get hand history for a game"""
     validate_game_id(game_id)
-    return {"game_id": game_id, "hands": []}
+    
+    if game_id not in games:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    game = games[game_id]
+    return {
+        "game_id": game_id, 
+        "hands": game.get_hand_history()
+    }
 
 
 @app.get(
@@ -568,6 +590,7 @@ async def health_check():
             "starting_chips": Config.STARTING_CHIPS,
             "small_blind": Config.SMALL_BLIND,
             "big_blind": Config.BIG_BLIND,
+            "ai_difficulty": Config.AI_DIFFICULTY,
         }
     }
 

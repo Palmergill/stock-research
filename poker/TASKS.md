@@ -23,7 +23,7 @@
 
 ### Game Features
 - [ ] **Tournament mode** - Sit & go tournaments with increasing blinds
-- [ ] **Hand history** - Log all hands played with replay capability
+- [x] **Hand history** - Fixed: Each hand is now logged with timestamp, players, hole cards, community cards, pot size, winners, and action sequence. History accessible via `/api/poker/games/{game_id}/history` endpoint
 - [ ] **Player statistics** - Track win rate, biggest pot, hands played
 - [ ] **Chat feature** - Simple chat between players
 - [x] **Sound effects** - Fixed: Added Web Audio API sound manager with card deal, chip, win, and loss sounds. Sounds are generated programmatically (no external files needed) and respect browser autoplay policies.
@@ -46,7 +46,7 @@
 - [ ] **Authentication** - Optional user accounts
 - [ ] **Multi-table support** - Play at multiple tables
 - [ ] **Spectator mode** - Watch games without playing
-- [ ] **AI difficulty levels** - Easy, medium, hard, expert
+- [x] **AI difficulty levels** - Fixed: Added AIDifficulty preset system with easy/medium/hard/expert levels. Each level controls aggression, bluff frequency, hand strength thresholds, raise sizing, and call thresholds. Set via `AI_DIFFICULTY` env var or defaults to mixed (varied opponents)
 
 ## 🔧 Code Improvements
 

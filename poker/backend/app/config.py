@@ -30,6 +30,7 @@ class Config:
     # AI settings
     AI_DECISION_DELAY: float = float(os.getenv("AI_DECISION_DELAY", "0.5"))
     AI_BLIND_DELAY: float = float(os.getenv("AI_BLIND_DELAY", "0.3"))
+    AI_DIFFICULTY: str = os.getenv("AI_DIFFICULTY", "mixed")  # easy, medium, hard, expert, mixed
     
     # Game cleanup
     GAME_CLEANUP_MINUTES: int = int(os.getenv("GAME_CLEANUP_MINUTES", "60"))
