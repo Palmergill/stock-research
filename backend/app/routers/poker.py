@@ -182,12 +182,11 @@ class NextHandRequest(BaseModel):
     player_id: str
 
 @router.post("/games/{game_id}/next-hand")
-async def next_hand(game_id: str, request: NextHandRequest):
+async def next_hand(game_id: str, player_id: str):
     """Start next hand"""
     import logging
     logger = logging.getLogger(__name__)
     
-    player_id = request.player_id
     logger.info(f"Next hand requested for game {game_id}, player {player_id}")
     
     if game_id not in games:
