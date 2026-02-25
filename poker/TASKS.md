@@ -61,7 +61,7 @@
 
 ### Backend (Python)
 - [x] **Add tests** - Fixed: Added pytest test suite with 63 tests covering game logic (hand evaluation, player actions, betting), API endpoints (health, create game, actions, rate limiting), and AI behavior (decision making, aggression levels)
-- [ ] **Type hints** - Complete type coverage
+- [x] **Type hints** - Fixed: Completed type coverage in ai.py - added proper types for `make_decision()`, `_preflop_strength()`, `AIManager.bots`, and `process_bot_turn()` return types
 - [ ] **API documentation** - OpenAPI/Swagger docs
 - [x] **Rate limiting** - Fixed: Already implemented in-memory rate limiter (20 req/min burst per IP)
 - [x] **Better logging** - Fixed: Already implemented structured logging with correlation IDs in `config.py`
@@ -100,7 +100,7 @@
 - [x] **Rate limiting** - Fixed: Implemented in-memory rate limiter with 20 req/min burst per IP, 1-minute block on violation, with proper headers (X-RateLimit-Remaining, X-RateLimit-Limit) and health check exemption
 - [ ] **CSRF protection** - If adding auth
 - [ ] **Game integrity** - Prevent cheating/exploits
-- [ ] **HTTPS enforcement** - Ensure all traffic is encrypted
+- [x] **HTTPS enforcement** - Fixed: Added HTTPS enforcement middleware that redirects HTTP to HTTPS in production (non-DEBUG mode), with health check exemption to avoid breaking monitoring
 
 ## 📊 Analytics
 

@@ -19,7 +19,31 @@ from .config import Config, get_logger, set_correlation_id, clear_correlation_id
 # Setup logging
 logger = get_logger()
 
-app = FastAPI(title="Texas Hold'em Poker API", debug=Config.DEBUG)
+app = FastAPI(
+    title="Texas Hold'em Poker API",
+    description="A multiplayer Texas Hold'em poker game API with AI opponents",
+    version="1.0.0",
+    debug=Config.DEBUG
+)
+
+# HTTPS enforcement middleware (production only)
+@app.middleware("http")
+async def https_enforcement_middleware(request: Request, call_next):
+    """Redirect HTTP to HTTPS in production environments with proper load balancer support"""
+    if not Config.DEBUG:
+        # Only enforce if we have explicit indication of HTTP from a load balancer/proxy
+        # X-Forwarded-Proto is set by most load balancers (AWS ALB/ELB, Nginx, CloudFlare, etc.)
+        forwarded_proto = request.headers.get("X-Forwarded-Proto", "")
+        
+        # Only redirect if load balancer explicitly says HTTP and not health check
+        if forwarded_proto == "http" and request.url.path != "/api/poker/health":
+            https_url = request.url.replace(scheme="https")
+            return JSONResponse(
+                status_code=307,  # Temporary redirect
+                headers={"Location": str(https_url)},
+                content={"detail": "HTTPS required"}
+            )
+    return await call_next(request)
 
 # CORS for frontend
 app.add_middleware(

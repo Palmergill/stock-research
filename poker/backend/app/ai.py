@@ -2,7 +2,7 @@
 AI Bot for Texas Hold'em Poker
 """
 import random
-from typing import Optional
+from typing import Optional, Dict, Any, List, Tuple
 from .game import PokerGame, Player, Card, HandRank
 
 class PokerAI:
@@ -11,7 +11,7 @@ class PokerAI:
     def __init__(self, aggression: float = 0.5):
         self.aggression = aggression  # 0 = tight, 1 = loose/aggressive
     
-    def make_decision(self, game: PokerGame, player: Player) -> dict:
+    def make_decision(self, game: PokerGame, player: Player) -> Dict[str, Any]:
         """Returns action dict with 'action' and optional 'amount'"""
         hand_strength = self._estimate_hand_strength(game, player)
         pot_odds = self._calculate_pot_odds(game, player)
@@ -96,7 +96,7 @@ class PokerAI:
         
         return wins / trials
     
-    def _preflop_strength(self, hand: list) -> float:
+    def _preflop_strength(self, hand: List[Card]) -> float:
         """Quick estimate of preflop hand strength"""
         if len(hand) != 2:
             return 0.5
@@ -153,7 +153,7 @@ class AIManager:
     
     def __init__(self, game: PokerGame):
         self.game = game
-        self.bots: dict = {}
+        self.bots: Dict[str, PokerAI] = {}
     
     def add_bot(self, name: str, aggression: float = 0.5) -> Player:
         """Add an AI bot to the game"""
@@ -161,7 +161,7 @@ class AIManager:
         self.bots[player.id] = PokerAI(aggression=aggression)
         return player
     
-    def process_bot_turn(self) -> Optional[dict]:
+    def process_bot_turn(self) -> Optional[Dict[str, Any]]:
         """Process the current bot's turn if it's an AI"""
         current = self.game.get_current_player()
         
