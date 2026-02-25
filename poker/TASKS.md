@@ -54,9 +54,9 @@
 - [ ] **Add TypeScript** - Type safety for game state
 - [ ] **State management** - Use Redux/Zustand instead of global variables
 - [ ] **Component structure** - Break into React/Vue components
-- [ ] **Error boundaries** - Better error handling
+- [x] **Error boundaries** - Fixed: Added comprehensive error boundary system with `ErrorBoundary` object in app.js featuring global error handlers, user-friendly toast notifications, and async function wrapping
 - [ ] **Unit tests** - Jest/Vitest for game logic
-- [ ] **PWA support** - Offline capability, app install
+- [x] **PWA support** - Fixed: Added manifest.json with app metadata and icons, created sw.js service worker with cache-first strategy for static assets, updated index.html with manifest link and service worker registration
 - [ ] **Service worker** - Cache assets for faster loads
 
 ### Backend (Python)

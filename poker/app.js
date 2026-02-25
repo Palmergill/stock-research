@@ -1,7 +1,116 @@
 // Poker Game Frontend - Option A: Bottom Focus Design
-const API_BASE = window.location.hostname === 'localhost' 
-    ? 'http://localhost:8000' 
+const API_BASE = window.location.hostname === 'localhost'
+    ? 'http://localhost:8000'
     : 'https://stock-research-production-b3ac.up.railway.app';
+
+// Error Boundary - Global error handling
+const ErrorBoundary = {
+    container: null,
+
+    init() {
+        // Create error container
+        this.container = document.createElement('div');
+        this.container.id = 'error-boundary';
+        this.container.style.cssText = `
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            max-width: 90%;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            pointer-events: none;
+        `;
+        document.body.appendChild(this.container);
+
+        // Global error handler
+        window.addEventListener('error', (e) => {
+            console.error('Global error:', e.error);
+            this.show('An unexpected error occurred. Please refresh the page if the game is not working.', 'error');
+        });
+
+        // Unhandled promise rejection handler
+        window.addEventListener('unhandledrejection', (e) => {
+            console.error('Unhandled promise rejection:', e.reason);
+            this.show('Network or server error. Please check your connection and try again.', 'error');
+        });
+    },
+
+    show(message, type = 'error') {
+        const toast = document.createElement('div');
+        const colors = {
+            error: '#ef4444',
+            warning: '#f59e0b',
+            info: '#3b82f6'
+        };
+
+        toast.style.cssText = `
+            background: ${colors[type] || colors.error};
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            animation: slideInDown 0.3s ease-out;
+            pointer-events: auto;
+            max-width: 400px;
+            text-align: center;
+        `;
+        toast.textContent = message;
+
+        // Add close button
+        const closeBtn = document.createElement('button');
+        closeBtn.innerHTML = '×';
+        closeBtn.style.cssText = `
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            margin-left: 12px;
+            padding: 0 4px;
+            float: right;
+        `;
+        closeBtn.onclick = () => toast.remove();
+        toast.appendChild(closeBtn);
+
+        this.container.appendChild(toast);
+
+        // Auto-remove after 8 seconds
+        setTimeout(() => {
+            toast.style.animation = 'fadeOutUp 0.3s ease-out';
+            setTimeout(() => toast.remove(), 300);
+        }, 8000);
+    },
+
+    // Wrap async functions with error handling
+    async wrap(asyncFn, errorMessage = 'Something went wrong') {
+        try {
+            return await asyncFn();
+        } catch (error) {
+            console.error(errorMessage, error);
+            this.show(`${errorMessage}: ${error.message || 'Unknown error'}`, 'error');
+            throw error;
+        }
+    }
+};
+
+// Add animation styles for error boundary
+const errorStyles = document.createElement('style');
+errorStyles.textContent = `
+    @keyframes slideInDown {
+        from { opacity: 0; transform: translateY(-20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeOutUp {
+        from { opacity: 1; transform: translateY(0); }
+        to { opacity: 0; transform: translateY(-20px); }
+    }
+`;
+document.head.appendChild(errorStyles);
 
 let gameState = null;
 let playerId = null;
@@ -49,6 +158,9 @@ const elements = {
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
+    // Initialize error boundary
+    ErrorBoundary.init();
+
     // Cleanup on page unload
     window.addEventListener('beforeunload', stopPolling);
     window.addEventListener('pagehide', stopPolling);
@@ -110,35 +222,38 @@ function setRaiseAmount(amount) {
 
 async function startGame() {
     const name = elements.playerName.value.trim() || 'Palmer';
-    
+
     try {
         elements.startBtn.disabled = true;
         elements.startBtn.textContent = 'Loading...';
-        
+
         const response = await fetch(`${API_BASE}/api/poker/games`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ player_name: name })
         });
-        
-        if (!response.ok) throw new Error('Failed to start game');
-        
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.detail || 'Failed to start game');
+        }
+
         const data = await response.json();
         gameId = data.game_id;
         playerId = data.player_id;
         gameState = data.state;
-        
+
         elements.yourName.textContent = name;
-        
+
         switchScreen('game');
         updateGameDisplay();
-        
+
         // Poll for updates
         startPolling();
         
     } catch (error) {
         console.error('Error starting game:', error);
-        alert('Failed to start game. Please try again.');
+        ErrorBoundary.show('Failed to start game. Please try again.', 'error');
         elements.startBtn.disabled = false;
         elements.startBtn.textContent = 'Play Now';
     }
@@ -175,6 +290,7 @@ function startPolling() {
             
         } catch (error) {
             console.error('Polling error:', error);
+            // Don't show error toast for polling - it's too frequent
         }
     }, 1000);
 }
@@ -223,7 +339,8 @@ async function playerAction(action) {
         }
         
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Error performing action:', error);
+        ErrorBoundary.show('Action failed. Please try again.', 'error');
     } finally {
         isRequestPending = false;
     }
@@ -296,9 +413,9 @@ async function nextHand() {
         startPolling();
         
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Error starting next hand:', error);
         const message = typeof error === 'string' ? error : (error.message || 'Failed to start next hand');
-        alert(message);
+        ErrorBoundary.show(message, 'error');
     } finally {
         isRequestPending = false;
         elements.btnNextHand.disabled = false;
