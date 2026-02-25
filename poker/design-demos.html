@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poker Design Options</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0a0a0f;
+            color: #fff;
+            padding: 40px 20px;
+        }
+        .container { max-width: 900px; margin: 0 auto; }
+        h1 { margin-bottom: 40px; font-size: 28px; text-align: center; }
+        h2 { margin: 40px 0 20px; font-size: 18px; color: #94a3b8; }
+        
+        .demo-box {
+            background: #1a1a2e;
+            border-radius: 16px;
+            overflow: hidden;
+            margin-bottom: 40px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .demo-label {
+            background: #0f172a;
+            padding: 12px 20px;
+            font-size: 14px;
+            color: #64748b;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        /* ===== OPTION A: Clean Minimal ===== */
+        .option-a {
+            background: linear-gradient(180deg, #1e3a5f 0%, #0d2137 100%);
+            padding: 30px;
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .option-a .header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        
+        .option-a .pot {
+            background: rgba(255,255,255,0.1);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+        
+        .option-a .table {
+            flex: 1;
+            background: rgba(255,255,255,0.05);
+            border-radius: 20px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .option-a .card {
+            width: 50px;
+            height: 70px;
+            background: white;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: #dc3545;
+        }
+        
+        .option-a .players {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+        }
+        
+        .option-a .player {
+            text-align: center;
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 12px;
+        }
+        
+        .option-a .player-name { font-size: 12px; color: #94a3b8; }
+        .option-a .player-chips { font-size: 14px; font-weight: 600; }
+        
+        .option-a .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .option-a .btn {
+            flex: 1;
+            padding: 16px;
+            border-radius: 12px;
+            border: none;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .option-a .btn-fold { background: #dc3545; color: white; }
+        .option-a .btn-call { background: #3b82f6; color: white; }
+        .option-a .btn-raise { background: #10b981; color: white; }
+        
+        /* ===== OPTION B: Casino Classic ===== */
+        .option-b {
+            background: linear-gradient(135deg, #0d3320 0%, #1a472a 50%, #0d3320 100%);
+            padding: 30px;
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        
+        .option-b::before {
+            content: '';
+            position: absolute;
+            inset: 20px;
+            border: 3px solid rgba(255,215,0,0.3);
+            border-radius: 40%;
+            pointer-events: none;
+        }
+        
+        .option-b .felt-pattern {
+            position: absolute;
+            inset: 0;
+            opacity: 0.1;
+            background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.03) 10px, rgba(255,255,255,0.03) 20px);
+        }
+        
+        .option-b .header {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .option-b .pot {
+            background: linear-gradient(135deg, #ffd700 0%, #ffaa00 100%);
+            color: #000;
+            padding: 12px 30px;
+            border-radius: 30px;
+            font-size: 20px;
+            font-weight: 700;
+            box-shadow: 0 4px 15px rgba(255,215,0,0.3);
+        }
+        
+        .option-b .table-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .option-b .community {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .option-b .card {
+            width: 55px;
+            height: 75px;
+            background: linear-gradient(135deg, #fff 0%, #f0f0f0 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            border: 1px solid #ddd;
+        }
+        
+        .option-b .players-ring {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .option-b .player {
+            position: absolute;
+            background: rgba(0,0,0,0.6);
+            padding: 8px 16px;
+            border-radius: 20px;
+            text-align: center;
+            border: 2px solid rgba(255,215,0,0.3);
+        }
+        
+        .option-b .player-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 50%;
+            margin: 0 auto 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+        
+        .option-b .player:nth-child(1) { top: 10%; left: 50%; transform: translateX(-50%); }
+        .option-b .player:nth-child(2) { top: 30%; right: 5%; }
+        .option-b .player:nth-child(3) { bottom: 30%; right: 5%; }
+        .option-b .player:nth-child(4) { bottom: 10%; left: 50%; transform: translateX(-50%); }
+        .option-b .player:nth-child(5) { bottom: 30%; left: 5%; }
+        .option-b .player:nth-child(6) { top: 30%; left: 5%; }
+        
+        .option-b .actions {
+            display: flex;
+            gap: 12px;
+            margin-top: auto;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .option-b .btn {
+            flex: 1;
+            padding: 18px 24px;
+            border-radius: 12px;
+            border: none;
+            font-size: 16px;
+            font-weight: 700;
+            text-transform: uppercase;
+            cursor: pointer;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+        }
+        
+        .option-b .btn-fold { background: linear-gradient(180deg, #dc3545, #a02834); color: white; }
+        .option-b .btn-call { background: linear-gradient(180deg, #3b82f6, #1e40af); color: white; }
+        .option-b .btn-raise { background: linear-gradient(180deg, #ffd700, #ffaa00); color: #000; }
+        
+        /* ===== OPTION C: Neon Cyber ===== */
+        .option-c {
+            background: #050508;
+            padding: 30px;
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid rgba(0,255,255,0.2);
+            box-shadow: 0 0 30px rgba(0,255,255,0.1), inset 0 0 30px rgba(0,255,255,0.05);
+        }
+        
+        .option-c .header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(0,255,255,0.2);
+        }
+        
+        .option-c .pot {
+            color: #0ff;
+            font-size: 24px;
+            font-weight: 700;
+            text-shadow: 0 0 10px rgba(0,255,255,0.5);
+        }
+        
+        .option-c .table {
+            flex: 1;
+            background: radial-gradient(ellipse at center, rgba(0,255,255,0.05) 0%, transparent 70%);
+            border: 1px solid rgba(0,255,255,0.1);
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            position: relative;
+        }
+        
+        .option-c .grid-lines {
+            position: absolute;
+            inset: 0;
+            background-image: 
+                linear-gradient(rgba(0,255,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,255,255,0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        
+        .option-c .community {
+            display: flex;
+            gap: 10px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .option-c .card {
+            width: 50px;
+            height: 70px;
+            background: rgba(0,0,0,0.8);
+            border: 1px solid rgba(0,255,255,0.3);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: #0ff;
+            box-shadow: 0 0 15px rgba(0,255,255,0.2);
+        }
+        
+        .option-c .players {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            margin-top: 20px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .option-c .player {
+            text-align: center;
+            padding: 15px;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(0,255,255,0.2);
+            border-radius: 12px;
+        }
+        
+        .option-c .player.active {
+            border-color: #0ff;
+            box-shadow: 0 0 20px rgba(0,255,255,0.3);
+        }
+        
+        .option-c .actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+        
+        .option-c .btn {
+            flex: 1;
+            padding: 18px;
+            border-radius: 8px;
+            border: 1px solid;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            background: transparent;
+            transition: all 0.2s;
+        }
+        
+        .option-c .btn-fold { border-color: #ff0040; color: #ff0040; }
+        .option-c .btn-fold:hover { background: rgba(255,0,64,0.1); box-shadow: 0 0 20px rgba(255,0,64,0.3); }
+        .option-c .btn-call { border-color: #0080ff; color: #0080ff; }
+        .option-c .btn-call:hover { background: rgba(0,128,255,0.1); box-shadow: 0 0 20px rgba(0,128,255,0.3); }
+        .option-c .btn-raise { border-color: #0ff; color: #0ff; }
+        .option-c .btn-raise:hover { background: rgba(0,255,255,0.1); box-shadow: 0 0 20px rgba(0,255,255,0.3); }
+        
+        /* ===== OPTION D: Card Focus ===== */
+        .option-d {
+            background: #0f172a;
+            padding: 30px;
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .option-d .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .option-d .phase {
+            font-size: 12px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .option-d .pot {
+            font-size: 32px;
+            font-weight: 700;
+            color: #ffd700;
+        }
+        
+        .option-d .main-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+        
+        .option-d .card-row {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+        }
+        
+        .option-d .card {
+            width: 60px;
+            height: 84px;
+            background: white;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            border: 1px solid #e0e0e0;
+        }
+        
+        .option-d .card.red { color: #dc3545; }
+        .option-d .card.black { color: #1a1a2e; }
+        
+        .option-d .label {
+            font-size: 11px;
+            color: #64748b;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+        
+        .option-d .opponents {
+            display: flex;
+            justify-content: space-around;
+        }
+        
+        .option-d .opponent {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .option-d .avatar {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 18px;
+        }
+        
+        .option-d .opponent-info {
+            text-align: center;
+        }
+        
+        .option-d .opponent-name {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+        
+        .option-d .opponent-chips {
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .option-d .actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .option-d .btn {
+            padding: 20px;
+            border-radius: 12px;
+            border: none;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .option-d .btn-fold { background: #1e293b; color: #94a3b8; }
+        .option-d .btn-call { background: #3b82f6; color: white; }
+        .option-d .btn-raise { background: #10b981; color: white; grid-column: span 2; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Poker Design Options</h1>
+        
+        <h2>Option A: Clean Minimal</h2>
+        <p style="color: #64748b; margin-bottom: 16px;">Simple, modern, lots of breathing room. Easy to read at a glance.</p>
+        <div class="demo-box">
+            <div class="demo-label">Mobile Preview</div>
+            <div class="option-a">
+                <div class="header">
+                    <span>Hand #1</span>
+                    <div class="pot">Pot: 90</div>
+                </div>
+                <div class="table">
+                    <div class="card">A♥</div>
+                    <div class="card">K♠</div>
+                    <div class="card">Q♦</div>
+                    <div class="card">J♣</div>
+                    <div class="card">10♥</div>
+                </div>
+                <div class="players">
+                    <div class="player">
+                        <div class="player-name">Alex</div>
+                        <div class="player-chips">980</div>
+                    </div>
+                    <div class="player">
+                        <div class="player-name">Bob</div>
+                        <div class="player-chips">980</div>
+                    </div>
+                    <div class="player">
+                        <div class="player-name">Charlie</div>
+                        <div class="player-chips">980</div>
+                    </div>
+                </div>
+                <div class="actions">
+                    <button class="btn btn-fold">Fold</button>
+                    <button class="btn btn-call">Call 20</button>
+                    <button class="btn btn-raise">Raise</button>
+                </div>
+            </div>
+        </div>
+        
+        <h2>Option B: Casino Classic</h2>
+        <p style="color: #64748b; margin-bottom: 16px;">Traditional felt table with gold accents. Oval table shape, realistic casino feel.</p>
+        <div class="demo-box">
+            <div class="demo-label">Mobile Preview</div>
+            <div class="option-b">
+                <div class="felt-pattern"></div>
+                <div class="header">
+                    <div class="pot">POT 90</div>
+                </div>
+                <div class="table-area">
+                    <div class="community">
+                        <div class="card">A♥</div>
+                        <div class="card">K♠</div>
+                        <div class="card">Q♦</div>
+                        <div class="card">J♣</div>
+                        <div class="card">10♥</div>
+                    </div>
+                </div>
+                <div class="actions">
+                    <button class="btn btn-fold">Fold</button>
+                    <button class="btn btn-call">Call 20</button>
+                    <button class="btn btn-raise">Raise</button>
+                </div>
+            </div>
+        </div>
+        
+        <h2>Option C: Neon Cyber</h2>
+        <p style="color: #64748b; margin-bottom: 16px;">Dark theme with cyan neon glow. Modern, high-tech vibe.</p>
+        <div class="demo-box">
+            <div class="demo-label">Mobile Preview</div>
+            <div class="option-c">
+                <div class="header">
+                    <span>HAND #1</span>
+                    <div class="pot">90</div>
+                </div>
+                <div class="table">
+                    <div class="grid-lines"></div>
+                    <div class="community">
+                        <div class="card">♥</div>
+                        <div class="card">♠</div>
+                        <div class="card">♦</div>
+                        <div class="card">♣</div>
+                        <div class="card">♥</div>
+                    </div>
+                    <div class="players">
+                        <div class="player active">
+                            <div>Alex</div>
+                            <div>980</div>
+                        </div>
+                        <div class="player">
+                            <div>Bob</div>
+                            <div>980</div>
+                        </div>
+                        <div class="player">
+                            <div>Charlie</div>
+                            <div>980</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="actions">
+                    <button class="btn btn-fold">FOLD</button>
+                    <button class="btn btn-call">CALL 20</button>
+                    <button class="btn btn-raise">RAISE</button>
+                </div>
+            </div>
+        </div>
+        
+        <h2>Option D: Card Focus</h2>
+        <p style="color: #64748b; margin-bottom: 16px;">Big cards front and center. Emphasis on your hand and the board. Clear hierarchy.</p>
+        <div class="demo-box">
+            <div class="demo-label">Mobile Preview</div>
+            <div class="option-d">
+                <div class="top-bar">
+                    <div class="phase">Flop</div>
+                    <div class="pot">90</div>
+                </div>
+                <div class="main-area">
+                    <div>
+                        <div class="label">Community</div>
+                        <div class="card-row">
+                            <div class="card red">A♥</div>
+                            <div class="card black">K♠</div>
+                            <div class="card red">Q♦</div>
+                            <div class="card black">J♣</div>
+                            <div class="card red">10♥</div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="label">Your Hand</div>
+                        <div class="card-row">
+                            <div class="card red">A♠</div>
+                            <div class="card red">K♥</div>
+                        </div>
+                    </div>
+                    <div class="opponents">
+                        <div class="opponent">
+                            <div class="avatar">A</div>
+                            <div class="opponent-info">
+                                <div class="opponent-name">Alex</div>
+                                <div class="opponent-chips">980</div>
+                            </div>
+                        </div>
+                        <div class="opponent">
+                            <div class="avatar">B</div>
+                            <div class="opponent-info">
+                                <div class="opponent-name">Bob</div>
+                                <div class="opponent-chips">980</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="actions">
+                    <button class="btn btn-fold">Fold</button>
+                    <button class="btn btn-call">Call 20</button>
+                    <button class="btn btn-raise">Raise</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
