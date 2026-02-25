@@ -294,14 +294,61 @@ const elements = {
     decisionTimer: document.getElementById('decision-timer'),
     timerText: document.getElementById('timer-text'),
     timerFill: document.getElementById('timer-fill'),
-    loadingOverlay: document.getElementById('loading-overlay')
+    loadingOverlay: document.getElementById('loading-overlay'),
+    themeToggle: document.getElementById('theme-toggle'),
+    gameScreen: document.getElementById('game-screen')
+};
+
+// Theme Manager
+const ThemeManager = {
+    themes: ['theme-green', 'theme-blue', 'theme-red', 'theme-black', 'theme-purple'],
+    currentThemeIndex: 0,
+
+    init() {
+        // Load saved theme from localStorage
+        const savedTheme = localStorage.getItem('poker-theme');
+        if (savedTheme && this.themes.includes(savedTheme)) {
+            this.currentThemeIndex = this.themes.indexOf(savedTheme);
+            this.applyTheme(savedTheme);
+        }
+    },
+
+    applyTheme(themeClass) {
+        if (!elements.gameScreen) return;
+        
+        // Remove all theme classes
+        this.themes.forEach(t => elements.gameScreen.classList.remove(t));
+        
+        // Add new theme class
+        elements.gameScreen.classList.add(themeClass);
+        
+        // Save to localStorage
+        localStorage.setItem('poker-theme', themeClass);
+    },
+
+    nextTheme() {
+        this.currentThemeIndex = (this.currentThemeIndex + 1) % this.themes.length;
+        const nextTheme = this.themes[this.currentThemeIndex];
+        this.applyTheme(nextTheme);
+        
+        // Provide haptic feedback if available
+        if (navigator.vibrate) {
+            navigator.vibrate(20);
+        }
+    }
 };
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
-    // Initialize error boundary and sound manager
+    // Initialize error boundary, sound manager, and theme manager
     ErrorBoundary.init();
     SoundManager.init();
+    ThemeManager.init();
+    
+    // Theme toggle button
+    if (elements.themeToggle) {
+        elements.themeToggle.addEventListener('click', () => ThemeManager.nextTheme());
+    }
 
     // Cleanup on page unload
     window.addEventListener('beforeunload', stopPolling);

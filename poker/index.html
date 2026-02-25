@@ -214,6 +214,78 @@
         #game-screen {
             background: #0a0a0f;
         }
+
+        /* ===== TABLE THEMES ===== */
+        :root {
+            --felt-primary: #1a472a;
+            --felt-secondary: #0d3320;
+            --felt-accent: #0f172a;
+        }
+
+        /* Classic Green (default) */
+        .theme-green .felt-area {
+            background: linear-gradient(180deg, #0d3320 0%, #1a472a 50%, #0f172a 100%);
+        }
+
+        /* Royal Blue */
+        .theme-blue .felt-area {
+            background: linear-gradient(180deg, #0c1a3a 0%, #1a2d5a 50%, #0f172a 100%);
+        }
+
+        .theme-blue .felt-area .community-cards .card {
+            box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+        }
+
+        /* Vegas Red */
+        .theme-red .felt-area {
+            background: linear-gradient(180deg, #3a0c1a 0%, #5a1a2d 50%, #0f172a 100%);
+        }
+
+        /* Midnight Black */
+        .theme-black .felt-area {
+            background: linear-gradient(180deg, #0a0a0a 0%, #1a1a1a 50%, #0f172a 100%);
+        }
+
+        /* Purple Royal */
+        .theme-purple .felt-area {
+            background: linear-gradient(180deg, #2d0c3a 0%, #4a1a5a 50%, #0f172a 100%);
+        }
+
+        /* Theme Toggle Button */
+        .theme-toggle {
+            position: fixed;
+            top: 50px;
+            right: 15px;
+            background: rgba(0,0,0,0.6);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: #94a3b8;
+            font-size: 11px;
+            cursor: pointer;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .theme-toggle:hover {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+
+        .theme-toggle .color-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #1a472a;
+        }
+
+        .theme-blue .theme-toggle .color-dot { background: #1a2d5a; }
+        .theme-red .theme-toggle .color-dot { background: #5a1a2d; }
+        .theme-black .theme-toggle .color-dot { background: #1a1a1a; }
+        .theme-purple .theme-toggle .color-dot { background: #4a1a5a; }
         
         /* Header */
         .game-header {
@@ -303,7 +375,27 @@
         }
         
         .opponent.folded {
-            opacity: 0.35;
+            opacity: 0.4;
+            background: rgba(0,0,0,0.15);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .opponent.folded .opponent-name::after {
+            content: " (FOLDED)";
+            font-size: 8px;
+            color: #ef4444;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .opponent.folded .card-back {
+            background: linear-gradient(135deg, #3a3a3a 0%, #1a1a1a 100%);
+            opacity: 0.4;
+            border-color: rgba(255,255,255,0.05);
+        }
+
+        .opponent.folded .opponent-chips {
+            color: #64748b;
         }
         
         .opponent.active-turn {
@@ -759,7 +851,13 @@
         </div>
 
         <!-- Game Screen -->
-        <div id="game-screen" class="screen">
+        <div id="game-screen" class="screen theme-green">
+            <!-- Theme Toggle -->
+            <button class="theme-toggle" id="theme-toggle" title="Change table theme">
+                <span class="color-dot"></span>
+                <span>Theme</span>
+            </button>
+
             <!-- Header -->
             <div class="game-header">
                 <div class="hand-info">

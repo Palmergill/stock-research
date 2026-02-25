@@ -37,7 +37,7 @@
 - [x] **Pot odds calculator** - Fixed: Added real-time pot odds display in the header showing ratio (e.g., "3.5:1") and required equity percentage. Shows only when there's a bet to call, hidden otherwise.
 - [x] **Timer for decisions** - Added: 30-second countdown timer with visual progress bar, auto-folds when time expires
 - [x] **Bet slider improvements** - Fixed: Added min/max labels below the slider that update dynamically based on current game state. Shows "Min: X" (minimum raise amount) and "Max: X" (player's chip stack) to help users make informed betting decisions.
-- [ ] **Table themes** - Different felt colors/designs
+- [x] **Table themes** - Fixed: Added 5 table theme options (Green, Blue, Red, Black, Purple) with CSS custom properties. Theme toggle button in top-right corner with localStorage persistence.
 - [ ] **Portrait/landscape support** - Better layout handling
 
 ### Backend Improvements
@@ -83,7 +83,7 @@
 - [ ] **Animated backgrounds** - Subtle felt texture animation
 - [ ] **Mobile gestures** - Swipe to fold, tap to call
 - [x] **Loading states** - Fixed: Added full-screen loading overlay with animated spinner and descriptive text ("Starting game...", "Dealing next hand..."). Shows during game initialization and between hands for better user feedback.
-- [ ] **Empty states** - Better empty/opponent-folded states
+- [x] **Empty states** - Fixed: Improved opponent folded state visualization with "FOLDED" text badge in red, dimmed chips color, grayed-out card backs, and reduced opacity for clearer game state indication.
 
 ## 📱 Mobile Optimization
 
