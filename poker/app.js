@@ -119,6 +119,9 @@ let isMyTurn = false;
 let raiseAmount = 0;
 let pollIntervalId = null;
 let isRequestPending = false; // Lock to prevent race conditions
+let turnStartTime = null;
+let turnTimerId = null;
+const TURN_TIME_LIMIT = 30000; // 30 seconds per turn
 
 // DOM Elements
 const screens = {
@@ -153,7 +156,10 @@ const elements = {
     handResult: document.getElementById('hand-result'),
     resultTitle: document.getElementById('result-title'),
     resultDetails: document.getElementById('result-details'),
-    btnNextHand: document.getElementById('btn-next-hand')
+    btnNextHand: document.getElementById('btn-next-hand'),
+    decisionTimer: document.getElementById('decision-timer'),
+    timerText: document.getElementById('timer-text'),
+    timerFill: document.getElementById('timer-fill')
 };
 
 // Initialize
@@ -304,6 +310,9 @@ function stopPolling() {
 
 async function playerAction(action) {
     if (!isMyTurn && action !== 'fold') return;
+    
+    // Stop timer when action is taken
+    stopTurnTimer();
     
     // Prevent race condition - ignore if request already pending
     if (isRequestPending) {
@@ -475,6 +484,15 @@ function updateGameDisplay() {
     
     // Update action buttons
     updateActionButtons();
+    
+    // Handle turn timer
+    if (isYourTurn && gameState.phase !== 'showdown') {
+        if (!turnTimerId) {
+            startTurnTimer();
+        }
+    } else {
+        stopTurnTimer();
+    }
 }
 
 function renderOpponent(player) {
@@ -681,4 +699,63 @@ function hideHandResult() {
 function switchScreen(screenName) {
     Object.values(screens).forEach(screen => screen.classList.remove('active'));
     screens[screenName].classList.add('active');
+}
+
+// Decision Timer Functions
+function startTurnTimer() {
+    stopTurnTimer(); // Clear any existing timer
+    
+    turnStartTime = Date.now();
+    elements.decisionTimer.classList.remove('hidden');
+    
+    updateTimerDisplay();
+    
+    // Update every 100ms for smooth countdown
+    turnTimerId = setInterval(() => {
+        updateTimerDisplay();
+        
+        const elapsed = Date.now() - turnStartTime;
+        if (elapsed >= TURN_TIME_LIMIT) {
+            stopTurnTimer();
+            // Auto-fold on timeout
+            elements.timerText.textContent = 'Time up! Folding...';
+            elements.timerText.classList.add('urgent');
+            setTimeout(() => {
+                playerAction('fold');
+            }, 500);
+        }
+    }, 100);
+}
+
+function stopTurnTimer() {
+    if (turnTimerId) {
+        clearInterval(turnTimerId);
+        turnTimerId = null;
+    }
+    turnStartTime = null;
+    if (elements.decisionTimer) {
+        elements.decisionTimer.classList.add('hidden');
+    }
+    if (elements.timerText) {
+        elements.timerText.classList.remove('urgent');
+    }
+}
+
+function updateTimerDisplay() {
+    if (!turnStartTime || !elements.timerText || !elements.timerFill) return;
+    
+    const elapsed = Date.now() - turnStartTime;
+    const remaining = Math.max(0, TURN_TIME_LIMIT - elapsed);
+    const seconds = Math.ceil(remaining / 1000);
+    const percentage = (remaining / TURN_TIME_LIMIT) * 100;
+    
+    elements.timerText.textContent = `Your turn - ${seconds}s`;
+    elements.timerFill.style.width = `${percentage}%`;
+    
+    // Add urgency styling when time is low
+    if (seconds <= 5) {
+        elements.timerText.classList.add('urgent');
+    } else {
+        elements.timerText.classList.remove('urgent');
+    }
 }

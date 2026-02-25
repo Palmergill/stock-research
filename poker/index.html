@@ -464,6 +464,40 @@
             cursor: not-allowed;
         }
         
+        /* Decision Timer */
+        .decision-timer {
+            text-align: center;
+            margin-bottom: 10px;
+            min-height: 24px;
+        }
+        
+        .timer-bar {
+            width: 100%;
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+        
+        .timer-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981 0%, #ffd700 50%, #ef4444 100%);
+            transition: width 1s linear;
+            border-radius: 2px;
+        }
+        
+        .timer-text {
+            font-size: 12px;
+            color: #94a3b8;
+            font-weight: 500;
+        }
+        
+        .timer-text.urgent {
+            color: #ef4444;
+            font-weight: 700;
+        }
+        
         /* Raise Slider */
         .raise-container {
             background: rgba(255,255,255,0.05);
@@ -627,6 +661,12 @@
                     <!-- Your cards rendered by JS -->
                 </div>
                 <div class="hand-strength" id="hand-strength"></div>
+                <div class="decision-timer hidden" id="decision-timer">
+                    <span class="timer-text" id="timer-text">Your turn - 30s</span>
+                    <div class="timer-bar">
+                        <div class="timer-fill" id="timer-fill" style="width: 100%"></div>
+                    </div>
+                </div>
                 <div class="your-info">
                     <div class="your-name" id="your-name">Palmer</div>
                     <div class="your-chips" id="your-chips">1000</div>

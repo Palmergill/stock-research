@@ -35,7 +35,7 @@
 - [ ] **Chip stack visualization** - Show actual chip stacks, not just numbers
 - [x] **Hand strength indicator** - Added: Shows "Pair of Aces", "Flush", "Straight", etc. in gold badge below cards
 - [ ] **Pot odds calculator** - Show pot odds in real-time
-- [ ] **Timer for decisions** - Countdown timer for player actions
+- [x] **Timer for decisions** - Added: 30-second countdown timer with visual progress bar, auto-folds when time expires
 - [ ] **Bet slider improvements** - Show min/max/pot on slider
 - [ ] **Table themes** - Different felt colors/designs
 - [ ] **Portrait/landscape support** - Better layout handling
@@ -124,7 +124,7 @@
 - [ ] **API documentation** - Document all endpoints
 - [ ] **Architecture diagram** - Show system design
 - [ ] **Contributing guide** - For open source
-- [ ] **Changelog** - Track version changes
+- [x] **Changelog** - Added: CHANGELOG.md following Keep a Changelog format
 - [ ] **User guide** - How to play, rules reference
 
 ## Priority Order
