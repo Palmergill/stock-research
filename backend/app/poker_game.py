@@ -111,6 +111,7 @@ class PokerGame:
         self.min_raise: int = 20
         self.winners: List[Dict] = []
         self.last_action: Optional[Dict] = None
+        self.last_ai_action: Optional[Dict] = None  # Track last AI action for display
         self.hand_number: int = 0
         self.acted_this_round: set = set()  # Track who has acted in current betting round
         self.round_start_player: int = 0  # Who started this betting round
@@ -547,6 +548,7 @@ class PokerGame:
             'dealer_index': self.dealer_index,
             'winners': self.winners,
             'last_action': self.last_action,
+            'last_ai_action': self.last_ai_action,
             'hand_number': self.hand_number,
             'min_raise': self.min_raise
         }

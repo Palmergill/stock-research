@@ -374,6 +374,7 @@ const elements = {
     communityCards: document.getElementById('community-cards'),
     yourCards: document.getElementById('your-cards'),
     handStrength: document.getElementById('hand-strength'),
+    aiActionIndicator: document.getElementById('ai-action-indicator'),
     yourName: document.getElementById('your-name'),
     yourChips: document.getElementById('your-chips'),
     actionButtons: document.getElementById('action-buttons'),
@@ -812,6 +813,18 @@ function updateGameDisplay() {
             elements.handStrength.innerHTML = `<span class="hand-strength-text">${handStrength}</span>`;
         } else {
             elements.handStrength.innerHTML = '';
+        }
+        
+        // Show AI action indicator
+        if (gameState.last_ai_action) {
+            const action = gameState.last_ai_action;
+            let actionText = `${action.player_name}: ${action.action.toUpperCase()}`;
+            if (action.amount) {
+                actionText += ` ${action.amount}`;
+            }
+            elements.aiActionIndicator.innerHTML = `<span class="ai-action-text">${actionText}</span>`;
+        } else {
+            elements.aiActionIndicator.innerHTML = '';
         }
         
         // Add/remove active-turn class

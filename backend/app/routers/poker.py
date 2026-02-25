@@ -123,7 +123,8 @@ async def get_game_state(game_id: str, player_id: str, process_ai: bool = True):
                 if not current or current.is_human or game.phase == 'showdown':
                     break
                 ai_manager.process_bot_turn()
-                await asyncio.sleep(0.1)
+                # 2-second delay between bot actions so player can see what happened
+                await asyncio.sleep(2.0)
     
     return game.to_dict(for_player=player_id)
 
@@ -169,7 +170,7 @@ async def player_action(game_id: str, request: ActionRequest):
         if not current or current.is_human or game.phase == 'showdown':
             break
         
-        await asyncio.sleep(0.2)  # Small delay between AI actions
+        await asyncio.sleep(2.0)  # 2-second delay between bot actions
         result = ai_manager.process_bot_turn()
         turns += 1
         

@@ -557,6 +557,24 @@
             min-height: 20px;
         }
         
+        .ai-action-indicator {
+            text-align: center;
+            margin-bottom: 8px;
+            min-height: 24px;
+            animation: fadeInUp 0.3s ease-out;
+        }
+        
+        .ai-action-text {
+            display: inline-block;
+            padding: 6px 14px;
+            background: rgba(59, 130, 246, 0.2);
+            border: 1px solid rgba(59, 130, 246, 0.4);
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #60a5fa;
+        }
+        
         .hand-strength-text {
             display: inline-block;
             padding: 4px 12px;
@@ -943,6 +961,7 @@
                     <!-- Your cards rendered by JS -->
                 </div>
                 <div class="hand-strength" id="hand-strength"></div>
+                <div class="ai-action-indicator" id="ai-action-indicator"></div>
                 <div class="decision-timer hidden" id="decision-timer">
                     <span class="timer-text" id="timer-text">Your turn - 30s</span>
                     <div class="timer-bar">

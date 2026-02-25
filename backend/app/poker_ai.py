@@ -2,6 +2,7 @@
 AI Bot for Texas Hold'em Poker
 """
 import random
+import asyncio
 from typing import Optional
 from app.poker_game import PokerGame, Player, Card, HandRank
 
@@ -208,6 +209,13 @@ class AIManager:
         
         if success:
             logger.info(f"Bot {current.name} successfully executed {decision['action']}")
+            # Store the action for frontend display
+            self.game.last_ai_action = {
+                'player_name': current.name,
+                'action': decision['action'],
+                'amount': decision.get('amount'),
+                'timestamp': asyncio.get_event_loop().time()
+            }
         else:
             logger.warning(f"Bot {current.name} failed to execute {decision['action']}")
             # Try to fold as fallback
