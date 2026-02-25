@@ -9,6 +9,7 @@ let gameId = null;
 let isMyTurn = false;
 let raiseAmount = 0;
 let pollIntervalId = null;
+let isRequestPending = false; // Lock to prevent race conditions
 
 // DOM Elements
 const screens = {
@@ -188,10 +189,18 @@ function stopPolling() {
 async function playerAction(action) {
     if (!isMyTurn && action !== 'fold') return;
     
+    // Prevent race condition - ignore if request already pending
+    if (isRequestPending) {
+        console.log('Action ignored - request already in progress');
+        return;
+    }
+    
     let amount = null;
     if (action === 'raise') {
         amount = raiseAmount;
     }
+    
+    isRequestPending = true;
     
     try {
         const body = { player_id: playerId, action };
@@ -215,6 +224,8 @@ async function playerAction(action) {
         
     } catch (error) {
         console.error('Error:', error);
+    } finally {
+        isRequestPending = false;
     }
 }
 
@@ -255,6 +266,14 @@ function confirmRaise() {
 }
 
 async function nextHand() {
+    // Prevent race condition
+    if (isRequestPending) {
+        console.log('Next hand ignored - request already in progress');
+        return;
+    }
+    
+    isRequestPending = true;
+    
     try {
         elements.btnNextHand.disabled = true;
         elements.btnNextHand.textContent = 'Dealing...';
@@ -281,6 +300,7 @@ async function nextHand() {
         const message = typeof error === 'string' ? error : (error.message || 'Failed to start next hand');
         alert(message);
     } finally {
+        isRequestPending = false;
         elements.btnNextHand.disabled = false;
         elements.btnNextHand.textContent = 'Next Hand';
     }
@@ -360,7 +380,11 @@ function renderOpponent(player) {
 }
 
 function renderCard(card, isPlayerCard = false) {
-    if (!card) return '';
+    // Handle null/undefined cards
+    if (!card || typeof card !== 'object') return '';
+    
+    // Handle missing suit or rank
+    if (!card.suit || card.rank === undefined || card.rank === null) return '';
     
     const isRed = card.suit === 'HEARTS' || card.suit === 'DIAMONDS';
     const suitSymbol = { 'HEARTS': '♥', 'DIAMONDS': '♦', 'CLUBS': '♣', 'SPADES': '♠' }[card.suit] || '';

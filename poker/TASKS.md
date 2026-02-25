@@ -10,14 +10,14 @@
 
 ### Medium Priority
 - [x] **Raise amount validation** - Fixed: Raise button now hidden when player can't afford minimum raise
-- [ ] **Card rendering on showdown** - Winner's cards should show correctly (backend fixed, verify frontend)
+- [x] **Card rendering on showdown** - Fixed: Added robust null/undefined checks in `renderCard()` function to prevent display issues with malformed card data
 - [x] **Polling continues after game ends** - Fixed: Proper cleanup on page unload, tab visibility change, and 404 errors
 - [ ] **CORS errors** - May occur in some browser environments
 
 ### Low Priority
 - [x] **Duplicate logging setup** - Fixed: Created centralized logging in `config.py` with `setup_logging()` and `get_logger()` functions
 - [x] **Memory leak** - Fixed: Games older than 1 hour are now automatically cleaned up
-- [ ] **Race condition in polling** - Multiple rapid actions could cause state conflicts
+- [x] **Race condition in polling** - Fixed: Added `isRequestPending` lock in app.js to prevent multiple simultaneous requests in `playerAction()` and `nextHand()` functions
 
 ## ✨ Features to Add
 
