@@ -56,6 +56,18 @@ async def create_game(request: CreateGameRequest):
     games[game_id] = game
     ai_managers[game_id] = ai_manager
     
+    # Process AI turns until it's human's turn
+    max_turns = 20
+    turns = 0
+    while turns < max_turns:
+        current = game.get_current_player()
+        if not current or current.is_human:
+            break
+        ai_manager.process_bot_turn()
+        turns += 1
+    
+    logger.info(f"Processed {turns} AI turns, current player: {game.get_current_player().name if game.get_current_player() else 'None'}")
+    
     return {
         "game_id": game_id,
         "player_id": human.id,
@@ -63,12 +75,26 @@ async def create_game(request: CreateGameRequest):
     }
 
 @router.get("/games/{game_id}")
-async def get_game_state(game_id: str, player_id: str):
-    """Get current game state"""
+async def get_game_state(game_id: str, player_id: str, process_ai: bool = True):
+    """Get current game state, optionally processing AI turns"""
     if game_id not in games:
         raise HTTPException(status_code=404, detail="Game not found")
     
     game = games[game_id]
+    
+    # Process AI turns if requested and it's not human's turn
+    if process_ai and game.phase != 'showdown':
+        current = game.get_current_player()
+        if current and not current.is_human:
+            ai_manager = ai_managers[game_id]
+            max_turns = 5  # Process a few turns per request
+            for _ in range(max_turns):
+                current = game.get_current_player()
+                if not current or current.is_human or game.phase == 'showdown':
+                    break
+                ai_manager.process_bot_turn()
+                await asyncio.sleep(0.1)
+    
     return game.to_dict(for_player=player_id)
 
 @router.post("/games/{game_id}/action")
