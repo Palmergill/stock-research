@@ -60,13 +60,13 @@
 - [ ] **Service worker** - Cache assets for faster loads
 
 ### Backend (Python)
-- [ ] **Add tests** - pytest for game logic and API
+- [x] **Add tests** - Fixed: Added pytest test suite with 63 tests covering game logic (hand evaluation, player actions, betting), API endpoints (health, create game, actions, rate limiting), and AI behavior (decision making, aggression levels)
 - [ ] **Type hints** - Complete type coverage
 - [ ] **API documentation** - OpenAPI/Swagger docs
-- [ ] **Rate limiting** - Prevent abuse
-- [ ] **Better logging** - Structured logging with correlation IDs
+- [x] **Rate limiting** - Fixed: Already implemented in-memory rate limiter (20 req/min burst per IP)
+- [x] **Better logging** - Fixed: Already implemented structured logging with correlation IDs in `config.py`
 - [x] **Configuration** - Fixed: Added `Config` class in `config.py` with environment variable support for HOST, PORT, CORS_ORIGINS, STARTING_CHIPS, SMALL_BLIND, BIG_BLIND, and AI delays
-- [ ] **Docker** - Containerize for easier deployment
+- [x] **Docker** - Fixed: Added Dockerfile and docker-compose.yml for containerized deployment
 
 ### AI Improvements
 - [ ] **More sophisticated AI** - Positional awareness, stack size consideration
