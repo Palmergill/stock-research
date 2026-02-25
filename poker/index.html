@@ -562,6 +562,59 @@
             color: #ef4444;
             font-weight: 700;
         }
+
+        /* Loading Spinner */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #ffd700;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10,10,15,0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: opacity 0.3s ease;
+        }
+
+        .loading-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .loading-overlay .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255,215,0,0.2);
+            border-top-color: #ffd700;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 16px;
+        }
+
+        .loading-overlay .loading-text {
+            color: #fff;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
         
         /* Raise Slider */
         .raise-container {
@@ -595,6 +648,19 @@
             align-items: center;
             justify-content: space-between;
             margin-bottom: 10px;
+        }
+
+        .slider-labels {
+            display: flex;
+            justify-content: space-between;
+            margin: -5px 0 10px;
+            padding: 0 2px;
+        }
+
+        .slider-label {
+            font-size: 11px;
+            color: rgba(255,255,255,0.6);
+            font-weight: 500;
         }
         
         .raise-controls button {
@@ -686,6 +752,12 @@
             </div>
         </div>
 
+        <!-- Loading Overlay -->
+        <div id="loading-overlay" class="loading-overlay hidden">
+            <div class="spinner"></div>
+            <div class="loading-text">Loading...</div>
+        </div>
+
         <!-- Game Screen -->
         <div id="game-screen" class="screen">
             <!-- Header -->
@@ -745,6 +817,10 @@
                 <!-- Raise Controls -->
                 <div class="raise-container hidden" id="raise-container">
                     <input type="range" class="raise-slider" id="raise-slider" min="0" max="1000" value="0">
+                    <div class="slider-labels">
+                        <span class="slider-label" id="slider-min">Min: 0</span>
+                        <span class="slider-label" id="slider-max">Max: 1000</span>
+                    </div>
                     <div class="raise-controls">
                         <button id="btn-min">Min</button>
                         <span class="raise-amount-display" id="raise-display">0</span>

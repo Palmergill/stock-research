@@ -280,6 +280,8 @@ const elements = {
     raiseContainer: document.getElementById('raise-container'),
     raiseSlider: document.getElementById('raise-slider'),
     raiseDisplay: document.getElementById('raise-display'),
+    sliderMin: document.getElementById('slider-min'),
+    sliderMax: document.getElementById('slider-max'),
     btnMin: document.getElementById('btn-min'),
     btnPot: document.getElementById('btn-pot'),
     btnAllIn: document.getElementById('btn-allin'),
@@ -291,7 +293,8 @@ const elements = {
     btnNextHand: document.getElementById('btn-next-hand'),
     decisionTimer: document.getElementById('decision-timer'),
     timerText: document.getElementById('timer-text'),
-    timerFill: document.getElementById('timer-fill')
+    timerFill: document.getElementById('timer-fill'),
+    loadingOverlay: document.getElementById('loading-overlay')
 };
 
 // Initialize
@@ -350,13 +353,26 @@ document.addEventListener('DOMContentLoaded', () => {
 function setRaiseAmount(amount) {
     const myPlayer = gameState?.players?.find(p => p.id === playerId);
     if (!myPlayer) return;
-    
+
     amount = Math.min(amount, myPlayer.chips);
     amount = Math.max(amount, 0);
-    
+
     elements.raiseSlider.value = amount;
     raiseAmount = amount;
     elements.raiseDisplay.textContent = amount;
+}
+
+function showLoading(text = 'Loading...') {
+    if (elements.loadingOverlay) {
+        elements.loadingOverlay.querySelector('.loading-text').textContent = text;
+        elements.loadingOverlay.classList.remove('hidden');
+    }
+}
+
+function hideLoading() {
+    if (elements.loadingOverlay) {
+        elements.loadingOverlay.classList.add('hidden');
+    }
 }
 
 async function startGame() {
@@ -364,7 +380,7 @@ async function startGame() {
 
     try {
         elements.startBtn.disabled = true;
-        elements.startBtn.textContent = 'Loading...';
+        showLoading('Starting game...');
 
         const response = await fetch(`${API_BASE}/api/poker/games`, {
             method: 'POST',
@@ -384,14 +400,16 @@ async function startGame() {
 
         elements.yourName.textContent = name;
 
+        hideLoading();
         switchScreen('game');
         updateGameDisplay();
 
         // Poll for updates
         startPolling();
-        
+
     } catch (error) {
         console.error('Error starting game:', error);
+        hideLoading();
         ErrorBoundary.show('Failed to start game. Please try again.', 'error');
         elements.startBtn.disabled = false;
         elements.startBtn.textContent = 'Play Now';
@@ -516,7 +534,11 @@ function showRaiseControls() {
     elements.raiseSlider.value = minTotal;
     raiseAmount = minTotal;
     elements.raiseDisplay.textContent = minTotal;
-    
+
+    // Update slider labels
+    if (elements.sliderMin) elements.sliderMin.textContent = `Min: ${minTotal}`;
+    if (elements.sliderMax) elements.sliderMax.textContent = `Max: ${myPlayer.chips}`;
+
     elements.raiseContainer.classList.remove('hidden');
     elements.actionButtons.classList.add('hidden');
 }
@@ -536,32 +558,34 @@ async function nextHand() {
         console.log('Next hand ignored - request already in progress');
         return;
     }
-    
+
     isRequestPending = true;
-    
+
     try {
         elements.btnNextHand.disabled = true;
-        elements.btnNextHand.textContent = 'Dealing...';
-        
+        showLoading('Dealing next hand...');
+
         const response = await fetch(`${API_BASE}/api/poker/games/${gameId}/next-hand?player_id=${playerId}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' }
         });
-        
+
         if (!response.ok) {
             const err = await response.json().catch(() => ({}));
             throw new Error(err.detail || err.message || 'Failed to start next hand');
         }
-        
+
         gameState = await response.json();
+        hideLoading();
         hideHandResult();
         updateGameDisplay();
-        
+
         // Restart polling for the new hand
         startPolling();
-        
+
     } catch (error) {
         console.error('Error starting next hand:', error);
+        hideLoading();
         const message = typeof error === 'string' ? error : (error.message || 'Failed to start next hand');
         ErrorBoundary.show(message, 'error');
     } finally {

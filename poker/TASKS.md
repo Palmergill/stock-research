@@ -36,7 +36,7 @@
 - [x] **Hand strength indicator** - Added: Shows "Pair of Aces", "Flush", "Straight", etc. in gold badge below cards
 - [x] **Pot odds calculator** - Fixed: Added real-time pot odds display in the header showing ratio (e.g., "3.5:1") and required equity percentage. Shows only when there's a bet to call, hidden otherwise.
 - [x] **Timer for decisions** - Added: 30-second countdown timer with visual progress bar, auto-folds when time expires
-- [ ] **Bet slider improvements** - Show min/max/pot on slider
+- [x] **Bet slider improvements** - Fixed: Added min/max labels below the slider that update dynamically based on current game state. Shows "Min: X" (minimum raise amount) and "Max: X" (player's chip stack) to help users make informed betting decisions.
 - [ ] **Table themes** - Different felt colors/designs
 - [ ] **Portrait/landscape support** - Better layout handling
 
@@ -82,7 +82,7 @@
 - [ ] **Avatar system** - Player profile pictures
 - [ ] **Animated backgrounds** - Subtle felt texture animation
 - [ ] **Mobile gestures** - Swipe to fold, tap to call
-- [ ] **Loading states** - Better loading indicators
+- [x] **Loading states** - Fixed: Added full-screen loading overlay with animated spinner and descriptive text ("Starting game...", "Dealing next hand..."). Shows during game initialization and between hands for better user feedback.
 - [ ] **Empty states** - Better empty/opponent-folded states
 
 ## 📱 Mobile Optimization
