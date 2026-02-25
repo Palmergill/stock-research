@@ -21,6 +21,36 @@
             touch-action: manipulation;
         }
         
+        /* Animations */
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.5); }
+            50% { box-shadow: 0 0 0 10px rgba(255, 215, 0, 0); }
+        }
+        
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        
+        /* Animation classes */
+        .animate-in {
+            animation: fadeInUp 0.3s ease-out;
+        }
+        
+        .card-dealt {
+            animation: fadeInUp 0.2s ease-out;
+        }
+        
         /* Screen Management */
         .screen {
             display: none;
@@ -186,15 +216,22 @@
             background: rgba(0,0,0,0.3);
             border-radius: 8px;
             min-width: 60px;
+            transition: all 0.2s ease;
         }
         
         .opponent.folded {
             opacity: 0.35;
         }
         
+        .opponent.active-turn {
+            background: rgba(255, 215, 0, 0.15);
+            border: 2px solid #ffd700;
+            animation: pulse 1.5s infinite;
+        }
+        
         .opponent.active-turn .opponent-name {
             color: #ffd700;
-            font-weight: 600;
+            font-weight: 700;
         }
         
         .opponent-cards {
@@ -276,6 +313,7 @@
             font-size: 18px;
             color: #dc3545;
             box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+            animation: fadeInUp 0.3s ease-out;
         }
         
         .card-slot {
@@ -284,10 +322,6 @@
             border-radius: 5px;
             background: rgba(255,255,255,0.05);
             border: 1px dashed rgba(255,255,255,0.1);
-        }
-        
-        .card.black {
-            color: #1a1a2e;
         }
         
         /* Your Section - always visible at bottom */
@@ -327,6 +361,13 @@
             color: #1a1a2e;
             box-shadow: 0 4px 12px rgba(0,0,0,0.4);
             border: 2px solid #3b82f6;
+            animation: fadeInUp 0.4s ease-out;
+        }
+        
+        .your-cards.active-turn .card {
+            border-color: #ffd700;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5), 0 4px 12px rgba(0,0,0,0.4);
+            animation: pulse 1.5s infinite;
         }
         
         .your-info {

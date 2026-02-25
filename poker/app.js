@@ -225,17 +225,18 @@ async function nextHand() {
             body: JSON.stringify({ player_id: playerId })
         });
         
-        if (!response.ok) throw new Error('Failed to start next hand');
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.detail || 'Failed to start next hand');
+        }
         
         gameState = await response.json();
         hideHandResult();
         updateGameDisplay();
         
-        // Restart polling
-        startPolling();
-        
     } catch (error) {
         console.error('Error:', error);
+        alert(error.message || 'Failed to start next hand');
     } finally {
         elements.btnNextHand.disabled = false;
         elements.btnNextHand.textContent = 'Next Hand';
@@ -250,20 +251,31 @@ function updateGameDisplay() {
     elements.phase.textContent = gameState.phase.replace('_', ' ').toUpperCase();
     elements.potAmount.textContent = gameState.pot;
     
+    // Check if it's your turn
+    const isYourTurn = gameState.current_player === playerId && gameState.phase !== 'showdown';
+    
     // Update your info
     const myPlayer = gameState.players.find(p => p.id === playerId);
     if (myPlayer) {
         elements.yourChips.textContent = myPlayer.chips;
         
-        // Your cards
-        elements.yourCards.innerHTML = myPlayer.hand.map(card => renderCard(card, true)).join('');
+        // Your cards with animation
+        const cardsHTML = myPlayer.hand.map(card => renderCard(card, true)).join('');
+        elements.yourCards.innerHTML = cardsHTML;
+        
+        // Add/remove active-turn class
+        if (isYourTurn) {
+            elements.yourCards.classList.add('active-turn');
+        } else {
+            elements.yourCards.classList.remove('active-turn');
+        }
     }
     
     // Update opponents
     const opponents = gameState.players.filter(p => !p.is_human);
     elements.opponentsRow.innerHTML = opponents.map(p => renderOpponent(p)).join('');
     
-    // Update community cards
+    // Update community cards with animation
     const community = gameState.community_cards;
     elements.communityCards.innerHTML = `
         <div class="card-slot" id="flop-1">${community[0] ? renderCard(community[0]) : ''}</div>
@@ -341,13 +353,24 @@ function updateActionButtons() {
 function showHandResult() {
     if (!gameState.winners || gameState.winners.length === 0) return;
     
+    // Update display one more time to show all cards
+    updateGameDisplay();
+    
     const winner = gameState.winners[0];
     const isMe = winner.id === playerId;
     
     elements.resultTitle.textContent = isMe ? '🎉 You Win!' : `${winner.name} Wins`;
     
     let detailsHTML = `<p style="font-size: 1.2rem; margin-bottom: 8px;">${winner.name}</p>`;
-    detailsHTML += `<p style="font-size: 1.5rem; color: #10b981; font-weight: 700;">+${winner.amount} chips</p>`;
+    detailsHTML += `<p style="font-size: 1.5rem; color: #10b981; font-weight: 700; margin-bottom: 15px;">+${winner.amount} chips</p>`;
+    
+    // Show winner's hand
+    if (winner.hand && winner.hand.length > 0) {
+        detailsHTML += `<p style="font-size: 0.9rem; color: #94a3b8; margin-bottom: 8px;">Winning Hand</p>`;
+        detailsHTML += `<div style="display: flex; justify-content: center; gap: 8px; margin-bottom: 15px;">`;
+        detailsHTML += winner.hand.map(c => renderCard(c)).join('');
+        detailsHTML += `</div>`;
+    }
     
     elements.resultDetails.innerHTML = detailsHTML;
     elements.handResult.classList.remove('hidden');
