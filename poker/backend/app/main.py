@@ -16,9 +16,39 @@ from .game import PokerGame
 from .ai import AIManager
 from .config import Config, get_logger, set_correlation_id, clear_correlation_id
 from .metrics import metrics_manager
+from .monitoring import performance_middleware, performance_monitor
 
 # Setup logging
 logger = get_logger()
+
+# =============================================================================
+# Sentry Error Tracking Setup
+# =============================================================================
+if Config.SENTRY_DSN:
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.fastapi import FastApiIntegration
+        from sentry_sdk.integrations.starlette import StarletteIntegration
+        
+        sentry_sdk.init(
+            dsn=Config.SENTRY_DSN,
+            environment=Config.SENTRY_ENVIRONMENT,
+            traces_sample_rate=Config.SENTRY_TRACES_SAMPLE_RATE,
+            profiles_sample_rate=0.1,
+            integrations=[
+                StarletteIntegration(
+                    transaction_style="endpoint"
+                ),
+                FastApiIntegration(
+                    transaction_style="endpoint"
+                ),
+            ],
+        )
+        logger.info(f"Sentry initialized for environment: {Config.SENTRY_ENVIRONMENT}")
+    except ImportError:
+        logger.warning("Sentry SDK not installed, error tracking disabled")
+    except Exception as e:
+        logger.error(f"Failed to initialize Sentry: {e}")
 
 # =============================================================================
 # Response Models
@@ -277,6 +307,13 @@ async def correlation_id_middleware(request: Request, call_next):
     
     clear_correlation_id()
     return response
+
+
+# Performance monitoring middleware
+@app.middleware("http")
+async def performance_tracking_middleware(request: Request, call_next):
+    """Track API response times and performance metrics"""
+    return await performance_middleware(request, call_next)
 
 
 @app.middleware("http")
@@ -726,6 +763,20 @@ async def detailed_health_check():
         },
         "version": "1.0.5"
     }
+
+
+@app.get(
+    "/api/poker/health/performance",
+    tags=["System"],
+    summary="Performance metrics",
+    description="Get API performance metrics including response times, request counts, and slow request tracking. Returns aggregated statistics for all tracked endpoints.",
+    responses={
+        200: {"description": "Performance metrics retrieved"}
+    }
+)
+async def performance_metrics():
+    """Get API performance metrics and statistics"""
+    return performance_monitor.get_stats()
 
 
 @app.get(

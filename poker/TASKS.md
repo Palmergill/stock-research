@@ -107,8 +107,8 @@
 
 - [x] **Game metrics** - Fixed: Added comprehensive metrics tracking including hands per hour (calculated from recent hand timing), average pot size, total pot accumulated, and phase distribution. New `/api/poker/games/{game_id}/metrics` endpoint returns session duration, hands played, and performance stats.
 - [x] **Player behavior** - Fixed: Added PlayerBehavior class that tracks fold/call/raise percentages, all-in frequency, and total actions per player. Integrated with game action logging to automatically record every player decision.
-- [ ] **Error tracking** - Sentry integration
-- [ ] **Performance monitoring** - Track API response times
+- [x] **Error tracking** - Fixed: Added Sentry integration with automatic error reporting, environment-based configuration, FastAPI/Starlette integration, and performance profiling. Configurable via SENTRY_DSN, SENTRY_ENVIRONMENT, and SENTRY_TRACES_SAMPLE_RATE environment variables.
+- [x] **Performance monitoring** - Fixed: Added performance monitoring middleware that tracks API response times, per-endpoint statistics (count, avg/min/max/p95), overall metrics (p95, p99, average, median), slow request detection (500ms threshold), and X-Response-Time-Ms headers. New `/api/poker/health/performance` endpoint returns aggregated stats. Configurable via ENABLE_PERFORMANCE_MONITORING and SLOW_REQUEST_THRESHOLD_MS env vars.
 - [ ] **Usage analytics** - Track active users, session length
 
 ## 🚀 Deployment

@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [1.0.7] - 2025-02-25
+
+### Added
+- Error tracking with Sentry integration
+  - Automatic error reporting to Sentry when SENTRY_DSN is configured
+  - Environment-based configuration (SENTRY_ENVIRONMENT, SENTRY_TRACES_SAMPLE_RATE)
+  - FastAPI and Starlette integration for automatic transaction tracking
+  - Performance profiling enabled (10% sample rate)
+- Performance monitoring middleware
+  - Tracks API response times for all endpoints
+  - Per-endpoint statistics (count, avg/min/max/p95 response times)
+  - Overall metrics: p95, p99, average, median response times
+  - Slow request detection and logging (threshold: 500ms)
+  - X-Response-Time-Ms header added to all responses
+  - New `/api/poker/health/performance` endpoint for metrics
+  - Configurable via ENABLE_PERFORMANCE_MONITORING and SLOW_REQUEST_THRESHOLD_MS env vars
+
 ## [1.0.6] - 2025-02-25
 
 ### Added
