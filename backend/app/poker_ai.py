@@ -61,7 +61,7 @@ class PokerAI:
     
     def _estimate_hand_strength(self, game: PokerGame, player: Player) -> float:
         """Estimate hand strength from 0-1 using Monte Carlo simulation"""
-        from .game import Deck
+        from app.poker_game import Deck
         
         if game.phase == 'preflop':
             return self._preflop_strength(player.hand)
