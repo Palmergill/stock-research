@@ -123,9 +123,9 @@
 
 - [ ] **API documentation** - Document all endpoints
 - [ ] **Architecture diagram** - Show system design
-- [ ] **Contributing guide** - For open source
+- [x] **Contributing guide** - Fixed: Added CONTRIBUTING.md with setup instructions, development workflow, code style guidelines, branch naming conventions, and contribution process
 - [x] **Changelog** - Added: CHANGELOG.md following Keep a Changelog format
-- [ ] **User guide** - How to play, rules reference
+- [x] **User guide** - Fixed: Added comprehensive USER_GUIDE.md with quick start instructions, Texas Hold'em rules, hand rankings, interface guide, feature explanations, customization options, strategy tips, troubleshooting, and keyboard shortcuts
 
 ## Priority Order
 
