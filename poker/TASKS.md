@@ -122,8 +122,8 @@
 
 ## 📝 Documentation
 
-- [ ] **API documentation** - Document all endpoints
-- [ ] **Architecture diagram** - Show system design
+- [x] **API documentation** - Fixed: Created comprehensive API.md with all endpoints documented, including request/response schemas, error handling, rate limiting details, and code examples in JavaScript and Python
+- [x] **Architecture diagram** - Fixed: Created ARCHITECTURE.md with system design documentation including Mermaid diagrams for system overview, component architecture, data flow, deployment architecture, and security layers
 - [x] **Contributing guide** - Fixed: Added CONTRIBUTING.md with setup instructions, development workflow, code style guidelines, branch naming conventions, and contribution process
 - [x] **Changelog** - Added: CHANGELOG.md following Keep a Changelog format
 - [x] **User guide** - Fixed: Added comprehensive USER_GUIDE.md with quick start instructions, Texas Hold'em rules, hand rankings, interface guide, feature explanations, customization options, strategy tips, troubleshooting, and keyboard shortcuts

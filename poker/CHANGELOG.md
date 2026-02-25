@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+- Comprehensive API documentation (API.md)
+  - All endpoints documented with request/response schemas
+  - Error handling and rate limiting details
+  - Code examples in JavaScript and Python
+  - Data models and field descriptions
+- Architecture documentation (ARCHITECTURE.md)
+  - System overview with Mermaid diagrams
+  - Component architecture diagrams
+  - Data flow sequences
+  - Deployment architecture
+  - Security architecture
+  - Performance optimizations
+  - Future architecture roadmap
+
 ## [1.0.7] - 2025-02-25
 
 ### Added
