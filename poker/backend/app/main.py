@@ -3,10 +3,14 @@ Poker Game API - FastAPI Backend
 """
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, Dict, List
 import uuid
 import asyncio
+import re
+import time
+from collections import defaultdict
 
 from .game import PokerGame
 from .ai import AIManager
@@ -40,19 +44,134 @@ async def correlation_id_middleware(request: Request, call_next):
     return response
 
 
+@app.middleware("http")
+async def rate_limit_middleware(request: Request, call_next):
+    """Rate limiting middleware - exempt health checks"""
+    # Skip rate limiting for health checks
+    if request.url.path == "/api/poker/health":
+        return await call_next(request)
+    
+    # Get client IP (handle proxies)
+    client_ip = request.headers.get("X-Forwarded-For", request.client.host if request.client else "unknown")
+    client_ip = client_ip.split(",")[0].strip() if "," in client_ip else client_ip
+    
+    # Check rate limit
+    if not rate_limiter.is_allowed(client_ip):
+        return JSONResponse(
+            status_code=429,
+            content={"detail": "Rate limit exceeded. Please try again later."},
+            headers={"Retry-After": "60"}
+        )
+    
+    # Process request and add rate limit headers
+    response = await call_next(request)
+    remaining = rate_limiter.get_remaining(client_ip)
+    response.headers["X-RateLimit-Remaining"] = str(remaining)
+    response.headers["X-RateLimit-Limit"] = str(rate_limiter.burst_size)
+    
+    return response
+
+
 # In-memory game storage
 games: Dict[str, PokerGame] = {}
 ai_managers: Dict[str, AIManager] = {}
 
+# =============================================================================
+# Rate Limiting
+# =============================================================================
+
+class RateLimiter:
+    """Simple in-memory rate limiter per IP address"""
+    
+    def __init__(self, requests_per_minute: int = 60, burst_size: int = 10):
+        self.requests_per_minute = requests_per_minute
+        self.burst_size = burst_size
+        self.requests: Dict[str, List[float]] = defaultdict(list)
+        self.blocked: Dict[str, float] = {}
+    
+    def is_allowed(self, client_ip: str) -> bool:
+        """Check if request is allowed for this IP"""
+        now = time.time()
+        
+        # Check if IP is temporarily blocked
+        if client_ip in self.blocked:
+            if now < self.blocked[client_ip]:
+                return False
+            else:
+                del self.blocked[client_ip]
+        
+        # Clean old requests older than 1 minute
+        cutoff = now - 60
+        self.requests[client_ip] = [t for t in self.requests[client_ip] if t > cutoff]
+        
+        # Check burst limit
+        if len(self.requests[client_ip]) >= self.burst_size:
+            # Block for 1 minute if burst exceeded
+            self.blocked[client_ip] = now + 60
+            logger.warning(f"Rate limit exceeded for IP: {client_ip}")
+            return False
+        
+        # Record this request
+        self.requests[client_ip].append(now)
+        return True
+    
+    def get_remaining(self, client_ip: str) -> int:
+        """Get remaining requests in current window"""
+        now = time.time()
+        cutoff = now - 60
+        recent = [t for t in self.requests[client_ip] if t > cutoff]
+        return max(0, self.burst_size - len(recent))
+
+
+# Initialize rate limiter
+rate_limiter = RateLimiter(requests_per_minute=60, burst_size=20)
+
+
+def validate_game_id(game_id: str) -> str:
+    """Validate game ID format - alphanumeric only, max 16 chars"""
+    if not game_id or len(game_id) > 16:
+        raise HTTPException(status_code=400, detail="Invalid game ID format")
+    if not re.match(r'^[a-zA-Z0-9-]+$', game_id):
+        raise HTTPException(status_code=400, detail="Invalid game ID characters")
+    return game_id
+
+
+def validate_player_id(player_id: str) -> str:
+    """Validate player ID format - alphanumeric only"""
+    if not player_id or len(player_id) > 10:
+        raise HTTPException(status_code=400, detail="Invalid player ID format")
+    if not re.match(r'^[a-zA-Z0-9]+$', player_id):
+        raise HTTPException(status_code=400, detail="Invalid player ID characters")
+    return player_id
+
 
 class CreateGameRequest(BaseModel):
-    player_name: str = "Player"
+    player_name: str = Field(default="Player", min_length=1, max_length=20)
+    
+    @field_validator('player_name')
+    @classmethod
+    def sanitize_player_name(cls, v: str) -> str:
+        # Trim whitespace
+        v = v.strip()
+        # Remove control characters and restrict to printable ASCII
+        v = ''.join(c for c in v if c.isprintable() and ord(c) < 128)
+        # Collapse multiple spaces
+        v = ' '.join(v.split())
+        return v[:20]  # Ensure max length
 
 
 class ActionRequest(BaseModel):
-    player_id: str
-    action: str  # fold, check, call, raise
-    amount: Optional[int] = None
+    player_id: str = Field(min_length=1, max_length=10)
+    action: str = Field(pattern=r'^(fold|check|call|raise)$')  # Only valid actions
+    amount: Optional[int] = Field(default=None, ge=0, le=1000000)  # Reasonable bounds
+    
+    @field_validator('player_id')
+    @classmethod
+    def validate_player_id(cls, v: str) -> str:
+        # Only allow alphanumeric player IDs
+        if not re.match(r'^[a-zA-Z0-9]+$', v):
+            raise ValueError('Player ID must be alphanumeric')
+        return v
 
 
 class GameResponse(BaseModel):
@@ -99,6 +218,10 @@ async def create_game(request: CreateGameRequest):
 @app.get("/api/poker/games/{game_id}")
 async def get_game_state(game_id: str, player_id: str):
     """Get current game state"""
+    # Validate inputs
+    validate_game_id(game_id)
+    validate_player_id(player_id)
+    
     if game_id not in games:
         logger.warning(f"Game not found: {game_id}")
         raise HTTPException(status_code=404, detail="Game not found")
@@ -110,6 +233,9 @@ async def get_game_state(game_id: str, player_id: str):
 @app.post("/api/poker/games/{game_id}/action")
 async def player_action(game_id: str, request: ActionRequest):
     """Execute player action"""
+    # Validate game ID
+    validate_game_id(game_id)
+    
     if game_id not in games:
         logger.warning(f"Action on non-existent game: {game_id}")
         raise HTTPException(status_code=404, detail="Game not found")
@@ -165,6 +291,10 @@ async def player_action(game_id: str, request: ActionRequest):
 @app.post("/api/poker/games/{game_id}/next-hand")
 async def next_hand(game_id: str, player_id: str):
     """Start next hand"""
+    # Validate inputs
+    validate_game_id(game_id)
+    validate_player_id(player_id)
+    
     if game_id not in games:
         logger.warning(f"Next hand on non-existent game: {game_id}")
         raise HTTPException(status_code=404, detail="Game not found")
@@ -203,6 +333,7 @@ async def next_hand(game_id: str, player_id: str):
 @app.get("/api/poker/games/{game_id}/history")
 async def get_game_history(game_id: str):
     """Get game history (placeholder for future)"""
+    validate_game_id(game_id)
     return {"game_id": game_id, "hands": []}
 
 
