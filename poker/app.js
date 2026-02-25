@@ -352,6 +352,7 @@ let turnStartTime = null;
 let turnTimerId = null;
 const TURN_TIME_LIMIT = 30000; // 30 seconds per turn
 let hasVibratedThisTurn = false; // Track if we've vibrated for current turn
+let seenCards = new Set(); // Track cards we've already animated
 let lastHandNumber = 0; // Track hand number for stats
 let handResultRecorded = false; // Prevent duplicate stat recording
 
@@ -548,6 +549,9 @@ function hideLoading() {
 
 async function startGame() {
     const name = elements.playerName.value.trim() || 'Palmer';
+    
+    // Clear seen cards for new game
+    seenCards.clear();
 
     try {
         elements.startBtn.disabled = true;
@@ -731,6 +735,9 @@ async function nextHand() {
     }
 
     isRequestPending = true;
+    
+    // Clear seen cards for new hand (so they animate again)
+    seenCards.clear();
 
     try {
         elements.btnNextHand.disabled = true;
@@ -878,7 +885,18 @@ function renderCard(card, isPlayerCard = false) {
     const suitSymbol = { 'HEARTS': '♥', 'DIAMONDS': '♦', 'CLUBS': '♣', 'SPADES': '♠' }[card.suit] || '';
     const rank = { 14: 'A', 13: 'K', 12: 'Q', 11: 'J' }[card.rank] || card.rank;
     
-    return `<div class="card ${isRed ? '' : 'black'}">${rank}${suitSymbol}</div>`;
+    // Create unique card ID to track if we've seen it before
+    const cardId = `${card.suit}-${card.rank}`;
+    const isNewCard = !seenCards.has(cardId);
+    
+    // Only animate if this is a new card we haven't seen before
+    if (isNewCard) {
+        seenCards.add(cardId);
+    }
+    
+    const newCardClass = isNewCard ? 'new-card' : '';
+    
+    return `<div class="card ${newCardClass} ${isRed ? '' : 'black'}">${rank}${suitSymbol}</div>`;
 }
 
 function evaluateHandStrength(playerCards, communityCards) {
