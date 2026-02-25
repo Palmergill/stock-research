@@ -1,4 +1,4 @@
-// Poker Game Frontend
+// Poker Game Frontend - Option A: Bottom Focus Design
 const API_BASE = window.location.hostname === 'localhost' 
     ? 'http://localhost:8000' 
     : 'https://stock-research-production-b3ac.up.railway.app';
@@ -7,7 +7,7 @@ let gameState = null;
 let playerId = null;
 let gameId = null;
 let isMyTurn = false;
-let raiseSliderValue = 0;
+let raiseAmount = 0;
 
 // DOM Elements
 const screens = {
@@ -21,25 +21,24 @@ const elements = {
     handNumber: document.getElementById('hand-number'),
     phase: document.getElementById('phase'),
     potAmount: document.getElementById('pot-amount'),
-    toCall: document.getElementById('to-call'),
-    humanName: document.getElementById('human-name'),
-    humanChips: document.getElementById('human-chips'),
-    humanCards: document.getElementById('human-cards'),
-    humanBet: document.getElementById('human-bet'),
+    opponentsRow: document.getElementById('opponents-row'),
+    communityCards: document.getElementById('community-cards'),
+    yourCards: document.getElementById('your-cards'),
+    yourName: document.getElementById('your-name'),
+    yourChips: document.getElementById('your-chips'),
     gameLog: document.getElementById('game-log'),
-    actionBar: document.getElementById('action-bar'),
+    actionButtons: document.getElementById('action-buttons'),
     btnFold: document.getElementById('btn-fold'),
-    btnCheck: document.getElementById('btn-check'),
     btnCall: document.getElementById('btn-call'),
     btnRaise: document.getElementById('btn-raise'),
-    raiseSliderContainer: document.getElementById('raise-slider-container'),
+    raiseContainer: document.getElementById('raise-container'),
     raiseSlider: document.getElementById('raise-slider'),
-    raiseAmount: document.getElementById('raise-amount'),
-    btnMinRaise: document.getElementById('btn-min-raise'),
+    raiseDisplay: document.getElementById('raise-display'),
+    btnMin: document.getElementById('btn-min'),
     btnPot: document.getElementById('btn-pot'),
-    btnAllIn: document.getElementById('btn-all-in'),
+    btnAllIn: document.getElementById('btn-allin'),
+    btnCancel: document.getElementById('btn-cancel'),
     btnConfirmRaise: document.getElementById('btn-confirm-raise'),
-    btnCancelRaise: document.getElementById('btn-cancel-raise'),
     handResult: document.getElementById('hand-result'),
     resultTitle: document.getElementById('result-title'),
     resultDetails: document.getElementById('result-details'),
@@ -50,21 +49,23 @@ const elements = {
 document.addEventListener('DOMContentLoaded', () => {
     elements.startBtn.addEventListener('click', startGame);
     elements.btnFold.addEventListener('click', () => playerAction('fold'));
-    elements.btnCheck.addEventListener('click', () => playerAction('check'));
     elements.btnCall.addEventListener('click', () => playerAction('call'));
-    elements.btnRaise.addEventListener('click', showRaiseSlider);
+    elements.btnRaise.addEventListener('click', showRaiseControls);
+    elements.btnCancel.addEventListener('click', hideRaiseControls);
     elements.btnConfirmRaise.addEventListener('click', confirmRaise);
-    elements.btnCancelRaise.addEventListener('click', hideRaiseSlider);
     elements.btnNextHand.addEventListener('click', nextHand);
     
     elements.raiseSlider.addEventListener('input', (e) => {
-        raiseSliderValue = parseInt(e.target.value);
-        elements.raiseAmount.textContent = raiseSliderValue;
+        raiseAmount = parseInt(e.target.value);
+        elements.raiseDisplay.textContent = raiseAmount;
     });
     
-    elements.btnMinRaise.addEventListener('click', () => {
+    elements.btnMin.addEventListener('click', () => {
         const min = gameState?.min_raise || 20;
-        setRaiseAmount(min);
+        const toCall = gameState?.current_bet || 0;
+        const myPlayer = gameState?.players?.find(p => p.id === playerId);
+        const myBet = myPlayer?.bet || 0;
+        setRaiseAmount(toCall - myBet + min);
     });
     
     elements.btnPot.addEventListener('click', () => {
@@ -80,8 +81,20 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+function setRaiseAmount(amount) {
+    const myPlayer = gameState?.players?.find(p => p.id === playerId);
+    if (!myPlayer) return;
+    
+    amount = Math.min(amount, myPlayer.chips);
+    amount = Math.max(amount, 0);
+    
+    elements.raiseSlider.value = amount;
+    raiseAmount = amount;
+    elements.raiseDisplay.textContent = amount;
+}
+
 async function startGame() {
-    const name = elements.playerName.value.trim() || 'Player';
+    const name = elements.playerName.value.trim() || 'Palmer';
     
     try {
         elements.startBtn.disabled = true;
@@ -100,14 +113,14 @@ async function startGame() {
         playerId = data.player_id;
         gameState = data.state;
         
-        elements.humanName.textContent = name;
+        elements.yourName.textContent = name;
         
         switchScreen('game');
         updateGameDisplay();
         addLogEntry('Game started! Good luck!');
         
-        // Check if we need to process AI turns
-        checkAndProcessAITurns();
+        // Poll for updates
+        startPolling();
         
     } catch (error) {
         console.error('Error starting game:', error);
@@ -117,12 +130,55 @@ async function startGame() {
     }
 }
 
-async function playerAction(action, amount = null) {
-    if (!isMyTurn) return;
+function startPolling() {
+    const pollInterval = setInterval(async () => {
+        if (!gameId || !playerId) {
+            clearInterval(pollInterval);
+            return;
+        }
+        
+        try {
+            const response = await fetch(`${API_BASE}/api/poker/games/${gameId}?player_id=${playerId}&process_ai=true`);
+            if (!response.ok) return;
+            
+            const newState = await response.json();
+            
+            // Log new actions
+            if (newState.last_action && 
+                (!gameState.last_action || 
+                 newState.last_action.player !== gameState.last_action.player ||
+                 newState.last_action.action !== gameState.last_action.action)) {
+                const action = newState.last_action;
+                let logText = `${action.player} ${action.action}`;
+                if (action.amount) logText += ` ${action.amount}`;
+                addLogEntry(logText);
+            }
+            
+            gameState = newState;
+            updateGameDisplay();
+            
+            if (gameState.phase === 'showdown') {
+                clearInterval(pollInterval);
+                showHandResult();
+            }
+            
+        } catch (error) {
+            console.error('Polling error:', error);
+        }
+    }, 1000);
+}
+
+async function playerAction(action) {
+    if (!isMyTurn && action !== 'fold') return;
+    
+    let amount = null;
+    if (action === 'raise') {
+        amount = raiseAmount;
+    }
     
     try {
         const body = { player_id: playerId, action };
-        if (amount) body.amount = amount;
+        if (amount !== null) body.amount = amount;
         
         const response = await fetch(`${API_BASE}/api/poker/games/${gameId}/action`, {
             method: 'POST',
@@ -134,7 +190,7 @@ async function playerAction(action, amount = null) {
         
         gameState = await response.json();
         
-        // Log action
+        // Log your action
         const myPlayer = gameState.players.find(p => p.id === playerId);
         if (action === 'raise') {
             addLogEntry(`You raise to ${amount}`);
@@ -142,13 +198,11 @@ async function playerAction(action, amount = null) {
             addLogEntry(`You ${action}`);
         }
         
+        hideRaiseControls();
         updateGameDisplay();
         
-        // Check for hand complete
         if (gameState.phase === 'showdown') {
             showHandResult();
-        } else {
-            checkAndProcessAITurns();
         }
         
     } catch (error) {
@@ -156,38 +210,31 @@ async function playerAction(action, amount = null) {
     }
 }
 
-async function checkAndProcessAITurns() {
-    // Poll until it's human's turn or hand is over
-    const pollInterval = setInterval(async () => {
-        try {
-            const response = await fetch(`${API_BASE}/api/poker/games/${gameId}?player_id=${playerId}`);
-            if (!response.ok) return;
-            
-            gameState = await response.json();
-            
-            // Log AI actions
-            if (gameState.last_action && gameState.last_action.player !== elements.humanName.textContent) {
-                const action = gameState.last_action;
-                let logText = `${action.player} ${action.action}`;
-                if (action.amount) {
-                    logText += ` ${action.amount}`;
-                }
-                addLogEntry(logText);
-            }
-            
-            updateGameDisplay();
-            
-            if (gameState.phase === 'showdown') {
-                clearInterval(pollInterval);
-                showHandResult();
-            } else if (gameState.current_player === playerId) {
-                clearInterval(pollInterval);
-            }
-            
-        } catch (error) {
-            console.error('Polling error:', error);
-        }
-    }, 1000);
+function showRaiseControls() {
+    const myPlayer = gameState?.players?.find(p => p.id === playerId);
+    if (!myPlayer) return;
+    
+    const toCall = (gameState?.current_bet || 0) - (myPlayer?.bet || 0);
+    const minRaise = gameState?.min_raise || 20;
+    const minTotal = toCall + minRaise;
+    
+    elements.raiseSlider.min = minTotal;
+    elements.raiseSlider.max = myPlayer.chips;
+    elements.raiseSlider.value = minTotal;
+    raiseAmount = minTotal;
+    elements.raiseDisplay.textContent = minTotal;
+    
+    elements.raiseContainer.classList.remove('hidden');
+    elements.actionButtons.classList.add('hidden');
+}
+
+function hideRaiseControls() {
+    elements.raiseContainer.classList.add('hidden');
+    elements.actionButtons.classList.remove('hidden');
+}
+
+function confirmRaise() {
+    playerAction('raise');
 }
 
 async function nextHand() {
@@ -209,7 +256,8 @@ async function nextHand() {
         addLogEntry(`--- Hand #${gameState.hand_number} ---`);
         updateGameDisplay();
         
-        checkAndProcessAITurns();
+        // Restart polling
+        startPolling();
         
     } catch (error) {
         console.error('Error:', error);
@@ -227,77 +275,65 @@ function updateGameDisplay() {
     elements.phase.textContent = gameState.phase.replace('_', ' ').toUpperCase();
     elements.potAmount.textContent = gameState.pot;
     
-    // Update human info
+    // Update your info
     const myPlayer = gameState.players.find(p => p.id === playerId);
     if (myPlayer) {
-        elements.humanChips.textContent = myPlayer.chips;
-        elements.humanBet.textContent = myPlayer.bet > 0 ? myPlayer.bet : '';
+        elements.yourChips.textContent = myPlayer.chips;
         
-        // Display human cards
-        elements.humanCards.innerHTML = myPlayer.hand.map(card => renderCard(card)).join('');
+        // Your cards
+        elements.yourCards.innerHTML = myPlayer.hand.map(card => renderCard(card, true)).join('');
     }
     
-    // Update all seats
-    gameState.players.forEach((player, index) => {
-        const seatEl = document.getElementById(`seat-${index}`);
-        if (!seatEl) return;
-        
-        // Update name and chips
-        const nameEl = seatEl.querySelector('.player-name');
-        const chipsEl = seatEl.querySelector('.player-chips');
-        const betEl = seatEl.querySelector('.player-bet');
-        const cardsEl = seatEl.querySelector('.player-cards');
-        const dealerBtn = seatEl.querySelector('.dealer-btn');
-        
-        if (nameEl) nameEl.textContent = player.name;
-        if (chipsEl) chipsEl.textContent = player.chips;
-        if (betEl) betEl.textContent = player.bet > 0 ? player.bet : '';
-        
-        // Dealer button
-        if (dealerBtn) {
-            dealerBtn.classList.toggle('hidden', index !== gameState.dealer_index);
-        }
-        
-        // Cards
-        if (cardsEl && !player.is_human) {
-            if (gameState.phase === 'showdown' && !player.folded) {
-                // Show bot cards at showdown
-                cardsEl.innerHTML = player.hand.map(card => renderCard(card)).join('');
-            } else {
-                // Hidden cards
-                cardsEl.innerHTML = `<div class="card hidden"></div><div class="card hidden"></div>`;
-            }
-        }
-        
-        // Folded state
-        seatEl.classList.toggle('folded', player.folded);
-        
-        // Active turn
-        const isCurrentPlayer = gameState.current_player === player.id;
-        seatEl.classList.toggle('active-turn', isCurrentPlayer);
-    });
+    // Update opponents
+    const opponents = gameState.players.filter(p => !p.is_human);
+    elements.opponentsRow.innerHTML = opponents.map(p => renderOpponent(p)).join('');
     
     // Update community cards
-    const communityCards = gameState.community_cards;
-    const flop1 = document.getElementById('flop-1');
-    const flop2 = document.getElementById('flop-2');
-    const flop3 = document.getElementById('flop-3');
-    const turn = document.getElementById('turn');
-    const river = document.getElementById('river');
-    
-    if (flop1) flop1.innerHTML = communityCards[0] ? renderCard(communityCards[0]) : '';
-    if (flop2) flop2.innerHTML = communityCards[1] ? renderCard(communityCards[1]) : '';
-    if (flop3) flop3.innerHTML = communityCards[2] ? renderCard(communityCards[2]) : '';
-    if (turn) turn.innerHTML = communityCards[3] ? renderCard(communityCards[3]) : '';
-    if (river) river.innerHTML = communityCards[4] ? renderCard(communityCards[4]) : '';
+    const community = gameState.community_cards;
+    elements.communityCards.innerHTML = `
+        <div class="card-slot" id="flop-1">${community[0] ? renderCard(community[0]) : ''}</div>
+        <div class="card-slot" id="flop-2">${community[1] ? renderCard(community[1]) : ''}</div>
+        <div class="card-slot" id="flop-3">${community[2] ? renderCard(community[2]) : ''}</div>
+        <div class="card-slot" id="turn">${community[3] ? renderCard(community[3]) : ''}</div>
+        <div class="card-slot" id="river">${community[4] ? renderCard(community[4]) : ''}</div>
+    `;
     
     // Update action buttons
     updateActionButtons();
 }
 
+function renderOpponent(player) {
+    const isCurrent = gameState.current_player === player.id;
+    const showCards = gameState.phase === 'showdown' && !player.folded;
+    
+    return `
+        <div class="opponent ${player.folded ? 'folded' : ''} ${isCurrent ? 'active-turn' : ''}">
+            <div class="opponent-cards">
+                ${showCards 
+                    ? player.hand.map(c => renderCard(c)).join('')
+                    : `<div class="card-back ${player.folded ? 'folded' : ''}">🂠</div><div class="card-back ${player.folded ? 'folded' : ''}">🂠</div>`
+                }
+            </div>
+            <span class="opponent-name">${player.name}</span>
+            <span class="opponent-chips">${player.chips}</span>
+            ${player.bet > 0 ? `<span class="opponent-bet">${player.bet}</span>` : ''}
+        </div>
+    `;
+}
+
+function renderCard(card, isPlayerCard = false) {
+    if (!card) return '';
+    
+    const isRed = card.suit === 'HEARTS' || card.suit === 'DIAMONDS';
+    const suitSymbol = { 'HEARTS': '♥', 'DIAMONDS': '♦', 'CLUBS': '♣', 'SPADES': '♠' }[card.suit] || '';
+    const rank = { 14: 'A', 13: 'K', 12: 'Q', 11: 'J' }[card.rank] || card.rank;
+    
+    return `<div class="card ${isRed ? '' : 'black'}">${rank}${suitSymbol}</div>`;
+}
+
 function updateActionButtons() {
     if (!gameState || gameState.phase === 'showdown') {
-        elements.actionBar.classList.add('hidden');
+        elements.actionButtons.classList.add('hidden');
         return;
     }
     
@@ -305,94 +341,26 @@ function updateActionButtons() {
     isMyTurn = gameState.current_player === playerId;
     
     if (!isMyTurn || !myPlayer) {
-        elements.actionBar.classList.add('hidden');
+        elements.actionButtons.classList.add('hidden');
         return;
     }
     
-    elements.actionBar.classList.remove('hidden');
+    elements.actionButtons.classList.remove('hidden');
     
     const toCall = gameState.current_bet - myPlayer.bet;
-    elements.toCall.textContent = toCall;
-    
-    // Show/hide buttons based on what's allowed
-    elements.btnFold.classList.remove('hidden');
-    elements.btnRaise.classList.remove('hidden');
     
     if (toCall === 0) {
-        // Can check
-        elements.btnCheck.classList.remove('hidden');
-        elements.btnCall.classList.add('hidden');
+        elements.btnCall.textContent = 'Check';
     } else {
-        // Must call or fold
-        elements.btnCheck.classList.add('hidden');
-        elements.btnCall.classList.remove('hidden');
-        elements.btnCall.textContent = `Call ${toCall}`;
+        const callAmount = Math.min(toCall, myPlayer.chips);
+        elements.btnCall.textContent = myPlayer.chips <= toCall ? 'All In' : `Call ${callAmount}`;
     }
     
-    // Disable if can't afford
-    if (toCall > myPlayer.chips) {
-        elements.btnCall.textContent = 'All In';
-    }
-}
-
-function renderCard(card) {
-    if (!card) return '';
-    const suitClass = card.suit.toLowerCase();
-    const display = card.display || '';
-    const rank = display.slice(0, -1);
-    const suit = display.slice(-1);
-    
-    return `<div class="card ${suitClass}">
-        <span class="rank">${rank}</span>
-        <span class="suit">${suit}</span>
-    </div>`;
-}
-
-function showRaiseSlider() {
-    const myPlayer = gameState.players.find(p => p.id === playerId);
-    if (!myPlayer) return;
-    
-    const toCall = gameState.current_bet - myPlayer.bet;
+    // Disable raise if can't afford min raise
     const minRaise = gameState.min_raise || 20;
-    const minTotal = toCall + minRaise;
-    
-    elements.raiseSlider.min = minTotal;
-    elements.raiseSlider.max = myPlayer.chips;
-    elements.raiseSlider.value = minTotal;
-    raiseSliderValue = minTotal;
-    elements.raiseAmount.textContent = minTotal;
-    
-    elements.raiseSliderContainer.classList.remove('hidden');
-    elements.btnFold.classList.add('hidden');
-    elements.btnCheck.classList.add('hidden');
-    elements.btnCall.classList.add('hidden');
-    elements.btnRaise.classList.add('hidden');
-}
-
-function hideRaiseSlider() {
-    elements.raiseSliderContainer.classList.add('hidden');
-    updateActionButtons();
-}
-
-function setRaiseAmount(amount) {
-    const myPlayer = gameState.players.find(p => p.id === playerId);
-    if (!myPlayer) return;
-    
-    amount = Math.min(amount, myPlayer.chips);
-    elements.raiseSlider.value = amount;
-    raiseSliderValue = amount;
-    elements.raiseAmount.textContent = amount;
-}
-
-function confirmRaise() {
-    const myPlayer = gameState.players.find(p => p.id === playerId);
-    if (!myPlayer) return;
-    
-    const toCall = gameState.current_bet - myPlayer.bet;
-    const raiseAmount = raiseSliderValue - toCall;
-    
-    hideRaiseSlider();
-    playerAction('raise', Math.max(raiseAmount, 0));
+    const canRaise = myPlayer.chips > toCall + minRaise;
+    elements.btnRaise.disabled = !canRaise;
+    elements.btnRaise.style.opacity = canRaise ? '1' : '0.4';
 }
 
 function showHandResult() {
@@ -403,15 +371,8 @@ function showHandResult() {
     
     elements.resultTitle.textContent = isMe ? '🎉 You Win!' : `${winner.name} Wins`;
     
-    let detailsHTML = `<p class="winner-name">${winner.name}</p>`;
-    detailsHTML += `<p class="win-amount">+${winner.amount} chips</p>`;
-    
-    if (winner.hand && winner.hand.length > 0) {
-        detailsHTML += `<p>Winning hand:</p>`;
-        detailsHTML += `<div class="winning-hand">`;
-        detailsHTML += winner.hand.map(card => renderCard(card)).join('');
-        detailsHTML += `</div>`;
-    }
+    let detailsHTML = `<p style="font-size: 1.2rem; margin-bottom: 8px;">${winner.name}</p>`;
+    detailsHTML += `<p style="font-size: 1.5rem; color: #10b981; font-weight: 700;">+${winner.amount} chips</p>`;
     
     elements.resultDetails.innerHTML = detailsHTML;
     elements.handResult.classList.remove('hidden');
