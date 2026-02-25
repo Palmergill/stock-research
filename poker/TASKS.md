@@ -9,9 +9,9 @@
 - [ ] **Game state persistence** - Games stored in memory are lost on backend restart (consider Redis or DB)
 
 ### Medium Priority
-- [ ] **Raise amount validation** - Frontend allows raises even when player doesn't have enough chips
-- [ ] **Card rendering on showdown** - Winner's cards may not show correctly in results overlay
-- [ ] **Polling continues after game ends** - Need to properly stop polling when player leaves/disconnects
+- [x] **Raise amount validation** - Fixed: Raise button now hidden when player can't afford minimum raise
+- [ ] **Card rendering on showdown** - Winner's cards should show correctly (backend fixed, verify frontend)
+- [x] **Polling continues after game ends** - Fixed: Proper cleanup on page unload, tab visibility change, and 404 errors
 - [ ] **CORS errors** - May occur in some browser environments
 
 ### Low Priority

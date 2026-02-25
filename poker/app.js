@@ -47,6 +47,19 @@ const elements = {
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', stopPolling);
+    window.addEventListener('pagehide', stopPolling);
+    
+    // Pause polling when tab is hidden
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            stopPolling();
+        } else if (gameState && gameState.phase !== 'showdown') {
+            startPolling();
+        }
+    });
+    
     elements.startBtn.addEventListener('click', startGame);
     elements.btnFold.addEventListener('click', () => playerAction('fold'));
     elements.btnCall.addEventListener('click', () => playerAction('call'));
@@ -131,29 +144,30 @@ async function startGame() {
 
 function startPolling() {
     // Clear any existing polling
-    if (pollIntervalId) {
-        clearInterval(pollIntervalId);
-        pollIntervalId = null;
-    }
+    stopPolling();
     
     pollIntervalId = setInterval(async () => {
         if (!gameId || !playerId) {
-            clearInterval(pollIntervalId);
-            pollIntervalId = null;
+            stopPolling();
             return;
         }
         
         try {
             const response = await fetch(`${API_BASE}/api/poker/games/${gameId}?player_id=${playerId}&process_ai=true`);
-            if (!response.ok) return;
+            if (!response.ok) {
+                if (response.status === 404) {
+                    // Game no longer exists, stop polling
+                    stopPolling();
+                }
+                return;
+            }
             
             const newState = await response.json();
             gameState = newState;
             updateGameDisplay();
             
             if (gameState.phase === 'showdown') {
-                clearInterval(pollIntervalId);
-                pollIntervalId = null;
+                stopPolling();
                 showHandResult();
             }
             
@@ -161,6 +175,13 @@ function startPolling() {
             console.error('Polling error:', error);
         }
     }, 1000);
+}
+
+function stopPolling() {
+    if (pollIntervalId) {
+        clearInterval(pollIntervalId);
+        pollIntervalId = null;
+    }
 }
 
 async function playerAction(action) {
@@ -203,6 +224,15 @@ function showRaiseControls() {
     const toCall = (gameState?.current_bet || 0) - (myPlayer?.bet || 0);
     const minRaise = gameState?.min_raise || 20;
     const minTotal = toCall + minRaise;
+    
+    // Check if player can afford minimum raise
+    if (myPlayer.chips < minTotal) {
+        // Can't raise, auto-call or all-in
+        if (myPlayer.chips <= toCall) {
+            playerAction('call'); // Will become all-in
+        }
+        return;
+    }
     
     elements.raiseSlider.min = minTotal;
     elements.raiseSlider.max = myPlayer.chips;
@@ -355,11 +385,16 @@ function updateActionButtons() {
         elements.btnCall.textContent = myPlayer.chips <= toCall ? 'All In' : `Call ${callAmount}`;
     }
     
-    // Disable raise if can't afford min raise
+    // Hide raise button if can't afford min raise
     const minRaise = gameState.min_raise || 20;
     const canRaise = myPlayer.chips > toCall + minRaise;
-    elements.btnRaise.disabled = !canRaise;
-    elements.btnRaise.style.opacity = canRaise ? '1' : '0.4';
+    if (canRaise) {
+        elements.btnRaise.classList.remove('hidden');
+        elements.btnRaise.disabled = false;
+        elements.btnRaise.style.opacity = '1';
+    } else {
+        elements.btnRaise.classList.add('hidden');
+    }
 }
 
 function showHandResult() {
