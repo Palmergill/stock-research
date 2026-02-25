@@ -26,7 +26,6 @@ const elements = {
     yourCards: document.getElementById('your-cards'),
     yourName: document.getElementById('your-name'),
     yourChips: document.getElementById('your-chips'),
-    gameLog: document.getElementById('game-log'),
     actionButtons: document.getElementById('action-buttons'),
     btnFold: document.getElementById('btn-fold'),
     btnCall: document.getElementById('btn-call'),
@@ -117,7 +116,6 @@ async function startGame() {
         
         switchScreen('game');
         updateGameDisplay();
-        addLogEntry('Game started! Good luck!');
         
         // Poll for updates
         startPolling();
@@ -142,18 +140,6 @@ function startPolling() {
             if (!response.ok) return;
             
             const newState = await response.json();
-            
-            // Log new actions
-            if (newState.last_action && 
-                (!gameState.last_action || 
-                 newState.last_action.player !== gameState.last_action.player ||
-                 newState.last_action.action !== gameState.last_action.action)) {
-                const action = newState.last_action;
-                let logText = `${action.player} ${action.action}`;
-                if (action.amount) logText += ` ${action.amount}`;
-                addLogEntry(logText);
-            }
-            
             gameState = newState;
             updateGameDisplay();
             
@@ -189,15 +175,6 @@ async function playerAction(action) {
         if (!response.ok) throw new Error('Action failed');
         
         gameState = await response.json();
-        
-        // Log your action
-        const myPlayer = gameState.players.find(p => p.id === playerId);
-        if (action === 'raise') {
-            addLogEntry(`You raise to ${amount}`);
-        } else {
-            addLogEntry(`You ${action}`);
-        }
-        
         hideRaiseControls();
         updateGameDisplay();
         
@@ -251,9 +228,7 @@ async function nextHand() {
         if (!response.ok) throw new Error('Failed to start next hand');
         
         gameState = await response.json();
-        
         hideHandResult();
-        addLogEntry(`--- Hand #${gameState.hand_number} ---`);
         updateGameDisplay();
         
         // Restart polling
@@ -380,14 +355,6 @@ function showHandResult() {
 
 function hideHandResult() {
     elements.handResult.classList.add('hidden');
-}
-
-function addLogEntry(message) {
-    const entry = document.createElement('div');
-    entry.className = 'log-entry';
-    entry.textContent = message;
-    elements.gameLog.appendChild(entry);
-    elements.gameLog.scrollTop = elements.gameLog.scrollHeight;
 }
 
 function switchScreen(screenName) {
