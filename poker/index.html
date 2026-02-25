@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Texas Hold'em Poker</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Start Screen -->
+        <div id="start-screen" class="screen active">
+            <div class="logo">♠♥♣♦</div>
+            <h1>Texas Hold'em</h1>
+            <p class="subtitle">No-Limit Poker</p>
+            <div class="start-form">
+                <input type="text" id="player-name" placeholder="Your name" maxlength="12" value="Player">
+                <button id="start-btn" class="btn-primary">Play Now</button>
+            </div>
+            <div class="game-info">
+                <p>• 5 AI Opponents</p>
+                <p>• 1000 Starting Chips</p>
+                <p>• Blinds 10/20</p>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="screen">
+            <!-- Header -->
+            <div class="game-header">
+                <div class="hand-info">
+                    <span>Hand #<span id="hand-number">1</span></span>
+                    <span class="phase" id="phase">Pre-Flop</span>
+                </div>
+                <div class="pot">
+                    <span class="pot-label">POT</span>
+                    <span class="pot-amount" id="pot-amount">0</span>
+                </div>
+            </div>
+
+            <!-- Poker Table -->
+            <div class="table">
+                <!-- Players -->
+                <div class="seats">
+                    <!-- Seat positions: 0=top, 1=top-right, 2=bottom-right, 3=bottom (human), 4=bottom-left, 5=top-left -->
+                    <div class="seat" id="seat-0" data-position="top">
+                        <div class="player-cards"></div>
+                        <div class="player-info">
+                            <span class="player-name">Bot 1</span>
+                            <span class="player-chips">1000</span>
+                        </div>
+                        <div class="player-bet"></div>
+                        <div class="dealer-btn hidden">D</div>
+                    </div>
+                    <div class="seat" id="seat-1" data-position="top-right">
+                        <div class="player-cards"></div>
+                        <div class="player-info">
+                            <span class="player-name">Bot 2</span>
+                            <span class="player-chips">1000</span>
+                        </div>
+                        <div class="player-bet"></div>
+                        <div class="dealer-btn hidden">D</div>
+                    </div>
+                    <div class="seat" id="seat-2" data-position="bottom-right">
+                        <div class="player-cards"></div>
+                        <div class="player-info">
+                            <span class="player-name">Bot 3</span>
+                            <span class="player-chips">1000</span>
+                        </div>
+                        <div class="player-bet"></div>
+                        <div class="dealer-btn hidden">D</div>
+                    </div>
+                    <div class="seat human" id="seat-3" data-position="bottom">
+                        <div class="player-cards" id="human-cards"></div>
+                        <div class="player-info">
+                            <span class="player-name" id="human-name">You</span>
+                            <span class="player-chips" id="human-chips">1000</span>
+                        </div>
+                        <div class="player-bet" id="human-bet"></div>
+                        <div class="dealer-btn hidden">D</div>
+                    </div>
+                    <div class="seat" id="seat-4" data-position="bottom-left">
+                        <div class="player-cards"></div>
+                        <div class="player-info">
+                            <span class="player-name">Bot 4</span>
+                            <span class="player-chips">1000</span>
+                        </div>
+                        <div class="player-bet"></div>
+                        <div class="dealer-btn hidden">D</div>
+                    </div>
+                    <div class="seat" id="seat-5" data-position="top-left">
+                        <div class="player-cards"></div>
+                        <div class="player-info">
+                            <span class="player-name">Bot 5</span>
+                            <span class="player-chips">1000</span>
+                        </div>
+                        <div class="player-bet"></div>
+                        <div class="dealer-btn hidden">D</div>
+                    </div>
+                </div>
+
+                <!-- Community Cards -->
+                <div class="community-cards">
+                    <div class="card-slot" id="flop-1"></div>
+                    <div class="card-slot" id="flop-2"></div>
+                    <div class="card-slot" id="flop-3"></div>
+                    <div class="card-slot" id="turn"></div>
+                    <div class="card-slot" id="river"></div>
+                </div>
+            </div>
+
+            <!-- Action Bar -->
+            <div class="action-bar" id="action-bar">
+                <div class="current-bet">
+                    To Call: <span id="to-call">0</span>
+                </div>
+                <div class="action-buttons">
+                    <button id="btn-fold" class="btn-action btn-fold">Fold</button>
+                    <button id="btn-check" class="btn-action btn-check hidden">Check</button>
+                    <button id="btn-call" class="btn-action btn-call hidden">Call 0</button>
+                    <button id="btn-raise" class="btn-action btn-raise">Raise</button>
+                </div>
+                <div class="raise-slider-container hidden" id="raise-slider-container">
+                    <input type="range" id="raise-slider" min="0" max="1000" value="0">
+                    <div class="raise-amount">
+                        <button id="btn-min-raise">Min</button>
+                        <span id="raise-amount">0</span>
+                        <button id="btn-pot">Pot</button>
+                        <button id="btn-all-in">All In</button>
+                    </div>
+                    <button id="btn-confirm-raise" class="btn-primary">Raise</button>
+                    <button id="btn-cancel-raise" class="btn-secondary">Cancel</button>
+                </div>
+            </div>
+
+            <!-- Game Log -->
+            <div class="game-log" id="game-log">
+                <div class="log-entry">Welcome to Texas Hold'em!</div>
+            </div>
+
+            <!-- Hand Result Overlay -->
+            <div id="hand-result" class="overlay hidden">
+                <div class="result-content">
+                    <h2 id="result-title">Hand Complete</h2>
+                    <div id="result-details"></div>
+                    <button id="btn-next-hand" class="btn-primary">Next Hand</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
