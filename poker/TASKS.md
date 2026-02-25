@@ -26,7 +26,7 @@
 - [ ] **Hand history** - Log all hands played with replay capability
 - [ ] **Player statistics** - Track win rate, biggest pot, hands played
 - [ ] **Chat feature** - Simple chat between players
-- [ ] **Sound effects** - Card deals, chips, win sounds
+- [x] **Sound effects** - Fixed: Added Web Audio API sound manager with card deal, chip, win, and loss sounds. Sounds are generated programmatically (no external files needed) and respect browser autoplay policies.
 - [x] **Vibration on turn** - Fixed: Added haptic feedback via `navigator.vibrate([50, 100, 50])` when it's the player's turn, with mobile device detection and graceful fallback
 - [ ] **All-in showdown** - Show all cards immediately when all-in
 
@@ -92,7 +92,7 @@
 - [x] **Font scaling** - Fixed: Added `text-size-adjust: 100%` and `html { font-size: 100% }` to respect user font size preferences
 - [x] **Orientation lock** - Fixed: Added `screen.orientation.lock('portrait')` call when entering game screen, with graceful fallback for unsupported devices
 - [x] **Safe area** - Fixed: Added CSS `@supports (padding-top: env(safe-area-inset-top))` rules to handle iPhone notch and safe areas
-- [ ] **Keyboard handling** - Prevent layout shift when keyboard opens
+- [x] **Keyboard handling** - Fixed: Added CSS to prevent layout shift when virtual keyboard opens on mobile. Body uses fixed positioning with 100dvh, and media query adjusts layout for small viewports (<500px height) to ensure game remains playable.
 
 ## 🔒 Security
 

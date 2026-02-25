@@ -3,6 +3,135 @@ const API_BASE = window.location.hostname === 'localhost'
     ? 'http://localhost:8000'
     : 'https://stock-research-production-b3ac.up.railway.app';
 
+// Sound Manager - Web Audio API for game sounds
+const SoundManager = {
+    audioContext: null,
+    enabled: true,
+
+    init() {
+        // Initialize on first user interaction to comply with browser autoplay policies
+        const initAudio = () => {
+            if (!this.audioContext) {
+                this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (this.audioContext.state === 'suspended') {
+                this.audioContext.resume();
+            }
+        };
+        document.addEventListener('click', initAudio, { once: true });
+        document.addEventListener('touchstart', initAudio, { once: true });
+    },
+
+    // Play card deal sound - quick noise burst with filter
+    playCardDeal() {
+        if (!this.enabled || !this.audioContext) return;
+        try {
+            const osc = this.audioContext.createOscillator();
+            const gainNode = this.audioContext.createGain();
+            const filter = this.audioContext.createBiquadFilter();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(800, this.audioContext.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(400, this.audioContext.currentTime + 0.05);
+
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(2000, this.audioContext.currentTime);
+
+            gainNode.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.05);
+
+            osc.connect(filter);
+            filter.connect(gainNode);
+            gainNode.connect(this.audioContext.destination);
+
+            osc.start(this.audioContext.currentTime);
+            osc.stop(this.audioContext.currentTime + 0.05);
+        } catch (e) {
+            console.log('[Sound] Card deal sound failed:', e.message);
+        }
+    },
+
+    // Play chip sound - short high tick
+    playChip() {
+        if (!this.enabled || !this.audioContext) return;
+        try {
+            const osc = this.audioContext.createOscillator();
+            const gainNode = this.audioContext.createGain();
+
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(1200, this.audioContext.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(600, this.audioContext.currentTime + 0.08);
+
+            gainNode.gain.setValueAtTime(0.08, this.audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.08);
+
+            osc.connect(gainNode);
+            gainNode.connect(this.audioContext.destination);
+
+            osc.start(this.audioContext.currentTime);
+            osc.stop(this.audioContext.currentTime + 0.08);
+        } catch (e) {
+            console.log('[Sound] Chip sound failed:', e.message);
+        }
+    },
+
+    // Play win sound - ascending arpeggio
+    playWin() {
+        if (!this.enabled || !this.audioContext) return;
+        try {
+            const notes = [523.25, 659.25, 783.99, 1046.50]; // C major arpeggio
+            notes.forEach((freq, i) => {
+                const osc = this.audioContext.createOscillator();
+                const gainNode = this.audioContext.createGain();
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, this.audioContext.currentTime + i * 0.08);
+
+                gainNode.gain.setValueAtTime(0, this.audioContext.currentTime + i * 0.08);
+                gainNode.gain.linearRampToValueAtTime(0.15, this.audioContext.currentTime + i * 0.08 + 0.02);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + i * 0.08 + 0.25);
+
+                osc.connect(gainNode);
+                gainNode.connect(this.audioContext.destination);
+
+                osc.start(this.audioContext.currentTime + i * 0.08);
+                osc.stop(this.audioContext.currentTime + i * 0.08 + 0.25);
+            });
+        } catch (e) {
+            console.log('[Sound] Win sound failed:', e.message);
+        }
+    },
+
+    // Play loss sound - descending tone
+    playLoss() {
+        if (!this.enabled || !this.audioContext) return;
+        try {
+            const osc = this.audioContext.createOscillator();
+            const gainNode = this.audioContext.createGain();
+
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(300, this.audioContext.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(150, this.audioContext.currentTime + 0.3);
+
+            gainNode.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.3);
+
+            osc.connect(gainNode);
+            gainNode.connect(this.audioContext.destination);
+
+            osc.start(this.audioContext.currentTime);
+            osc.stop(this.audioContext.currentTime + 0.3);
+        } catch (e) {
+            console.log('[Sound] Loss sound failed:', e.message);
+        }
+    },
+
+    toggle() {
+        this.enabled = !this.enabled;
+        return this.enabled;
+    }
+};
+
 // Error Boundary - Global error handling
 const ErrorBoundary = {
     container: null,
@@ -165,8 +294,9 @@ const elements = {
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
-    // Initialize error boundary
+    // Initialize error boundary and sound manager
     ErrorBoundary.init();
+    SoundManager.init();
 
     // Cleanup on page unload
     window.addEventListener('beforeunload', stopPolling);
@@ -342,6 +472,12 @@ async function playerAction(action) {
         
         gameState = await response.json();
         hideRaiseControls();
+        
+        // Play chip sound for betting actions
+        if (action === 'raise' || action === 'call') {
+            SoundManager.playChip();
+        }
+        
         updateGameDisplay();
         
         if (gameState.phase === 'showdown') {
@@ -681,6 +817,13 @@ function showHandResult() {
     
     const winner = gameState.winners[0];
     const isMe = winner.id === playerId;
+    
+    // Play win/loss sound
+    if (isMe) {
+        SoundManager.playWin();
+    } else {
+        SoundManager.playLoss();
+    }
     
     elements.resultTitle.textContent = isMe ? '🎉 You Win!' : `${winner.name} Wins`;
     
