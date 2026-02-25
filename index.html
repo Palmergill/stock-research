@@ -162,7 +162,21 @@
         
         <div class="projects-grid">
             <a href="/stock-research/" class="project-card">
-                <div class="project-image">🦞</div>
+                <div class="project-image">
+                    <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="80" height="80" rx="12" fill="url(#stockGradient)"/>
+                        <path d="M20 50L30 40L40 45L50 30L60 35" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="50" cy="30" r="4" fill="#10b981"/>
+                        <path d="M55 25L65 15" stroke="#10b981" stroke-width="3" stroke-linecap="round"/>
+                        <path d="M60 15H65V20" stroke="#10b981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                        <defs>
+                            <linearGradient id="stockGradient" x1="0" y1="0" x2="80" y2="80">
+                                <stop stop-color="#3b82f6"/>
+                                <stop offset="1" stop-color="#1e40af"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
                 <div class="project-content">
                     <h3 class="project-title">Stock Research</h3>
                     <p class="project-description">Real-time stock data with interactive charts, comprehensive financial metrics, and company fundamentals. Built with FastAPI and vanilla JavaScript.</p>
