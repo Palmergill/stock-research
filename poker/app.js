@@ -8,6 +8,7 @@ let playerId = null;
 let gameId = null;
 let isMyTurn = false;
 let raiseAmount = 0;
+let pollIntervalId = null;
 
 // DOM Elements
 const screens = {
@@ -129,9 +130,16 @@ async function startGame() {
 }
 
 function startPolling() {
-    const pollInterval = setInterval(async () => {
+    // Clear any existing polling
+    if (pollIntervalId) {
+        clearInterval(pollIntervalId);
+        pollIntervalId = null;
+    }
+    
+    pollIntervalId = setInterval(async () => {
         if (!gameId || !playerId) {
-            clearInterval(pollInterval);
+            clearInterval(pollIntervalId);
+            pollIntervalId = null;
             return;
         }
         
@@ -144,7 +152,8 @@ function startPolling() {
             updateGameDisplay();
             
             if (gameState.phase === 'showdown') {
-                clearInterval(pollInterval);
+                clearInterval(pollIntervalId);
+                pollIntervalId = null;
                 showHandResult();
             }
             
@@ -233,6 +242,9 @@ async function nextHand() {
         gameState = await response.json();
         hideHandResult();
         updateGameDisplay();
+        
+        // Restart polling for the new hand
+        startPolling();
         
     } catch (error) {
         console.error('Error:', error);

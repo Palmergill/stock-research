@@ -150,28 +150,41 @@ async def player_action(game_id: str, request: ActionRequest):
 @router.post("/games/{game_id}/next-hand")
 async def next_hand(game_id: str, player_id: str):
     """Start next hand"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    logger.info(f"Next hand requested for game {game_id}, player {player_id}")
+    
     if game_id not in games:
+        logger.error(f"Game {game_id} not found")
         raise HTTPException(status_code=404, detail="Game not found")
     
     game = games[game_id]
+    logger.info(f"Game phase: {game.phase}")
     
     # Only proceed if hand is complete
     if game.phase not in ['showdown', 'waiting']:
+        logger.warning(f"Hand still in progress, phase: {game.phase}")
         raise HTTPException(status_code=400, detail="Hand still in progress")
     
     # Move dealer button
     game.dealer_index = (game.dealer_index + 1) % len(game.players)
     
     # Start new hand
-    game.start_hand()
+    success = game.start_hand()
+    logger.info(f"Hand started: {success}, new phase: {game.phase}")
     
     # Process AI blinds and early action
     ai_manager = ai_managers[game_id]
     current = game.get_current_player()
-    while current and not current.is_human:
+    turns = 0
+    while current and not current.is_human and turns < 10:
         await asyncio.sleep(0.3)
         ai_manager.process_bot_turn()
         current = game.get_current_player()
+        turns += 1
+    
+    logger.info(f"Processed {turns} AI turns, current player: {current.id if current else 'None'}")
     
     return game.to_dict(for_player=player_id)
 
