@@ -5,14 +5,14 @@
 ### High Priority
 - [x] **Side pot calculation** - Fixed: Now properly calculates and awards side pots when players go all-in for different amounts
 - [x] **Hand strength evaluation bug** - Fixed: `_is_straight` now correctly identifies wheel straights (A-5)
-- [ ] **AI infinite loop protection** - Improved: Added `MAX_AI_TURNS` config with proper enforcement in action and next-hand endpoints
+- [x] **AI infinite loop protection** - Fixed: Added `MAX_AI_TURNS` config with proper enforcement in action and next-hand endpoints (enforced in `/api/poker/games/{game_id}/action` with error logging if limit reached)
 - [ ] **Game state persistence** - Games stored in memory are lost on backend restart (consider Redis or DB)
 
 ### Medium Priority
 - [x] **Raise amount validation** - Fixed: Raise button now hidden when player can't afford minimum raise
 - [x] **Card rendering on showdown** - Fixed: Added robust null/undefined checks in `renderCard()` function to prevent display issues with malformed card data
 - [x] **Polling continues after game ends** - Fixed: Proper cleanup on page unload, tab visibility change, and 404 errors
-- [ ] **CORS errors** - May occur in some browser environments
+- [x] **CORS configuration** - Fixed: CORS properly configured in main.py with `Config.CORS_ORIGINS` environment variable support, allowing credentials and all methods/headers
 
 ### Low Priority
 - [x] **Duplicate logging setup** - Fixed: Created centralized logging in `config.py` with `setup_logging()` and `get_logger()` functions
@@ -87,11 +87,11 @@
 
 ## 📱 Mobile Optimization
 
-- [ ] **Viewport fixes** - Handle mobile browser chrome properly
-- [ ] **Touch targets** - Ensure buttons are large enough (44px min)
-- [ ] **Font scaling** - Respect user font size preferences
+- [x] **Viewport fixes** - Fixed: Added `viewport-fit=cover` to viewport meta tag and `min-height: 100dvh` for dynamic viewport support
+- [x] **Touch targets** - Fixed: All action buttons have minimum 44px touch targets (primary buttons: 18px 32px padding, action buttons: 16px 12px padding)
+- [x] **Font scaling** - Fixed: Added `text-size-adjust: 100%` and `html { font-size: 100% }` to respect user font size preferences
 - [ ] **Orientation lock** - Lock to portrait on mobile
-- [ ] **Safe area** - Handle iPhone notch/safe areas
+- [x] **Safe area** - Fixed: Added CSS `@supports (padding-top: env(safe-area-inset-top))` rules to handle iPhone notch and safe areas
 - [ ] **Keyboard handling** - Prevent layout shift when keyboard opens
 
 ## 🔒 Security
