@@ -3,8 +3,8 @@
 ## 🐛 Bugs to Fix
 
 ### High Priority
-- [ ] **Side pot calculation** - Currently only handles single pot, doesn't properly calculate side pots when players go all-in for different amounts
-- [ ] **Hand strength evaluation bug** - The `_is_straight` function may not correctly identify wheel straights (A-5)
+- [x] **Side pot calculation** - Fixed: Now properly calculates and awards side pots when players go all-in for different amounts
+- [x] **Hand strength evaluation bug** - Fixed: `_is_straight` now correctly identifies wheel straights (A-5)
 - [ ] **AI infinite loop protection** - The `max_turns` limit exists but may not catch all edge cases where AI keeps raising each other
 - [ ] **Game state persistence** - Games stored in memory are lost on backend restart (consider Redis or DB)
 
@@ -16,7 +16,7 @@
 
 ### Low Priority
 - [ ] **Duplicate logging setup** - Multiple loggers created in different files
-- [ ] **Memory leak** - Games never removed from memory (add cleanup for old games)
+- [x] **Memory leak** - Fixed: Games older than 1 hour are now automatically cleaned up
 - [ ] **Race condition in polling** - Multiple rapid actions could cause state conflicts
 
 ## ✨ Features to Add

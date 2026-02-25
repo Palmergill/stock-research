@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from typing import Optional, Dict, List
 import uuid
 import asyncio
+import time
 
 from app.poker_game import PokerGame
 from app.poker_ai import AIManager
@@ -15,6 +16,30 @@ router = APIRouter(prefix="/api/poker", tags=["poker"])
 # In-memory game storage
 games: Dict[str, PokerGame] = {}
 ai_managers: Dict[str, AIManager] = {}
+game_last_accessed: Dict[str, float] = {}  # Track last access time for cleanup
+
+# Cleanup games older than 1 hour
+GAME_MAX_AGE_SECONDS = 3600
+
+def cleanup_old_games():
+    """Remove games that haven't been accessed in a while"""
+    current_time = time.time()
+    games_to_remove = []
+    
+    for game_id, last_access in list(game_last_accessed.items()):
+        if current_time - last_access > GAME_MAX_AGE_SECONDS:
+            games_to_remove.append(game_id)
+    
+    for game_id in games_to_remove:
+        games.pop(game_id, None)
+        ai_managers.pop(game_id, None)
+        game_last_accessed.pop(game_id, None)
+        
+    return len(games_to_remove)
+
+def update_game_access(game_id: str):
+    """Update last access time for a game"""
+    game_last_accessed[game_id] = time.time()
 
 class CreateGameRequest(BaseModel):
     player_name: str = "Player"
@@ -55,6 +80,10 @@ async def create_game(request: CreateGameRequest):
     # Store game
     games[game_id] = game
     ai_managers[game_id] = ai_manager
+    update_game_access(game_id)
+    
+    # Cleanup old games periodically
+    cleanup_old_games()
     
     # Process AI turns until it's human's turn
     max_turns = 20
@@ -80,6 +109,7 @@ async def get_game_state(game_id: str, player_id: str, process_ai: bool = True):
     if game_id not in games:
         raise HTTPException(status_code=404, detail="Game not found")
     
+    update_game_access(game_id)
     game = games[game_id]
     
     # Process AI turns if requested and it's not human's turn
@@ -103,6 +133,7 @@ async def player_action(game_id: str, request: ActionRequest):
     if game_id not in games:
         raise HTTPException(status_code=404, detail="Game not found")
     
+    update_game_access(game_id)
     game = games[game_id]
     
     # Verify it's player's turn
@@ -163,6 +194,7 @@ async def next_hand(game_id: str, request: NextHandRequest):
         logger.error(f"Game {game_id} not found")
         raise HTTPException(status_code=404, detail="Game not found")
     
+    update_game_access(game_id)
     game = games[game_id]
     logger.info(f"Game phase: {game.phase}")
     
@@ -195,4 +227,6 @@ async def next_hand(game_id: str, request: NextHandRequest):
 @router.get("/health")
 async def health_check():
     """Health check endpoint"""
-    return {"status": "ok", "active_games": len(games)}
+    # Cleanup old games and return count
+    cleaned = cleanup_old_games()
+    return {"status": "ok", "active_games": len(games), "cleaned_games": cleaned}

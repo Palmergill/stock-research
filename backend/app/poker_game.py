@@ -76,6 +76,7 @@ class Player:
     chips: int
     hand: List[Card] = field(default_factory=list)
     bet: int = 0
+    total_bet: int = 0  # Total contributed to pot this hand (for side pots)
     folded: bool = False
     is_all_in: bool = False
     is_human: bool = False
@@ -87,6 +88,7 @@ class Player:
             'chips': self.chips,
             'hand': [c.to_dict() for c in self.hand] if show_cards else [],
             'bet': self.bet,
+            'total_bet': self.total_bet,
             'folded': self.folded,
             'is_all_in': self.is_all_in,
             'is_human': self.is_human
@@ -142,6 +144,7 @@ class PokerGame:
         for player in self.players:
             player.hand = []
             player.bet = 0
+            player.total_bet = 0
             player.folded = False
             player.is_all_in = False
         
@@ -169,6 +172,7 @@ class PokerGame:
         actual_bet = min(amount, player.chips)
         player.chips -= actual_bet
         player.bet = actual_bet
+        player.total_bet = actual_bet
         self.pot += actual_bet
         self.round_bets[player.id] = actual_bet
         
@@ -226,6 +230,7 @@ class PokerGame:
         actual_call = min(call_amount, player.chips)
         player.chips -= actual_call
         player.bet += actual_call
+        player.total_bet += actual_call
         self.pot += actual_call
         self.acted_this_round.add(player_id)
         
@@ -261,6 +266,7 @@ class PokerGame:
             actual_raise = player.chips - call_amount
             player.chips = 0
             player.bet += call_amount + actual_raise
+            player.total_bet += call_amount + actual_raise
             self.pot += call_amount + actual_raise
             player.is_all_in = True
             
@@ -272,6 +278,7 @@ class PokerGame:
         else:
             player.chips -= total_needed
             player.bet += total_needed
+            player.total_bet += total_needed
             self.pot += total_needed
             self.current_bet = player.bet
             self.min_raise = amount
@@ -461,26 +468,71 @@ class PokerGame:
             if unique[i] - unique[i+4] == 4:
                 return True
         
-        # Check for A-5 straight (wheel)
-        if set([14, 2, 3, 4, 5]).issubset(unique):
+        # Check for A-5 straight (wheel) - Ace counts as 1
+        if 14 in unique and 2 in unique and 3 in unique and 4 in unique and 5 in unique:
             return True
         
         return False
     
     def _award_pot(self, winners: List[Player]):
-        split_amount = self.pot // len(winners)
-        remainder = self.pot % len(winners)
+        """Award pot with proper side pot calculation"""
+        # Get all non-folded players sorted by total contribution
+        active_players = [p for p in self.players if not p.folded]
+        sorted_players = sorted(active_players, key=lambda p: p.total_bet)
         
-        for i, winner in enumerate(winners):
-            amount = split_amount + (1 if i < remainder else 0)
-            winner.chips += amount
+        # Calculate side pots
+        side_pots = []
+        previous_bet = 0
         
-        self.winners = [{
-            'id': w.id,
-            'name': w.name,
-            'amount': split_amount + (1 if i < remainder else 0),
-            'hand': [c.to_dict() for c in w.hand]
-        } for i, w in enumerate(winners)]
+        for player in sorted_players:
+            if player.total_bet > previous_bet:
+                # Create a side pot for the difference
+                pot_size = (player.total_bet - previous_bet) * len(sorted_players)
+                eligible_players = [p for p in sorted_players if p.total_bet >= player.total_bet]
+                side_pots.append({
+                    'size': pot_size,
+                    'eligible': eligible_players,
+                    'bet_level': player.total_bet
+                })
+                previous_bet = player.total_bet
+        
+        # Award each side pot
+        total_winnings = {p.id: 0 for p in active_players}
+        
+        for pot in side_pots:
+            # Find the best hand among eligible players
+            eligible = pot['eligible']
+            if len(eligible) == 1:
+                # Only one eligible player, they win the whole pot
+                pot_winners = eligible
+            else:
+                # Evaluate hands and find winner(s)
+                hand_evaluations = []
+                for p in eligible:
+                    best = self._get_best_hand(p.hand + self.community_cards)
+                    hand_evaluations.append((p, best))
+                hand_evaluations.sort(key=lambda x: x[1], reverse=True)
+                best_hand = hand_evaluations[0][1]
+                pot_winners = [p for p, h in hand_evaluations if h == best_hand]
+            
+            # Split the pot among winners
+            split = pot['size'] // len(pot_winners)
+            remainder = pot['size'] % len(pot_winners)
+            for i, w in enumerate(pot_winners):
+                amount = split + (1 if i < remainder else 0)
+                total_winnings[w.id] += amount
+                w.chips += amount
+        
+        # Set winners for display
+        self.winners = []
+        for p in active_players:
+            if total_winnings[p.id] > 0:
+                self.winners.append({
+                    'id': p.id,
+                    'name': p.name,
+                    'amount': total_winnings[p.id],
+                    'hand': [c.to_dict() for c in p.hand]
+                })
     
     def to_dict(self, for_player: Optional[str] = None) -> dict:
         """Convert game state to dict for API response"""
