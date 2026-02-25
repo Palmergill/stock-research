@@ -550,9 +550,10 @@ function hideLoading() {
 
 async function startGame() {
     const name = elements.playerName.value.trim() || 'Palmer';
-    
-    // Clear seen cards for new game
+
+    // Clear seen cards and reset deal sequence for new game
     seenCards.clear();
+    resetCardDealSequence();
 
     try {
         elements.startBtn.disabled = true;
@@ -736,9 +737,10 @@ async function nextHand() {
     }
 
     isRequestPending = true;
-    
-    // Clear seen cards for new hand (so they animate again)
+
+    // Clear seen cards and reset deal sequence for new hand (so they animate again)
     seenCards.clear();
+    resetCardDealSequence();
 
     try {
         elements.btnNextHand.disabled = true;
@@ -803,8 +805,8 @@ function updateGameDisplay() {
     if (myPlayer) {
         elements.yourChips.textContent = myPlayer.chips;
         
-        // Your cards with animation
-        const cardsHTML = myPlayer.hand.map(card => renderCard(card, true)).join('');
+        // Your cards with staggered animation (deal player cards first)
+        const cardsHTML = myPlayer.hand.map((card, index) => renderCard(card, true, index)).join('');
         elements.yourCards.innerHTML = cardsHTML;
         
         // Show hand strength
@@ -839,14 +841,14 @@ function updateGameDisplay() {
     const opponents = gameState.players.filter(p => !p.is_human);
     elements.opponentsRow.innerHTML = opponents.map(p => renderOpponent(p)).join('');
     
-    // Update community cards with animation
+    // Update community cards with staggered animation (offset by 2 for player cards)
     const community = gameState.community_cards;
     elements.communityCards.innerHTML = `
-        <div class="card-slot" id="flop-1">${community[0] ? renderCard(community[0]) : ''}</div>
-        <div class="card-slot" id="flop-2">${community[1] ? renderCard(community[1]) : ''}</div>
-        <div class="card-slot" id="flop-3">${community[2] ? renderCard(community[2]) : ''}</div>
-        <div class="card-slot" id="turn">${community[3] ? renderCard(community[3]) : ''}</div>
-        <div class="card-slot" id="river">${community[4] ? renderCard(community[4]) : ''}</div>
+        <div class="card-slot" id="flop-1">${community[0] ? renderCard(community[0], false, 2) : ''}</div>
+        <div class="card-slot" id="flop-2">${community[1] ? renderCard(community[1], false, 3) : ''}</div>
+        <div class="card-slot" id="flop-3">${community[2] ? renderCard(community[2], false, 4) : ''}</div>
+        <div class="card-slot" id="turn">${community[3] ? renderCard(community[3], false, 2) : ''}</div>
+        <div class="card-slot" id="river">${community[4] ? renderCard(community[4], false, 2) : ''}</div>
     `;
     
     // Update action buttons
@@ -887,7 +889,16 @@ function renderOpponent(player) {
     `;
 }
 
-function renderCard(card, isPlayerCard = false) {
+// Track card deal sequences for staggered animations
+let cardDealSequence = 0;
+let lastCommunityCount = 0;
+
+function resetCardDealSequence() {
+    cardDealSequence = 0;
+    lastCommunityCount = 0;
+}
+
+function renderCard(card, isPlayerCard = false, dealIndex = null) {
     // Handle null/undefined cards
     if (!card || typeof card !== 'object') return '';
     
@@ -907,9 +918,16 @@ function renderCard(card, isPlayerCard = false) {
         seenCards.add(cardId);
     }
     
-    const newCardClass = isNewCard ? 'new-card' : '';
+    // Use staggered animation class if deal index provided and card is new
+    let animationClass = '';
+    if (isNewCard && dealIndex !== null) {
+        const staggerIndex = Math.min(dealIndex + 1, 5); // cap at 5
+        animationClass = `card-deal-${staggerIndex}`;
+    } else if (isNewCard) {
+        animationClass = 'new-card';
+    }
     
-    return `<div class="card ${newCardClass} ${isRed ? '' : 'black'}">${rank}${suitSymbol}</div>`;
+    return `<div class="card ${animationClass} ${isRed ? '' : 'black'}">${rank}${suitSymbol}</div>`;
 }
 
 function evaluateHandStrength(playerCards, communityCards) {

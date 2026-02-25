@@ -7,6 +7,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- Better card animations - cards now deal one by one with staggered animation
+  - Player hole cards animate first (positions 1-2)
+  - Community cards animate with offset timing
+  - Cards flip and slide in with 3D rotation effect
+  - Each new hand triggers fresh animations
+- Portrait/landscape support - improved layout handling for landscape orientation
+  - Side-by-side layout when device is in landscape mode
+  - Felt area takes 70% width, controls panel takes 30%
+  - Opponents stack vertically on the left in landscape
+  - Optimized for phones in landscape with short height
 - Player statistics tracking - persists across sessions using localStorage
   - Hands played, hands won, win rate percentage
   - Biggest pot won, net profit/loss tracking

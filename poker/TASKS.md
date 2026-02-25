@@ -31,14 +31,14 @@
 - [x] **All-in showdown** - Fixed: When all active players are all-in, the board runs out immediately (deals all remaining community cards at once) and goes straight to showdown. Implemented `_all_active_players_all_in()` and `_run_out_board()` methods in game.py.
 
 ### UI Improvements
-- [ ] **Better card animations** - Deal cards one by one with animation
+- [x] **Better card animations** - Fixed: Cards now deal one by one with staggered animation. Player hole cards animate first (positions 1-2), then community cards with offset timing. Cards flip and slide in with 3D rotation effect. Each new hand triggers fresh animations.
 - [ ] **Chip stack visualization** - Show actual chip stacks, not just numbers
 - [x] **Hand strength indicator** - Added: Shows "Pair of Aces", "Flush", "Straight", etc. in gold badge below cards
 - [x] **Pot odds calculator** - Fixed: Added real-time pot odds display in the header showing ratio (e.g., "3.5:1") and required equity percentage. Shows only when there's a bet to call, hidden otherwise.
 - [x] **Timer for decisions** - Added: 30-second countdown timer with visual progress bar, auto-folds when time expires
 - [x] **Bet slider improvements** - Fixed: Added min/max labels below the slider that update dynamically based on current game state. Shows "Min: X" (minimum raise amount) and "Max: X" (player's chip stack) to help users make informed betting decisions.
 - [x] **Table themes** - Fixed: Added 5 table theme options (Green, Blue, Red, Black, Purple) with CSS custom properties. Theme toggle button in top-right corner with localStorage persistence.
-- [ ] **Portrait/landscape support** - Better layout handling
+- [x] **Portrait/landscape support** - Fixed: Added improved layout handling for landscape orientation. Side-by-side layout when device is in landscape mode with felt area taking 70% width and controls panel taking 30%. Opponents stack vertically on the left. Optimized for phones in landscape with short height (< 500px).
 
 ### Backend Improvements
 - [ ] **WebSocket support** - Real-time updates instead of polling
