@@ -249,6 +249,26 @@
             color: #ffd700;
         }
         
+        .pot-container {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 2px;
+        }
+        
+        .pot-odds {
+            font-size: 11px;
+            color: #94a3b8;
+            background: rgba(0,0,0,0.3);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+        
+        .pot-odds.hidden {
+            display: none;
+        }
+        
         /* Felt Area - takes available space but allows shrinking */
         .felt-area {
             flex: 1 1 auto;
@@ -674,8 +694,13 @@
                     <span class="hand-num">Hand #<span id="hand-number">1</span></span>
                     <span class="phase" id="phase">Pre-Flop</span>
                 </div>
-                <div class="pot">
-                    <span id="pot-amount">0</span>
+                <div class="pot-container">
+                    <div class="pot">
+                        <span id="pot-amount">0</span>
+                    </div>
+                    <div class="pot-odds hidden" id="pot-odds">
+                        <span id="pot-odds-text">Pot odds: --</span>
+                    </div>
                 </div>
             </div>
 

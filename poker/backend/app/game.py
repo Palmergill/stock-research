@@ -372,6 +372,13 @@ class PokerGame:
         # This is simplified - real poker tracks action more carefully
         return True
     
+    def _all_active_players_all_in(self) -> bool:
+        """Check if all non-folded players are all-in"""
+        active_players = [p for p in self.players if not p.folded]
+        if len(active_players) <= 1:
+            return False
+        return all(p.is_all_in for p in active_players)
+    
     def _advance_phase(self):
         active_players = [p for p in self.players if not p.folded]
         
@@ -380,6 +387,9 @@ class PokerGame:
             self._award_pot([active_players[0]])
             self.phase = 'showdown'
             return
+        
+        # Check if all active players are all-in - run out the board immediately
+        all_all_in = self._all_active_players_all_in()
         
         # Reset bets for new round
         for p in self.players:
@@ -390,12 +400,21 @@ class PokerGame:
         if self.phase == 'preflop':
             self.phase = 'flop'
             self.community_cards.extend(self.deck.deal(3))
+            if all_all_in:
+                self._run_out_board()
+                return
         elif self.phase == 'flop':
             self.phase = 'turn'
             self.community_cards.extend(self.deck.deal(1))
+            if all_all_in:
+                self._run_out_board()
+                return
         elif self.phase == 'turn':
             self.phase = 'river'
             self.community_cards.extend(self.deck.deal(1))
+            if all_all_in:
+                self._run_out_board()
+                return
         elif self.phase == 'river':
             self.phase = 'showdown'
             self._evaluate_hands()
@@ -405,6 +424,17 @@ class PokerGame:
         self.current_player_index = (self.dealer_index + 1) % len(self.players)
         while self.players[self.current_player_index].folded:
             self.current_player_index = (self.current_player_index + 1) % len(self.players)
+    
+    def _run_out_board(self):
+        """Deal all remaining community cards and go to showdown (for all-in situations)"""
+        # Deal remaining cards based on current phase
+        if self.phase == 'flop':
+            self.community_cards.extend(self.deck.deal(2))  # Turn and River
+        elif self.phase == 'turn':
+            self.community_cards.extend(self.deck.deal(1))  # River
+        
+        self.phase = 'showdown'
+        self._evaluate_hands()
     
     def _evaluate_hands(self):
         active_players = [p for p in self.players if not p.folded]

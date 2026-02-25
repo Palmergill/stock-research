@@ -28,13 +28,13 @@
 - [ ] **Chat feature** - Simple chat between players
 - [x] **Sound effects** - Fixed: Added Web Audio API sound manager with card deal, chip, win, and loss sounds. Sounds are generated programmatically (no external files needed) and respect browser autoplay policies.
 - [x] **Vibration on turn** - Fixed: Added haptic feedback via `navigator.vibrate([50, 100, 50])` when it's the player's turn, with mobile device detection and graceful fallback
-- [ ] **All-in showdown** - Show all cards immediately when all-in
+- [x] **All-in showdown** - Fixed: When all active players are all-in, the board runs out immediately (deals all remaining community cards at once) and goes straight to showdown. Implemented `_all_active_players_all_in()` and `_run_out_board()` methods in game.py.
 
 ### UI Improvements
 - [ ] **Better card animations** - Deal cards one by one with animation
 - [ ] **Chip stack visualization** - Show actual chip stacks, not just numbers
 - [x] **Hand strength indicator** - Added: Shows "Pair of Aces", "Flush", "Straight", etc. in gold badge below cards
-- [ ] **Pot odds calculator** - Show pot odds in real-time
+- [x] **Pot odds calculator** - Fixed: Added real-time pot odds display in the header showing ratio (e.g., "3.5:1") and required equity percentage. Shows only when there's a bet to call, hidden otherwise.
 - [x] **Timer for decisions** - Added: 30-second countdown timer with visual progress bar, auto-folds when time expires
 - [ ] **Bet slider improvements** - Show min/max/pot on slider
 - [ ] **Table themes** - Different felt colors/designs

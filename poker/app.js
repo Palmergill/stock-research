@@ -265,6 +265,8 @@ const elements = {
     handNumber: document.getElementById('hand-number'),
     phase: document.getElementById('phase'),
     potAmount: document.getElementById('pot-amount'),
+    potOdds: document.getElementById('pot-odds'),
+    potOddsText: document.getElementById('pot-odds-text'),
     opponentsRow: document.getElementById('opponents-row'),
     communityCards: document.getElementById('community-cards'),
     yourCards: document.getElementById('your-cards'),
@@ -577,6 +579,9 @@ function updateGameDisplay() {
     elements.phase.textContent = gameState.phase.replace('_', ' ').toUpperCase();
     elements.potAmount.textContent = gameState.pot;
     
+    // Update pot odds
+    updatePotOdds();
+    
     // Check if it's your turn
     const isYourTurn = gameState.current_player === playerId && gameState.phase !== 'showdown';
     
@@ -807,6 +812,35 @@ function updateActionButtons() {
     } else {
         elements.btnRaise.classList.add('hidden');
     }
+}
+
+function updatePotOdds() {
+    if (!gameState || !elements.potOdds || !elements.potOddsText) return;
+    
+    const myPlayer = gameState.players.find(p => p.id === playerId);
+    if (!myPlayer || gameState.phase === 'showdown') {
+        elements.potOdds.classList.add('hidden');
+        return;
+    }
+    
+    const toCall = gameState.current_bet - myPlayer.bet;
+    const pot = gameState.pot;
+    
+    // Only show pot odds when there's a bet to call
+    if (toCall <= 0) {
+        elements.potOdds.classList.add('hidden');
+        return;
+    }
+    
+    // Calculate pot odds: (pot + toCall) : toCall
+    // This gives the ratio of potential win to amount to call
+    const totalPot = pot + toCall;  // Including your call
+    const ratio = totalPot / toCall;
+    const percentage = (toCall / totalPot) * 100;
+    
+    // Format: "Pot odds: 3.5:1 (22%)"
+    elements.potOddsText.textContent = `Pot odds: ${ratio.toFixed(1)}:1 (${percentage.toFixed(0)}% equity needed)`;
+    elements.potOdds.classList.remove('hidden');
 }
 
 function showHandResult() {
