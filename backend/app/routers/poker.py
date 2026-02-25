@@ -27,11 +27,17 @@ class ActionRequest(BaseModel):
 @router.post("/games")
 async def create_game(request: CreateGameRequest):
     """Create a new poker game with AI opponents"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
     game_id = str(uuid.uuid4())[:8]
+    logger.info(f"Creating new poker game: {game_id}")
+    
     game = PokerGame(game_id)
     
     # Add human player
     human = game.add_player(request.player_name, is_human=True)
+    logger.info(f"Added human player: {human.name} ({human.id})")
     
     # Add AI bots with varying aggression
     ai_manager = AIManager(game)
@@ -40,9 +46,11 @@ async def create_game(request: CreateGameRequest):
     ai_manager.add_bot("Charlie", aggression=0.7)  # Loose
     ai_manager.add_bot("Diana", aggression=0.6)  # Aggressive
     ai_manager.add_bot("Eve", aggression=0.4)  # Balanced
+    logger.info(f"Added {len(ai_manager.bots)} AI bots")
     
     # Start first hand
-    game.start_hand()
+    success = game.start_hand()
+    logger.info(f"Hand started: {success}, Phase: {game.phase}, Current player: {game.get_current_player().name if game.get_current_player() else 'None'}")
     
     # Store game
     games[game_id] = game
@@ -94,24 +102,19 @@ async def player_action(game_id: str, request: ActionRequest):
     if not success:
         raise HTTPException(status_code=400, detail="Action failed")
     
-    # Process AI turns
+    # Process AI turns until it's human's turn or hand is over
     ai_manager = ai_managers[game_id]
-    max_ai_turns = 50  # Safety limit to prevent infinite loops
-    ai_turns = 0
+    max_turns = 20
+    turns = 0
     
-    while ai_turns < max_ai_turns:
+    while turns < max_turns:
         current = game.get_current_player()
-        if not current or current.is_human:
+        if not current or current.is_human or game.phase == 'showdown':
             break
         
-        # Check if hand is over
-        if game.phase == 'showdown':
-            break
-        
-        # Small delay for realism
-        await asyncio.sleep(0.3)
+        await asyncio.sleep(0.2)  # Small delay between AI actions
         result = ai_manager.process_bot_turn()
-        ai_turns += 1
+        turns += 1
         
         if not result:
             break

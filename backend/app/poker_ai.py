@@ -163,29 +163,54 @@ class AIManager:
     
     def process_bot_turn(self) -> Optional[dict]:
         """Process the current bot's turn if it's an AI"""
+        import logging
+        logger = logging.getLogger(__name__)
+        
         current = self.game.get_current_player()
         
-        if not current or current.is_human:
+        if not current:
+            logger.debug("No current player")
+            return None
+        
+        if current.is_human:
+            logger.debug(f"Current player {current.name} is human")
             return None
         
         if current.id not in self.bots:
+            logger.debug(f"Player {current.name} not in bots dict")
             return None
+        
+        if current.folded or current.is_all_in:
+            logger.debug(f"Player {current.name} folded or all-in, skipping")
+            # Move to next player manually
+            self.game._next_player()
+            return {'action': 'skip', 'player': current.name}
         
         bot = self.bots[current.id]
         decision = bot.make_decision(self.game, current)
         
+        logger.info(f"Bot {current.name} decision: {decision}")
+        
         # Execute the decision
+        success = False
         if decision['action'] == 'fold':
-            self.game.action_fold(current.id)
+            success = self.game.action_fold(current.id)
         elif decision['action'] == 'check':
-            self.game.action_check(current.id)
+            success = self.game.action_check(current.id)
         elif decision['action'] == 'call':
-            self.game.action_call(current.id)
+            success = self.game.action_call(current.id)
         elif decision['action'] == 'raise':
-            self.game.action_raise(current.id, decision['amount'])
+            success = self.game.action_raise(current.id, decision['amount'])
         elif decision['action'] == 'all-in':
             to_call = self.game.current_bet - current.bet
             all_in_amount = current.chips - to_call
-            self.game.action_raise(current.id, all_in_amount)
+            success = self.game.action_raise(current.id, all_in_amount)
+        
+        if success:
+            logger.info(f"Bot {current.name} successfully executed {decision['action']}")
+        else:
+            logger.warning(f"Bot {current.name} failed to execute {decision['action']}")
+            # Try to fold as fallback
+            self.game.action_fold(current.id)
         
         return decision
