@@ -41,6 +41,7 @@
 - [x] **Portrait/landscape support** - Fixed: Added improved layout handling for landscape orientation. Side-by-side layout when device is in landscape mode with felt area taking 70% width and controls panel taking 30%. Opponents stack vertically on the left. Optimized for phones in landscape with short height (< 500px).
 
 ### Backend Improvements
+- [x] **Health checks** - Fixed: Added `/api/poker/health/detailed` endpoint with uptime, memory usage estimates, games by phase, average game age, and total player counts. Also added `/api/poker/games/{game_id}/ai-stats` endpoint to view AI bot statistics and behavioral patterns.
 - [ ] **WebSocket support** - Real-time updates instead of polling
 - [ ] **Database persistence** - Store game history, player stats
 - [ ] **Authentication** - Optional user accounts
@@ -70,9 +71,9 @@
 
 ### AI Improvements
 - [ ] **More sophisticated AI** - Positional awareness, stack size consideration
-- [ ] **AI tells** - Make AI more human-like (timing tells, bet sizing patterns)
+- [x] **AI tells** - Fixed: Added human-like behavioral patterns including timing tells (fast/normal/deliberate/tanker patterns), betting styles (precise/rounded/psychological), decision delay calculation based on hand strength, and bet sizing patterns. Each bot gets unique tell patterns on initialization. Added `get_decision_delay()`, `get_bet_size()`, and `get_stats()` methods to PokerAI class.
 - [ ] **Adaptive AI** - AI adjusts to player tendencies
-- [ ] **AI difficulty** - Configurable skill levels
+- [x] **AI difficulty** - Fixed: Added configurable difficulty levels (easy/medium/hard/expert) with varying aggression, bluff frequency, and hand strength thresholds
 - [ ] **GTO approximation** - Game theory optimal play option
 
 ## 🎨 Design Tasks

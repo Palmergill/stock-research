@@ -61,7 +61,7 @@ class AIDifficulty:
 
 
 class PokerAI:
-    """Poker AI with configurable difficulty levels"""
+    """Poker AI with configurable difficulty levels and human-like tells"""
     
     def __init__(self, aggression: float = 0.5, difficulty: Optional[str] = None):
         """
@@ -85,6 +85,150 @@ class PokerAI:
                 "fold_to_raise": 0.3 - (aggression * 0.2),
                 "call_threshold": 0.4 - (aggression * 0.2),
             }
+        
+        # AI tells - behavioral patterns that make AI more human-like
+        self.tells = {
+            "timing_pattern": random.choice(["fast", "normal", "deliberate", "tanker"]),
+            "betting_style": random.choice(["precise", "rounded", "psychological"]),
+            "bluff_reveal_tendency": random.random() * 0.3,  # Chance to show bluff when winning
+            "chat_frequency": random.random() * 0.2,  # Chance to send chat message
+        }
+        
+        # Decision history for pattern analysis
+        self.decision_history: List[Dict[str, Any]] = []
+        self.hands_played = 0
+        self.hands_won = 0
+        
+    def get_decision_delay(self, hand_strength: float, decision_type: str) -> float:
+        """
+        Calculate human-like decision delay based on hand strength and decision type.
+        Returns delay in seconds.
+        """
+        import random
+        
+        base_delay = 0.5
+        
+        # Timing tell patterns
+        if self.tells["timing_pattern"] == "fast":
+            base_delay = 0.3
+        elif self.tells["timing_pattern"] == "deliberate":
+            base_delay = 1.2
+        elif self.tells["timing_pattern"] == "tanker":
+            base_delay = 2.0
+        
+        # Adjust based on decision type and hand strength
+        if decision_type == "fold":
+            # Quick folds with weak hands, sometimes tank with medium hands
+            if hand_strength < 0.3:
+                delay = base_delay * 0.5 + random.uniform(0, 0.3)
+            else:
+                delay = base_delay * 1.5 + random.uniform(0, 1.0)
+        elif decision_type == "call":
+            # Calls take moderate time, longer with marginal hands
+            if hand_strength < 0.5:
+                delay = base_delay * 1.5 + random.uniform(0, 1.5)
+            else:
+                delay = base_delay + random.uniform(0, 0.5)
+        elif decision_type == "raise":
+            # Raises can be quick (value) or slow (deciding bet size)
+            if hand_strength > 0.8:
+                delay = base_delay * 0.8 + random.uniform(0, 0.5)
+            else:
+                delay = base_delay * 1.8 + random.uniform(0, 1.0)
+        else:
+            delay = base_delay + random.uniform(0, 0.5)
+        
+        # Add some randomness for realism
+        delay += random.gauss(0, 0.2)
+        
+        return max(0.1, delay)
+    
+    def get_bet_size(self, base_amount: int, game: PokerGame, hand_strength: float) -> int:
+        """
+        Apply betting style patterns to determine final bet size.
+        Makes AI betting look more human and less algorithmic.
+        """
+        import random
+        
+        style = self.tells["betting_style"]
+        
+        if style == "precise":
+            # Bets exact calculated amounts (slight randomization)
+            variance = random.uniform(0.95, 1.05)
+            return int(base_amount * variance)
+        
+        elif style == "rounded":
+            # Bets nice round numbers
+            if base_amount < 100:
+                return round(base_amount / 5) * 5
+            elif base_amount < 500:
+                return round(base_amount / 25) * 25
+            else:
+                return round(base_amount / 50) * 50
+        
+        elif style == "psychological":
+            # Bets to create specific psychological effects
+            pot = game.pot
+            to_call = game.current_bet
+            
+            # Just over the pot (looks strong)
+            if random.random() < 0.3 and base_amount > pot * 0.8:
+                return int(pot * 1.1) + random.randint(1, 10)
+            
+            # Just enough to make it "hard to call" (uncomfortable number)
+            if to_call > 0 and random.random() < 0.2:
+                uncomfortable = to_call + int(base_amount * 1.1) + random.randint(1, 5)
+                return uncomfortable
+            
+            # Standard sizing
+            return base_amount
+        
+        return base_amount
+    
+    def record_decision(self, decision: Dict[str, Any], hand_strength: float, 
+                       game_phase: str, was_winner: bool = False):
+        """Record decision for pattern analysis"""
+        self.decision_history.append({
+            "decision": decision,
+            "hand_strength": hand_strength,
+            "phase": game_phase,
+            "was_winner": was_winner,
+        })
+        
+        if was_winner:
+            self.hands_won += 1
+        
+        # Keep only last 50 decisions
+        if len(self.decision_history) > 50:
+            self.decision_history = self.decision_history[-50:]
+    
+    def get_stats(self) -> Dict[str, Any]:
+        """Get AI stats and tendencies"""
+        if not self.decision_history:
+            return {
+                "hands_played": self.hands_played,
+                "hands_won": self.hands_won,
+                "win_rate": 0,
+                "avg_hand_strength": 0,
+                "fold_frequency": 0,
+                "raise_frequency": 0,
+            }
+        
+        total = len(self.decision_history)
+        folds = sum(1 for d in self.decision_history if d["decision"].get("action") == "fold")
+        raises = sum(1 for d in self.decision_history if d["decision"].get("action") == "raise")
+        avg_strength = sum(d["hand_strength"] for d in self.decision_history) / total
+        
+        return {
+            "hands_played": self.hands_played,
+            "hands_won": self.hands_won,
+            "win_rate": self.hands_won / max(1, self.hands_played),
+            "avg_hand_strength": round(avg_strength, 3),
+            "fold_frequency": round(folds / total, 3),
+            "raise_frequency": round(raises / total, 3),
+            "timing_pattern": self.tells["timing_pattern"],
+            "betting_style": self.tells["betting_style"],
+        }
     
     def make_decision(self, game: PokerGame, player: Player) -> Dict[str, Any]:
         """Returns action dict with 'action' and optional 'amount'"""
@@ -96,63 +240,77 @@ class PokerAI:
         # Calculate effective pot odds including implied odds
         effective_pot_odds = pot_odds * (1.0 - cfg["aggression"] * 0.2)
         
+        decision = None
+        
         # Very strong hand - raise or all-in
         strong_threshold = 0.85 - (cfg["aggression"] * 0.1)
         if hand_strength > strong_threshold:
             if player.chips > to_call + game.min_raise:
                 # Use difficulty-based raise sizing
                 raise_multiplier = cfg["raise_multiplier"]
-                raise_amount = min(
+                base_raise = min(
                     player.chips - to_call,
                     max(int(game.min_raise * raise_multiplier), int(game.pot * 0.75))
                 )
-                return {'action': 'raise', 'amount': raise_amount}
+                raise_amount = self.get_bet_size(base_raise, game, hand_strength)
+                decision = {'action': 'raise', 'amount': raise_amount}
             elif player.chips > to_call:
-                return {'action': 'all-in'}
+                decision = {'action': 'all-in'}
             else:
-                return {'action': 'call'}
+                decision = {'action': 'call'}
         
         # Strong hand - raise or call
-        medium_strong_threshold = cfg["hand_strength_threshold"] + 0.25
-        if hand_strength > medium_strong_threshold:
-            # More likely to raise with higher aggression
-            raise_chance = cfg["aggression"] * 0.8
-            if random.random() < raise_chance and player.chips > to_call + game.min_raise:
-                raise_amount = min(
-                    int(game.min_raise * cfg["raise_multiplier"]), 
-                    player.chips - to_call
-                )
-                return {'action': 'raise', 'amount': raise_amount}
-            elif to_call == 0:
-                return {'action': 'check'}
-            else:
-                return {'action': 'call'}
+        if decision is None:
+            medium_strong_threshold = cfg["hand_strength_threshold"] + 0.25
+            if hand_strength > medium_strong_threshold:
+                # More likely to raise with higher aggression
+                raise_chance = cfg["aggression"] * 0.8
+                if random.random() < raise_chance and player.chips > to_call + game.min_raise:
+                    base_raise = min(
+                        int(game.min_raise * cfg["raise_multiplier"]), 
+                        player.chips - to_call
+                    )
+                    raise_amount = self.get_bet_size(base_raise, game, hand_strength)
+                    decision = {'action': 'raise', 'amount': raise_amount}
+                elif to_call == 0:
+                    decision = {'action': 'check'}
+                else:
+                    decision = {'action': 'call'}
         
         # Medium hand - call if good pot odds, otherwise fold
-        if hand_strength > cfg["hand_strength_threshold"]:
-            if to_call == 0:
-                return {'action': 'check'}
-            elif pot_odds > cfg["call_threshold"] or hand_strength > pot_odds * 1.5:
-                return {'action': 'call'}
-            else:
-                return {'action': 'fold'}
+        if decision is None:
+            if hand_strength > cfg["hand_strength_threshold"]:
+                if to_call == 0:
+                    decision = {'action': 'check'}
+                elif pot_odds > cfg["call_threshold"] or hand_strength > pot_odds * 1.5:
+                    decision = {'action': 'call'}
+                else:
+                    decision = {'action': 'fold'}
         
         # Weak hand - fold unless free to check or bluffing
-        if to_call == 0:
-            # Bluff based on difficulty bluff frequency
-            if random.random() < cfg["bluff_frequency"]:
-                raise_amount = min(
-                    int(game.min_raise * cfg["raise_multiplier"]), 
-                    player.chips
-                )
-                return {'action': 'raise', 'amount': raise_amount}
-            return {'action': 'check'}
+        if decision is None:
+            if to_call == 0:
+                # Bluff based on difficulty bluff frequency
+                if random.random() < cfg["bluff_frequency"]:
+                    base_raise = min(
+                        int(game.min_raise * cfg["raise_multiplier"]), 
+                        player.chips
+                    )
+                    raise_amount = self.get_bet_size(base_raise, game, hand_strength)
+                    decision = {'action': 'raise', 'amount': raise_amount}
+                else:
+                    decision = {'action': 'check'}
+            else:
+                # Occasional bluff call with weak hand (hero call)
+                if random.random() < cfg["bluff_frequency"] * 0.3:
+                    decision = {'action': 'call'}
+                else:
+                    decision = {'action': 'fold'}
         
-        # Occasional bluff call with weak hand (hero call)
-        if random.random() < cfg["bluff_frequency"] * 0.3:
-            return {'action': 'call'}
+        # Record the decision for pattern analysis
+        self.record_decision(decision, hand_strength, game.phase)
         
-        return {'action': 'fold'}
+        return decision
     
     def _estimate_hand_strength(self, game: PokerGame, player: Player) -> float:
         """Estimate hand strength from 0-1 using Monte Carlo simulation"""
@@ -292,8 +450,48 @@ class AIManager:
             players.append(player)
         return players
     
+    async def process_bot_turn_async(self) -> Optional[Dict[str, Any]]:
+        """Process the current bot's turn with human-like timing delays"""
+        import asyncio
+        
+        current = self.game.get_current_player()
+        
+        if not current or current.is_human:
+            return None
+        
+        if current.id not in self.bots:
+            return None
+        
+        bot = self.bots[current.id]
+        
+        # Make decision first to know what delay to apply
+        decision = bot.make_decision(self.game, current)
+        
+        # Estimate hand strength for timing calculation
+        hand_strength = bot._estimate_hand_strength(self.game, current)
+        
+        # Calculate and apply human-like delay
+        delay = bot.get_decision_delay(hand_strength, decision['action'])
+        await asyncio.sleep(delay)
+        
+        # Execute the decision
+        if decision['action'] == 'fold':
+            self.game.action_fold(current.id)
+        elif decision['action'] == 'check':
+            self.game.action_check(current.id)
+        elif decision['action'] == 'call':
+            self.game.action_call(current.id)
+        elif decision['action'] == 'raise':
+            self.game.action_raise(current.id, decision['amount'])
+        elif decision['action'] == 'all-in':
+            to_call = self.game.current_bet - current.bet
+            all_in_amount = current.chips - to_call
+            self.game.action_raise(current.id, all_in_amount)
+        
+        return decision
+    
     def process_bot_turn(self) -> Optional[Dict[str, Any]]:
-        """Process the current bot's turn if it's an AI"""
+        """Process the current bot's turn if it's an AI (synchronous version)"""
         current = self.game.get_current_player()
         
         if not current or current.is_human:
@@ -320,3 +518,17 @@ class AIManager:
             self.game.action_raise(current.id, all_in_amount)
         
         return decision
+    
+    def get_bot_stats(self, bot_id: str) -> Optional[Dict[str, Any]]:
+        """Get stats for a specific bot"""
+        if bot_id in self.bots:
+            return self.bots[bot_id].get_stats()
+        return None
+    
+    def get_all_bot_stats(self) -> Dict[str, Dict[str, Any]]:
+        """Get stats for all bots"""
+        stats = {}
+        for player in self.game.players:
+            if not player.is_human and player.id in self.bots:
+                stats[player.name] = self.bots[player.id].get_stats()
+        return stats

@@ -133,6 +133,19 @@ class HealthStatus(BaseModel):
     config: dict = Field(..., description="Current game configuration")
 
 
+class DetailedHealthStatus(BaseModel):
+    """Detailed health check response with system metrics"""
+    status: str = Field(..., description="API status: 'ok' if healthy")
+    uptime_seconds: float = Field(..., description="API uptime in seconds")
+    active_games: int = Field(..., description="Number of active games in memory")
+    total_players: int = Field(..., description="Total players across all games")
+    memory_usage_mb: float = Field(..., description="Estimated memory usage in MB")
+    games_by_phase: dict = Field(..., description="Count of games by phase")
+    avg_game_age_minutes: float = Field(..., description="Average game age in minutes")
+    config: dict = Field(..., description="Current game configuration")
+    version: str = Field(..., description="API version")
+
+
 class HandHistoryEntry(BaseModel):
     """Single hand history entry"""
     hand_number: int = Field(..., description="Hand number")
@@ -147,6 +160,12 @@ class HandHistoryResponse(BaseModel):
     """Game history response"""
     game_id: str = Field(..., description="Game identifier")
     hands: List[HandHistoryEntry] = Field(default_factory=list, description="Completed hands")
+
+
+class AIStatsResponse(BaseModel):
+    """AI bot statistics response"""
+    game_id: str = Field(..., description="Game identifier")
+    bots: Dict[str, dict] = Field(..., description="Stats for each AI bot by name")
 
 
 class ErrorResponse(BaseModel):
@@ -265,6 +284,10 @@ async def rate_limit_middleware(request: Request, call_next):
 # In-memory game storage
 games: Dict[str, PokerGame] = {}
 ai_managers: Dict[str, AIManager] = {}
+
+# Track startup time for uptime calculation
+import time as time_module
+STARTUP_TIME = time_module.time()
 
 # =============================================================================
 # Rate Limiting
@@ -472,7 +495,7 @@ async def player_action(game_id: str, request: ActionRequest):
         logger.warning(f"Action failed: game={game_id}, action={request.action}")
         raise HTTPException(status_code=400, detail="Action failed")
 
-    # Process AI turns with turn limit protection
+    # Process AI turns with turn limit protection and human-like timing
     ai_manager = ai_managers[game_id]
     ai_turns = 0
 
@@ -481,9 +504,8 @@ async def player_action(game_id: str, request: ActionRequest):
         if not current or current.is_human:
             break
 
-        # Small delay for realism
-        await asyncio.sleep(Config.AI_DECISION_DELAY)
-        ai_manager.process_bot_turn()
+        # Use async bot turn with human-like timing tells
+        await ai_manager.process_bot_turn_async()
         ai_turns += 1
 
     if ai_turns >= Config.MAX_AI_TURNS:
@@ -528,14 +550,14 @@ async def next_hand(game_id: str, player_id: str):
     # Start new hand
     game.start_hand()
 
-    # Process AI blinds and early action
+    # Process AI blinds and early action with human-like timing
     ai_manager = ai_managers[game_id]
     current = game.get_current_player()
     ai_turns = 0
 
     while current and not current.is_human and ai_turns < Config.MAX_AI_TURNS:
-        await asyncio.sleep(Config.AI_BLIND_DELAY)
-        ai_manager.process_bot_turn()
+        # Use async bot turn with human-like timing tells
+        await ai_manager.process_bot_turn_async()
         current = game.get_current_player()
         ai_turns += 1
 
@@ -572,6 +594,36 @@ async def get_game_history(game_id: str):
 
 
 @app.get(
+    "/api/poker/games/{game_id}/ai-stats",
+    response_model=AIStatsResponse,
+    tags=["Game State"],
+    summary="Get AI bot statistics",
+    description="Retrieve statistics for all AI bots in a game including their playing patterns, win rates, and behavioral tells.",
+    responses={
+        200: {"description": "AI stats retrieved", "model": AIStatsResponse},
+        400: {"description": "Invalid game ID format", "model": ErrorResponse},
+        404: {"description": "Game not found", "model": ErrorResponse}
+    }
+)
+async def get_ai_stats(game_id: str):
+    """Get AI bot statistics for a game"""
+    validate_game_id(game_id)
+    
+    if game_id not in games:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    ai_manager = ai_managers.get(game_id)
+    if not ai_manager:
+        raise HTTPException(status_code=404, detail="AI manager not found for this game")
+    
+    stats = ai_manager.get_all_bot_stats()
+    return {
+        "game_id": game_id,
+        "bots": stats
+    }
+
+
+@app.get(
     "/api/poker/health",
     response_model=HealthStatus,
     tags=["System"],
@@ -592,6 +644,61 @@ async def health_check():
             "big_blind": Config.BIG_BLIND,
             "ai_difficulty": Config.AI_DIFFICULTY,
         }
+    }
+
+
+@app.get(
+    "/api/poker/health/detailed",
+    response_model=DetailedHealthStatus,
+    tags=["System"],
+    summary="Detailed health check",
+    description="Get detailed system metrics including memory usage, game statistics, and uptime. Useful for monitoring and debugging.",
+    responses={
+        200: {"description": "Detailed health information", "model": DetailedHealthStatus}
+    }
+)
+async def detailed_health_check():
+    """Detailed health check with system metrics"""
+    import sys
+    
+    # Calculate uptime
+    uptime_seconds = time_module.time() - STARTUP_TIME
+    
+    # Count total players and games by phase
+    total_players = 0
+    games_by_phase = {}
+    total_game_age_seconds = 0
+    now = time_module.time()
+    
+    for game in games.values():
+        total_players += len(game.players)
+        phase = game.phase
+        games_by_phase[phase] = games_by_phase.get(phase, 0) + 1
+        # Estimate game age from hand number (approximate)
+        total_game_age_seconds += game.hand_number * 2 * 60  # Assume ~2 min per hand
+    
+    avg_game_age_minutes = (total_game_age_seconds / len(games) / 60) if games else 0
+    
+    # Estimate memory usage (rough approximation)
+    # Each game ~50KB + players + history
+    estimated_memory_mb = len(games) * 0.05 + total_players * 0.001
+    
+    return {
+        "status": "ok",
+        "uptime_seconds": round(uptime_seconds, 2),
+        "active_games": len(games),
+        "total_players": total_players,
+        "memory_usage_mb": round(estimated_memory_mb, 3),
+        "games_by_phase": games_by_phase,
+        "avg_game_age_minutes": round(avg_game_age_minutes, 2),
+        "config": {
+            "starting_chips": Config.STARTING_CHIPS,
+            "small_blind": Config.SMALL_BLIND,
+            "big_blind": Config.BIG_BLIND,
+            "ai_difficulty": Config.AI_DIFFICULTY,
+            "ai_decision_delay": Config.AI_DECISION_DELAY,
+        },
+        "version": "1.0.5"
     }
 
 
