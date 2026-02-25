@@ -228,10 +228,9 @@ async function nextHand() {
         elements.btnNextHand.disabled = true;
         elements.btnNextHand.textContent = 'Dealing...';
         
-        const response = await fetch(`${API_BASE}/api/poker/games/${gameId}/next-hand`, {
+        const response = await fetch(`${API_BASE}/api/poker/games/${gameId}/next-hand?player_id=${playerId}`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ player_id: playerId })
+            headers: { 'Content-Type': 'application/json' }
         });
         
         if (!response.ok) {
