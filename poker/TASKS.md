@@ -57,12 +57,12 @@
 - [x] **Error boundaries** - Fixed: Added comprehensive error boundary system with `ErrorBoundary` object in app.js featuring global error handlers, user-friendly toast notifications, and async function wrapping
 - [ ] **Unit tests** - Jest/Vitest for game logic
 - [x] **PWA support** - Fixed: Added manifest.json with app metadata and icons, created sw.js service worker with cache-first strategy for static assets, updated index.html with manifest link and service worker registration
-- [ ] **Service worker** - Cache assets for faster loads
+- [x] **Service worker** - Fixed: Service worker already implemented with cache-first strategy for static assets, proper cache versioning, offline API error handling, and message handling for skipWaiting
 
 ### Backend (Python)
 - [x] **Add tests** - Fixed: Added pytest test suite with 63 tests covering game logic (hand evaluation, player actions, betting), API endpoints (health, create game, actions, rate limiting), and AI behavior (decision making, aggression levels)
 - [x] **Type hints** - Fixed: Completed type coverage in ai.py - added proper types for `make_decision()`, `_preflop_strength()`, `AIManager.bots`, and `process_bot_turn()` return types
-- [ ] **API documentation** - OpenAPI/Swagger docs
+- [x] **API documentation** - Fixed: Added comprehensive OpenAPI/Swagger documentation with detailed request/response models (GameState, CreateGameRequest/Response, ActionRequest/Response, etc.), endpoint summaries, descriptions, response codes, and automatic redirect from root to /docs
 - [x] **Rate limiting** - Fixed: Already implemented in-memory rate limiter (20 req/min burst per IP)
 - [x] **Better logging** - Fixed: Already implemented structured logging with correlation IDs in `config.py`
 - [x] **Configuration** - Fixed: Added `Config` class in `config.py` with environment variable support for HOST, PORT, CORS_ORIGINS, STARTING_CHIPS, SMALL_BLIND, BIG_BLIND, and AI delays
