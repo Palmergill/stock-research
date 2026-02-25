@@ -32,7 +32,7 @@
 
 ### UI Improvements
 - [x] **Better card animations** - Fixed: Cards now deal one by one with staggered animation. Player hole cards animate first (positions 1-2), then community cards with offset timing. Cards flip and slide in with 3D rotation effect. Each new hand triggers fresh animations.
-- [ ] **Chip stack visualization** - Show actual chip stacks, not just numbers
+- [x] **Chip stack visualization** - Fixed: Added visual chip stacks with color-coded denominations (blue=1, red=5, green=25, gold=100, black=500, purple=1000), realistic chip appearance with edge stripes and gradients, used in pot display, player chips, opponent chips, and bets
 - [x] **Hand strength indicator** - Added: Shows "Pair of Aces", "Flush", "Straight", etc. in gold badge below cards
 - [x] **Pot odds calculator** - Fixed: Added real-time pot odds display in the header showing ratio (e.g., "3.5:1") and required equity percentage. Shows only when there's a bet to call, hidden otherwise.
 - [x] **Timer for decisions** - Added: 30-second countdown timer with visual progress bar, auto-folds when time expires
@@ -77,7 +77,7 @@
 
 ## 🎨 Design Tasks
 
-- [ ] **Dark mode toggle** - Alternative color scheme
+- [x] **Dark mode toggle** - Fixed: Added light/dark mode toggle with CSS custom properties, persists preference in localStorage, smooth transitions between modes, all UI elements adapt including felt colors
 - [ ] **Card deck themes** - Different card designs
 - [ ] **Avatar system** - Player profile pictures
 - [ ] **Animated backgrounds** - Subtle felt texture animation

@@ -400,6 +400,7 @@ const elements = {
     timerFill: document.getElementById('timer-fill'),
     loadingOverlay: document.getElementById('loading-overlay'),
     themeToggle: document.getElementById('theme-toggle'),
+    darkModeToggle: document.getElementById('dark-mode-toggle'),
     gameScreen: document.getElementById('game-screen'),
     statsBtn: document.getElementById('stats-btn'),
     statsModal: document.getElementById('stats-modal'),
@@ -447,17 +448,148 @@ const ThemeManager = {
     }
 };
 
+// Dark Mode Manager
+const DarkModeManager = {
+    isDarkMode: true,
+
+    init() {
+        // Load saved preference from localStorage
+        const savedMode = localStorage.getItem('poker-dark-mode');
+        if (savedMode !== null) {
+            this.isDarkMode = savedMode === 'true';
+        }
+        this.applyMode();
+    },
+
+    applyMode() {
+        const body = document.body;
+        const modeIcon = document.getElementById('mode-icon');
+        
+        if (this.isDarkMode) {
+            body.classList.remove('light-mode');
+            if (modeIcon) modeIcon.textContent = '🌙';
+        } else {
+            body.classList.add('light-mode');
+            if (modeIcon) modeIcon.textContent = '☀️';
+        }
+        
+        // Save to localStorage
+        localStorage.setItem('poker-dark-mode', this.isDarkMode);
+    },
+
+    toggle() {
+        this.isDarkMode = !this.isDarkMode;
+        this.applyMode();
+        
+        // Provide haptic feedback if available
+        if (navigator.vibrate) {
+            navigator.vibrate(20);
+        }
+    }
+};
+
+// Chip Stack Visualizer
+const ChipStackVisualizer = {
+    // Chip denominations and their colors
+    denominations: [
+        { value: 1000, color: 'chip-purple', max: 10 },
+        { value: 500, color: 'chip-black', max: 8 },
+        { value: 100, color: 'chip-gold', max: 8 },
+        { value: 25, color: 'chip-green', max: 10 },
+        { value: 5, color: 'chip-red', max: 10 },
+        { value: 1, color: 'chip-blue', max: 10 }
+    ],
+
+    /**
+     * Generate HTML for chip stack visualization
+     * @param {number} amount - Chip amount to display
+     * @param {boolean} showAmount - Whether to show the numeric amount alongside
+     * @param {boolean} large - Whether to use large chip size
+     * @returns {string} HTML string for chip stack
+     */
+    render(amount, showAmount = true, large = false) {
+        if (amount <= 0) return '<span class="chips-amount">0</span>';
+        
+        let remaining = amount;
+        const chips = [];
+        
+        // Calculate chips for each denomination
+        for (const denom of this.denominations) {
+            const count = Math.min(Math.floor(remaining / denom.value), denom.max);
+            if (count > 0) {
+                for (let i = 0; i < count; i++) {
+                    chips.push(denom.color);
+                }
+                remaining -= count * denom.value;
+            }
+        }
+        
+        // Cap total visible chips for performance and aesthetics
+        const maxVisibleChips = large ? 25 : 15;
+        const displayChips = chips.slice(0, maxVisibleChips);
+        
+        const stackClass = large ? 'chip-stack-large' : 'chip-stack';
+        const chipsHTML = displayChips.map(color => `<div class="chip ${color}"></div>`).join('');
+        
+        if (showAmount) {
+            return `
+                <span class="chips-display">
+                    <span class="${stackClass}">${chipsHTML}</span>
+                    <span class="chips-amount">${amount}</span>
+                </span>
+            `;
+        } else {
+            return `<span class="${stackClass}">${chipsHTML}</span>`;
+        }
+    },
+
+    /**
+     * Render a simplified chip indicator (just a few chips + amount)
+     * Used for opponent chip displays
+     */
+    renderCompact(amount) {
+        if (amount <= 0) return '0';
+        
+        // Determine the highest denomination
+        let color = 'chip-blue';
+        if (amount >= 500) color = 'chip-purple';
+        else if (amount >= 100) color = 'chip-black';
+        else if (amount >= 25) color = 'chip-gold';
+        else if (amount >= 5) color = 'chip-green';
+        
+        // Show 1-3 chips based on amount size
+        let chipCount = 1;
+        if (amount >= 100) chipCount = 2;
+        if (amount >= 500) chipCount = 3;
+        
+        const chipsHTML = Array(chipCount).fill(`<div class="chip ${color}"></div>`).join('');
+        
+        return `
+            <span class="chips-display">
+                <span class="chip-stack">${chipsHTML}</span>
+                <span class="chips-amount">${amount}</span>
+            </span>
+        `;
+    }
+};
+
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
-    // Initialize error boundary, sound manager, theme manager, and stats
+    // Initialize error boundary, sound manager, theme manager, dark mode, and stats
     ErrorBoundary.init();
     SoundManager.init();
     ThemeManager.init();
+    DarkModeManager.init();
     StatsManager.init();
     
     // Theme toggle button
     if (elements.themeToggle) {
         elements.themeToggle.addEventListener('click', () => ThemeManager.nextTheme());
+    }
+    
+    // Dark mode toggle button
+    if (elements.darkModeToggle) {
+        elements.darkModeToggle.addEventListener('click', () => DarkModeManager.toggle());
     }
 
     // Cleanup on page unload
@@ -792,7 +924,7 @@ function updateGameDisplay() {
     // Update header
     elements.handNumber.textContent = gameState.hand_number;
     elements.phase.textContent = gameState.phase.replace('_', ' ').toUpperCase();
-    elements.potAmount.textContent = gameState.pot;
+    elements.potAmount.innerHTML = ChipStackVisualizer.render(gameState.pot, true, true);
     
     // Update pot odds
     updatePotOdds();
@@ -803,7 +935,7 @@ function updateGameDisplay() {
     // Update your info
     const myPlayer = gameState.players.find(p => p.id === playerId);
     if (myPlayer) {
-        elements.yourChips.textContent = myPlayer.chips;
+        elements.yourChips.innerHTML = ChipStackVisualizer.render(myPlayer.chips, true, true);
         
         // Your cards with staggered animation (deal player cards first)
         const cardsHTML = myPlayer.hand.map((card, index) => renderCard(card, true, index)).join('');
@@ -873,18 +1005,18 @@ function updateGameDisplay() {
 function renderOpponent(player) {
     const isCurrent = gameState.current_player === player.id;
     const showCards = gameState.phase === 'showdown' && !player.folded;
-    
+
     return `
         <div class="opponent ${player.folded ? 'folded' : ''} ${isCurrent ? 'active-turn' : ''}">
             <div class="opponent-cards">
-                ${showCards 
+                ${showCards
                     ? player.hand.map(c => renderCard(c)).join('')
                     : `<div class="card-back ${player.folded ? 'folded' : ''}">🂠</div><div class="card-back ${player.folded ? 'folded' : ''}">🂠</div>`
                 }
             </div>
             <span class="opponent-name">${player.name}</span>
-            <span class="opponent-chips">${player.chips}</span>
-            ${player.bet > 0 ? `<span class="opponent-bet">${player.bet}</span>` : ''}
+            <span class="opponent-chips">${ChipStackVisualizer.renderCompact(player.chips)}</span>
+            ${player.bet > 0 ? `<span class="opponent-bet">${ChipStackVisualizer.renderCompact(player.bet)}</span>` : ''}
         </div>
     `;
 }

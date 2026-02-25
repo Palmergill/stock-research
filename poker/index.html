@@ -334,11 +334,220 @@
             background: #0a0a0f;
         }
 
-        /* ===== TABLE THEMES ===== */
+        /* ===== APP THEME (Light/Dark Mode) ===== */
         :root {
+            --app-bg: #0a0a0f;
+            --app-text: #fff;
+            --app-text-secondary: #94a3b8;
+            --app-header-bg: #0f172a;
+            --app-border: rgba(255,255,255,0.1);
+            --app-input-bg: rgba(255,255,255,0.05);
+            --app-overlay-bg: rgba(10,10,15,0.9);
             --felt-primary: #1a472a;
             --felt-secondary: #0d3320;
             --felt-accent: #0f172a;
+        }
+
+        /* Light mode overrides */
+        .light-mode {
+            --app-bg: #f1f5f9;
+            --app-text: #1e293b;
+            --app-text-secondary: #64748b;
+            --app-header-bg: #e2e8f0;
+            --app-border: rgba(0,0,0,0.1);
+            --app-input-bg: rgba(255,255,255,0.8);
+            --app-overlay-bg: rgba(241,245,249,0.95);
+        }
+
+        .light-mode body {
+            background: var(--app-bg);
+            color: var(--app-text);
+        }
+
+        .light-mode #start-screen {
+            background: linear-gradient(135deg, #e2e8f0 0%, #f1f5f9 50%, #e2e8f0 100%);
+        }
+
+        .light-mode .game-header {
+            background: var(--app-header-bg);
+            border-bottom-color: var(--app-border);
+        }
+
+        .light-mode .your-section {
+            background: var(--app-header-bg);
+            border-top-color: var(--app-border);
+        }
+
+        .light-mode .start-form input {
+            background: var(--app-input-bg);
+            border-color: var(--app-border);
+            color: var(--app-text);
+        }
+
+        .light-mode .phase,
+        .light-mode .hand-num {
+            color: var(--app-text-secondary);
+        }
+
+        .light-mode .opponent {
+            background: rgba(0,0,0,0.1);
+        }
+
+        .light-mode .opponent-name {
+            color: var(--app-text-secondary);
+        }
+
+        .light-mode .community-label {
+            color: var(--app-text-secondary);
+        }
+
+        .light-mode .card-slot {
+            background: rgba(0,0,0,0.1);
+            border-color: rgba(0,0,0,0.1);
+        }
+
+        .light-mode .raise-container {
+            background: rgba(0,0,0,0.05);
+        }
+
+        .light-mode .btn-secondary {
+            background: rgba(0,0,0,0.1);
+            border-color: var(--app-border);
+            color: var(--app-text);
+        }
+
+        .light-mode .loading-overlay {
+            background: var(--app-overlay-bg);
+        }
+
+        .light-mode .result-content {
+            background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+            border-color: rgba(255,215,0,0.5);
+        }
+
+        .light-mode .result-content p {
+            color: var(--app-text);
+        }
+
+        .light-mode .game-info {
+            color: var(--app-text-secondary);
+        }
+
+        .light-mode .subtitle {
+            color: var(--app-text-secondary);
+        }
+
+        .light-mode .your-label {
+            color: #3b82f6;
+        }
+
+        /* Light mode theme colors for felt */
+        .light-mode .theme-green .felt-area {
+            background: linear-gradient(180deg, #0d5c2d 0%, #1a6b3a 50%, #0f4a2a 100%);
+        }
+
+        .light-mode .theme-blue .felt-area {
+            background: linear-gradient(180deg, #1e3a8a 0%, #2563eb 50%, #1e40af 100%);
+        }
+
+        .light-mode .theme-red .felt-area {
+            background: linear-gradient(180deg, #7f1d1d 0%, #dc2626 50%, #991b1b 100%);
+        }
+
+        .light-mode .theme-black .felt-area {
+            background: linear-gradient(180deg, #1f2937 0%, #374151 50%, #1f2937 100%);
+        }
+
+        .light-mode .theme-purple .felt-area {
+            background: linear-gradient(180deg, #581c87 0%, #7c3aed 50%, #5b21b6 100%);
+        }
+
+        /* ===== CHIP STACK VISUALIZATION ===== */
+        .chip-stack {
+            display: inline-flex;
+            flex-direction: column-reverse;
+            align-items: center;
+            position: relative;
+            height: auto;
+            vertical-align: middle;
+        }
+
+        .chip {
+            width: 18px;
+            height: 5px;
+            border-radius: 2px;
+            position: relative;
+            margin-top: -2px;
+            box-shadow: 
+                inset 0 1px 0 rgba(255,255,255,0.3),
+                inset 0 -1px 0 rgba(0,0,0,0.3),
+                0 1px 2px rgba(0,0,0,0.3);
+            border: 1px solid rgba(0,0,0,0.2);
+        }
+
+        .chip:first-child {
+            margin-top: 0;
+        }
+
+        /* Chip colors by denomination */
+        .chip-red { background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%); }
+        .chip-blue { background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%); }
+        .chip-green { background: linear-gradient(180deg, #22c55e 0%, #16a34a 100%); }
+        .chip-black { background: linear-gradient(180deg, #374151 0%, #1f2937 100%); }
+        .chip-purple { background: linear-gradient(180deg, #a855f7 0%, #7c3aed 100%); }
+        .chip-gold { background: linear-gradient(180deg, #fbbf24 0%, #f59e0b 100%); }
+
+        /* Chip edge stripes pattern */
+        .chip::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                90deg,
+                transparent,
+                transparent 3px,
+                rgba(255,255,255,0.2) 3px,
+                rgba(255,255,255,0.2) 5px
+            );
+            border-radius: 1px;
+        }
+
+        /* Large chip stacks in main display */
+        .chip-stack-large {
+            display: inline-flex;
+            flex-direction: column-reverse;
+            align-items: center;
+            margin-right: 8px;
+        }
+
+        .chip-stack-large .chip {
+            width: 28px;
+            height: 7px;
+            margin-top: -3px;
+        }
+
+        .chip-stack-large .chip:first-child {
+            margin-top: 0;
+        }
+
+        /* Chips with amount text */
+        .chips-display {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .chips-amount {
+            font-weight: 700;
+            color: #ffd700;
+            white-space: nowrap;
+        }
+
+        .light-mode .chips-amount {
+            color: #b45309;
         }
 
         /* Classic Green (default) */
@@ -1031,10 +1240,14 @@
 
         <!-- Game Screen -->
         <div id="game-screen" class="screen theme-green">
-            <!-- Theme Toggle -->
+            <!-- Theme Toggles -->
             <button class="theme-toggle" id="theme-toggle" title="Change table theme">
                 <span class="color-dot"></span>
                 <span>Theme</span>
+            </button>
+            <button class="theme-toggle" id="dark-mode-toggle" title="Toggle light/dark mode" style="top: 85px;">
+                <span id="mode-icon">🌙</span>
+                <span>Mode</span>
             </button>
 
             <!-- Header -->

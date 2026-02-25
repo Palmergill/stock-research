@@ -7,6 +7,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- Dark mode toggle - Switch between dark and light themes
+  - Persists preference in localStorage
+  - Smooth transition between modes
+  - All UI elements adapt to current theme
+- Chip stack visualization - Visual representation of chip amounts
+  - Color-coded chips by denomination (blue, red, green, gold, black, purple)
+  - Realistic chip appearance with edge stripes
+  - Used in pot display, player chips, opponent chips, and bets
+  - Compact view for opponents, detailed view for main player and pot
 - Better card animations - cards now deal one by one with staggered animation
   - Player hole cards animate first (positions 1-2)
   - Community cards animate with offset timing
