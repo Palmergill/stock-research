@@ -155,12 +155,12 @@
             color: #ffd700;
         }
         
-        /* Felt Area - smaller now */
+        /* Felt Area */
         .felt-area {
-            flex: 0 0 auto;
-            max-height: 35vh;
+            flex: 1;
+            min-height: 0;
             background: linear-gradient(180deg, #0d3320 0%, #1a472a 50%, #0f172a 100%);
-            padding: 6px;
+            padding: 8px;
             display: flex;
             flex-direction: column;
             overflow: hidden;
@@ -171,19 +171,19 @@
             display: flex;
             justify-content: center;
             flex-wrap: wrap;
-            gap: 4px;
-            margin-bottom: 4px;
+            gap: 8px;
+            margin-bottom: 10px;
         }
         
         .opponent {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 1px;
-            padding: 3px 6px;
+            gap: 3px;
+            padding: 6px 10px;
             background: rgba(0,0,0,0.3);
-            border-radius: 5px;
-            min-width: 50px;
+            border-radius: 8px;
+            min-width: 60px;
         }
         
         .opponent.folded {
@@ -201,14 +201,14 @@
         }
         
         .card-back {
-            width: 18px;
-            height: 25px;
+            width: 24px;
+            height: 34px;
             background: linear-gradient(135deg, #1e3a5f 0%, #0d2137 100%);
-            border-radius: 3px;
+            border-radius: 4px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 10px;
+            font-size: 12px;
             border: 1px solid rgba(255,255,255,0.1);
             color: rgba(255,255,255,0.3);
         }
@@ -219,22 +219,22 @@
         }
         
         .opponent-name {
-            font-size: 9px;
+            font-size: 10px;
             color: #94a3b8;
         }
         
         .opponent-chips {
-            font-size: 10px;
+            font-size: 11px;
             color: #ffd700;
             font-weight: 600;
         }
         
         .opponent-bet {
-            font-size: 8px;
+            font-size: 9px;
             color: #10b981;
             background: rgba(16,185,129,0.2);
-            padding: 0px 3px;
-            border-radius: 6px;
+            padding: 1px 5px;
+            border-radius: 8px;
         }
         
         /* Community Cards */
@@ -243,13 +243,17 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 3px;
-            padding: 3px 0;
-            flex-shrink: 0;
+            gap: 6px;
+            padding: 8px 0;
+            flex: 1;
         }
         
         .community-label {
-            display: none;
+            font-size: 10px;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
         }
         
         .community-cards {
@@ -260,22 +264,22 @@
         }
         
         .community-cards .card {
-            width: 32px;
-            height: 44px;
+            width: 40px;
+            height: 56px;
             background: white;
-            border-radius: 4px;
+            border-radius: 5px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 16px;
+            font-size: 20px;
             color: #dc3545;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
         }
         
         .card-slot {
-            width: 32px;
-            height: 44px;
-            border-radius: 4px;
+            width: 40px;
+            height: 56px;
+            border-radius: 5px;
             background: rgba(255,255,255,0.05);
             border: 1px dashed rgba(255,255,255,0.1);
         }
@@ -284,22 +288,19 @@
             color: #1a1a2e;
         }
         
-        /* Your Section - takes remaining space */
+        /* Your Section */
         .your-section {
             background: #0f172a;
-            padding: 8px 12px 12px;
+            padding: 10px 15px 15px;
             border-top: 1px solid rgba(255,255,255,0.1);
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end;
+            flex-shrink: 0;
         }
         
         .your-label {
             text-align: center;
-            font-size: 10px;
+            font-size: 11px;
             color: #3b82f6;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
             text-transform: uppercase;
             letter-spacing: 1px;
         }
@@ -307,50 +308,49 @@
         .your-cards {
             display: flex;
             justify-content: center;
-            gap: 8px;
-            margin-bottom: 6px;
+            gap: 10px;
+            margin-bottom: 8px;
         }
         
         .your-cards .card {
-            width: 50px;
-            height: 70px;
+            width: 60px;
+            height: 84px;
             background: white;
-            border-radius: 6px;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
+            font-size: 28px;
             color: #1a1a2e;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.4);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
             border: 2px solid #3b82f6;
         }
         
         .your-info {
             text-align: center;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
         
         .your-name {
-            font-size: 13px;
+            font-size: 14px;
             font-weight: 600;
         }
         
         .your-chips {
-            font-size: 15px;
+            font-size: 16px;
             color: #ffd700;
         }
         
         /* Actions */
         .actions {
             display: flex;
-            gap: 6px;
-            margin-top: auto;
+            gap: 10px;
         }
         
         .btn-action {
             flex: 1;
-            padding: 14px 10px;
-            border-radius: 8px;
+            padding: 16px;
+            border-radius: 10px;
             border: none;
             font-size: 16px;
             font-weight: 600;
