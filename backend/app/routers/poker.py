@@ -112,19 +112,15 @@ async def get_game_state(game_id: str, player_id: str, process_ai: bool = True):
     update_game_access(game_id)
     game = games[game_id]
     
-    # Process AI turns if requested and it's not human's turn
+    # Process only ONE AI turn per request so frontend can see each action
     if process_ai and game.phase != 'showdown':
         current = game.get_current_player()
         if current and not current.is_human:
             ai_manager = ai_managers[game_id]
-            max_turns = 5  # Process a few turns per request
-            for _ in range(max_turns):
-                current = game.get_current_player()
-                if not current or current.is_human or game.phase == 'showdown':
-                    break
-                ai_manager.process_bot_turn()
-                # 2-second delay between bot actions so player can see what happened
-                await asyncio.sleep(2.0)
+            # Process just one turn - frontend will poll again for next
+            ai_manager.process_bot_turn()
+            # 1.5-second delay before responding so player sees the action
+            await asyncio.sleep(1.5)
     
     return game.to_dict(for_player=player_id)
 
@@ -160,22 +156,12 @@ async def player_action(game_id: str, request: ActionRequest):
     if not success:
         raise HTTPException(status_code=400, detail="Action failed")
     
-    # Process AI turns until it's human's turn or hand is over
+    # Process only ONE AI turn - frontend will poll again for next
     ai_manager = ai_managers[game_id]
-    max_turns = 20
-    turns = 0
-    
-    while turns < max_turns:
-        current = game.get_current_player()
-        if not current or current.is_human or game.phase == 'showdown':
-            break
-        
-        await asyncio.sleep(2.0)  # 2-second delay between bot actions
-        result = ai_manager.process_bot_turn()
-        turns += 1
-        
-        if not result:
-            break
+    current = game.get_current_player()
+    if current and not current.is_human and game.phase != 'showdown':
+        await asyncio.sleep(1.5)  # Delay so player sees the action
+        ai_manager.process_bot_turn()
     
     return game.to_dict(for_player=request.player_id)
 
