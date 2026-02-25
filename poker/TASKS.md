@@ -5,7 +5,7 @@
 ### High Priority
 - [x] **Side pot calculation** - Fixed: Now properly calculates and awards side pots when players go all-in for different amounts
 - [x] **Hand strength evaluation bug** - Fixed: `_is_straight` now correctly identifies wheel straights (A-5)
-- [ ] **AI infinite loop protection** - The `max_turns` limit exists but may not catch all edge cases where AI keeps raising each other
+- [ ] **AI infinite loop protection** - Improved: Added `MAX_AI_TURNS` config with proper enforcement in action and next-hand endpoints
 - [ ] **Game state persistence** - Games stored in memory are lost on backend restart (consider Redis or DB)
 
 ### Medium Priority
@@ -15,7 +15,7 @@
 - [ ] **CORS errors** - May occur in some browser environments
 
 ### Low Priority
-- [ ] **Duplicate logging setup** - Multiple loggers created in different files
+- [x] **Duplicate logging setup** - Fixed: Created centralized logging in `config.py` with `setup_logging()` and `get_logger()` functions
 - [x] **Memory leak** - Fixed: Games older than 1 hour are now automatically cleaned up
 - [ ] **Race condition in polling** - Multiple rapid actions could cause state conflicts
 
@@ -65,7 +65,7 @@
 - [ ] **API documentation** - OpenAPI/Swagger docs
 - [ ] **Rate limiting** - Prevent abuse
 - [ ] **Better logging** - Structured logging with correlation IDs
-- [ ] **Configuration** - Environment-based config
+- [x] **Configuration** - Fixed: Added `Config` class in `config.py` with environment variable support for HOST, PORT, CORS_ORIGINS, STARTING_CHIPS, SMALL_BLIND, BIG_BLIND, and AI delays
 - [ ] **Docker** - Containerize for easier deployment
 
 ### AI Improvements

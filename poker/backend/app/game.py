@@ -6,6 +6,14 @@ from typing import List, Optional, Dict
 from enum import Enum
 import random
 
+from .config import Config
+
+# Use config values for game constants
+STARTING_CHIPS = Config.STARTING_CHIPS
+SMALL_BLIND = Config.SMALL_BLIND
+BIG_BLIND = Config.BIG_BLIND
+MIN_RAISE = Config.MIN_RAISE
+
 class Suit(Enum):
     HEARTS = "♥"
     DIAMONDS = "♦"
@@ -102,11 +110,11 @@ class PokerGame:
         self.current_bet: int = 0
         self.dealer_index: int = 0
         self.current_player_index: int = 0
-        self.small_blind: int = 10
-        self.big_blind: int = 20
+        self.small_blind: int = SMALL_BLIND
+        self.big_blind: int = BIG_BLIND
         self.phase: str = 'waiting'  # waiting, preflop, flop, turn, river, showdown
         self.round_bets: Dict[str, int] = {}  # Track bets per player for this round
-        self.min_raise: int = 20
+        self.min_raise: int = MIN_RAISE
         self.winners: List[Dict] = []
         self.last_action: Optional[Dict] = None
         self.hand_number: int = 0
@@ -116,7 +124,7 @@ class PokerGame:
         player = Player(
             id=player_id,
             name=name,
-            chips=1000,
+            chips=STARTING_CHIPS,
             is_human=is_human
         )
         self.players.append(player)
