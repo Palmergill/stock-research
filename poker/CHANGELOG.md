@@ -7,6 +7,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 
 ### Added
+- Card deck themes - 5 different card styles to choose from
+  - Classic: Traditional design with subtle gradient and corner suit symbols
+  - Modern: Sleek rounded cards with smooth shadows
+  - Minimal: Clean flat design for distraction-free play
+  - Vintage: Aged paper look for retro casino feel
+  - Neon: Cyberpunk glow effect optimized for dark mode
+  - Toggle button with localStorage persistence
+- Animated felt backgrounds - Subtle texture animations per table theme
+  - Green: Diagonal shimmer pattern (20s cycle)
+  - Blue: Pulsing radial gradients (15s cycle)
+  - Red: Rotating conic gradient effect (25s cycle)
+  - Purple: Breathing opacity pulse (6s cycle)
+  - Non-distracting, smooth CSS animations
 - Dark mode toggle - Switch between dark and light themes
   - Persists preference in localStorage
   - Smooth transition between modes

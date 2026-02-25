@@ -232,6 +232,253 @@
             50% { transform: rotateY(90deg); }
             100% { transform: rotateY(0deg); }
         }
+
+        /* ========== CARD DECK THEMES ========== */
+        /* Classic Theme (default) */
+        .card-deck-classic .your-cards .card,
+        .card-deck-classic .community-cards .card {
+            background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%);
+            border: 2px solid #d4d4d4;
+            box-shadow: 
+                inset 0 1px 0 rgba(255,255,255,0.8),
+                0 2px 4px rgba(0,0,0,0.2),
+                0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        /* Modern Theme - sleek gradient cards */
+        .card-deck-modern .your-cards .card,
+        .card-deck-modern .community-cards .card {
+            background: linear-gradient(145deg, #ffffff 0%, #e8e8e8 50%, #f5f5f5 100%);
+            border: 1px solid #c0c0c0;
+            box-shadow: 
+                0 1px 3px rgba(0,0,0,0.12),
+                0 3px 6px rgba(0,0,0,0.16),
+                inset 0 -2px 0 rgba(0,0,0,0.05);
+            border-radius: 10px;
+        }
+
+        .card-deck-modern .your-cards .card {
+            border-width: 2px;
+        }
+
+        /* Minimal Theme - clean flat design */
+        .card-deck-minimal .your-cards .card,
+        .card-deck-minimal .community-cards .card {
+            background: #ffffff;
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border-radius: 6px;
+        }
+
+        .card-deck-minimal .your-cards .card {
+            border-width: 2px;
+            border-color: #3b82f6;
+        }
+
+        /* Vintage Theme - old casino style */
+        .card-deck-vintage .your-cards .card,
+        .card-deck-vintage .community-cards .card {
+            background: linear-gradient(135deg, #f5f0e1 0%, #e8e0c8 100%);
+            border: 2px solid #c9b896;
+            box-shadow: 
+                inset 0 0 20px rgba(139, 119, 74, 0.1),
+                0 3px 6px rgba(0,0,0,0.25);
+            color: #4a3728;
+        }
+
+        .card-deck-vintage .your-cards .card.hearts,
+        .card-deck-vintage .your-cards .card.diamonds,
+        .card-deck-vintage .community-cards .card.hearts,
+        .card-deck-vintage .community-cards .card.diamonds {
+            color: #c41e3a;
+        }
+
+        .card-deck-vintage .your-cards .card.spades,
+        .card-deck-vintage .your-cards .card.clubs,
+        .card-deck-vintage .community-cards .card.spades,
+        .card-deck-vintage .community-cards .card.clubs {
+            color: #2c2c2c;
+        }
+
+        /* Neon Theme - cyberpunk style for dark mode */
+        .card-deck-neon .your-cards .card,
+        .card-deck-neon .community-cards .card {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border: 2px solid #00d4ff;
+            box-shadow: 
+                0 0 10px rgba(0, 212, 255, 0.3),
+                0 0 20px rgba(0, 212, 255, 0.1),
+                inset 0 1px 0 rgba(255,255,255,0.1);
+        }
+
+        .card-deck-neon .your-cards .card.hearts,
+        .card-deck-neon .your-cards .card.diamonds,
+        .card-deck-neon .community-cards .card.hearts,
+        .card-deck-neon .community-cards .card.diamonds {
+            color: #ff2a6d;
+            text-shadow: 0 0 5px rgba(255, 42, 109, 0.5);
+        }
+
+        .card-deck-neon .your-cards .card.spades,
+        .card-deck-neon .your-cards .card.clubs,
+        .card-deck-neon .community-cards .card.spades,
+        .card-deck-neon .community-cards .card.clubs {
+            color: #00d4ff;
+            text-shadow: 0 0 5px rgba(0, 212, 255, 0.5);
+        }
+
+        /* Card suit symbols for better visibility */
+        .card-deck-classic .card::before,
+        .card-deck-modern .card::before,
+        .card-deck-minimal .card::before {
+            content: attr(data-suit);
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            font-size: 10px;
+            opacity: 0.3;
+        }
+
+        .card-deck-classic .card::after,
+        .card-deck-modern .card::after,
+        .card-deck-minimal .card::after {
+            content: attr(data-rank);
+            position: absolute;
+            bottom: 4px;
+            right: 4px;
+            font-size: 10px;
+            opacity: 0.3;
+            transform: rotate(180deg);
+        }
+
+        /* ========== ANIMATED FELT BACKGROUNDS ========== */
+        /* Subtle felt texture animation */
+        @keyframes feltShimmer {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        @keyframes feltPulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Animated felt overlay */
+        .felt-area::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(255,255,255,0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(255,255,255,0.03) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(0,0,0,0.1) 0%, transparent 70%);
+            pointer-events: none;
+            animation: feltPulse 8s ease-in-out infinite;
+            z-index: 1;
+        }
+
+        /* Theme-specific felt animations */
+        .theme-green .felt-area::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            right: -50%;
+            bottom: -50%;
+            background: 
+                repeating-linear-gradient(
+                    45deg,
+                    transparent,
+                    transparent 10px,
+                    rgba(255,255,255,0.01) 10px,
+                    rgba(255,255,255,0.01) 20px
+                );
+            animation: feltShimmer 20s linear infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .theme-blue .felt-area::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            right: -50%;
+            bottom: -50%;
+            background: 
+                radial-gradient(ellipse at 30% 20%, rgba(100,150,255,0.05) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 80%, rgba(100,150,255,0.05) 0%, transparent 50%);
+            animation: feltShimmer 15s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .theme-red .felt-area::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            right: -50%;
+            bottom: -50%;
+            background: 
+                conic-gradient(from 0deg at 50% 50%, 
+                    transparent 0deg, 
+                    rgba(255,100,100,0.02) 60deg, 
+                    transparent 120deg,
+                    transparent 240deg,
+                    rgba(255,100,100,0.02) 300deg,
+                    transparent 360deg
+                );
+            animation: feltShimmer 25s linear infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .theme-purple .felt-area::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            right: -50%;
+            bottom: -50%;
+            background: 
+                radial-gradient(circle at 50% 50%, rgba(150,100,255,0.04) 0%, transparent 60%);
+            animation: feltPulse 6s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Card Deck Toggle Button */
+        .card-deck-toggle {
+            position: fixed;
+            top: 120px;
+            right: 15px;
+            background: rgba(0,0,0,0.6);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: #94a3b8;
+            font-size: 11px;
+            cursor: pointer;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .card-deck-toggle:hover {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+
+        .card-deck-toggle .deck-icon {
+            font-size: 12px;
+        }
         
         /* Screen Management */
         .screen {
@@ -1239,7 +1486,7 @@
         </div>
 
         <!-- Game Screen -->
-        <div id="game-screen" class="screen theme-green">
+        <div id="game-screen" class="screen theme-green card-deck-classic">
             <!-- Theme Toggles -->
             <button class="theme-toggle" id="theme-toggle" title="Change table theme">
                 <span class="color-dot"></span>
@@ -1248,6 +1495,10 @@
             <button class="theme-toggle" id="dark-mode-toggle" title="Toggle light/dark mode" style="top: 85px;">
                 <span id="mode-icon">🌙</span>
                 <span>Mode</span>
+            </button>
+            <button class="card-deck-toggle" id="card-deck-toggle" title="Change card style">
+                <span class="deck-icon">🃏</span>
+                <span id="deck-label">Classic</span>
             </button>
 
             <!-- Header -->

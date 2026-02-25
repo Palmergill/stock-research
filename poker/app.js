@@ -401,6 +401,7 @@ const elements = {
     loadingOverlay: document.getElementById('loading-overlay'),
     themeToggle: document.getElementById('theme-toggle'),
     darkModeToggle: document.getElementById('dark-mode-toggle'),
+    cardDeckToggle: document.getElementById('card-deck-toggle'),
     gameScreen: document.getElementById('game-screen'),
     statsBtn: document.getElementById('stats-btn'),
     statsModal: document.getElementById('stats-modal'),
@@ -480,6 +481,52 @@ const DarkModeManager = {
     toggle() {
         this.isDarkMode = !this.isDarkMode;
         this.applyMode();
+        
+        // Provide haptic feedback if available
+        if (navigator.vibrate) {
+            navigator.vibrate(20);
+        }
+    }
+};
+
+// Card Deck Theme Manager
+const CardDeckManager = {
+    decks: ['card-deck-classic', 'card-deck-modern', 'card-deck-minimal', 'card-deck-vintage', 'card-deck-neon'],
+    deckLabels: ['Classic', 'Modern', 'Minimal', 'Vintage', 'Neon'],
+    currentDeckIndex: 0,
+
+    init() {
+        // Load saved deck theme from localStorage
+        const savedDeck = localStorage.getItem('poker-card-deck');
+        if (savedDeck && this.decks.includes(savedDeck)) {
+            this.currentDeckIndex = this.decks.indexOf(savedDeck);
+            this.applyDeck(savedDeck);
+        }
+    },
+
+    applyDeck(deckClass) {
+        if (!elements.gameScreen) return;
+        
+        // Remove all deck classes
+        this.decks.forEach(d => elements.gameScreen.classList.remove(d));
+        
+        // Add new deck class
+        elements.gameScreen.classList.add(deckClass);
+        
+        // Update label
+        const deckLabel = document.getElementById('deck-label');
+        if (deckLabel) {
+            deckLabel.textContent = this.deckLabels[this.currentDeckIndex];
+        }
+        
+        // Save to localStorage
+        localStorage.setItem('poker-card-deck', deckClass);
+    },
+
+    nextDeck() {
+        this.currentDeckIndex = (this.currentDeckIndex + 1) % this.decks.length;
+        const nextDeck = this.decks[this.currentDeckIndex];
+        this.applyDeck(nextDeck);
         
         // Provide haptic feedback if available
         if (navigator.vibrate) {
@@ -580,6 +627,7 @@ document.addEventListener('DOMContentLoaded', () => {
     SoundManager.init();
     ThemeManager.init();
     DarkModeManager.init();
+    CardDeckManager.init();
     StatsManager.init();
     
     // Theme toggle button
@@ -590,6 +638,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // Dark mode toggle button
     if (elements.darkModeToggle) {
         elements.darkModeToggle.addEventListener('click', () => DarkModeManager.toggle());
+    }
+
+    // Card deck toggle button
+    if (elements.cardDeckToggle) {
+        elements.cardDeckToggle.addEventListener('click', () => CardDeckManager.nextDeck());
     }
 
     // Cleanup on page unload
