@@ -1277,7 +1277,7 @@
         
         .ai-action-indicator {
             text-align: center;
-            margin-bottom: 8px;
+            margin: 8px 0;
             min-height: 24px;
             animation: fadeInUp 0.3s ease-out;
         }
@@ -1967,6 +1967,9 @@
                     <!-- Opponents rendered by JS -->
                 </div>
                 
+                <!-- AI Action Indicator -->
+                <div class="ai-action-indicator" id="ai-action-indicator"></div>
+                
                 <!-- Community Cards -->
                 <div class="community-area">
                     <span class="community-label">Community Cards</span>
@@ -1987,7 +1990,6 @@
                     <!-- Your cards rendered by JS -->
                 </div>
                 <div class="hand-strength" id="hand-strength"></div>
-                <div class="ai-action-indicator" id="ai-action-indicator"></div>
                 <div class="decision-timer hidden" id="decision-timer">
                     <span class="timer-text" id="timer-text">Your turn - 30s</span>
                     <div class="timer-bar">
