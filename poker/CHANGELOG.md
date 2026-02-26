@@ -9,6 +9,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [1.0.9] - 2025-02-25
 
 ### Added
+- **Backup strategy** - Export and restore game data
+  - New `/api/poker/games/{game_id}/backup` endpoint exports complete game state
+  - Exports include players, hand history, AI state, and metrics
+  - New `/api/poker/games/{game_id}/restore` endpoint to restore from backup
+  - Backup format versioned for future compatibility
+- **Spectator mode** - Watch games without playing
+  - New `/api/poker/games/{game_id}/spectate` endpoint returns game state with hidden hole cards
+  - New `/api/poker/games/{game_id}/spectators` endpoint returns active spectator count
+  - No player_id required to spectate - anyone can watch
+  - Spectator counts tracked per game
 - **Game state persistence** - Games now survive backend restarts
   - File-based persistence system saves games every 5 minutes
   - Automatic game restoration on startup

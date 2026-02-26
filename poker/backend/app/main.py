@@ -955,7 +955,7 @@ async def detailed_health_check():
             "ai_difficulty": Config.AI_DIFFICULTY,
             "ai_decision_delay": Config.AI_DECISION_DELAY,
         },
-        "version": "1.0.5"
+        "version": "1.0.9"
     }
 
 
