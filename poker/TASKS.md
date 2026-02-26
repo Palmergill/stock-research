@@ -56,7 +56,7 @@
 - [ ] **State management** - Use Redux/Zustand instead of global variables
 - [ ] **Component structure** - Break into React/Vue components
 - [x] **Error boundaries** - Fixed: Added comprehensive error boundary system with `ErrorBoundary` object in app.js featuring global error handlers, user-friendly toast notifications, and async function wrapping
-- [ ] **Unit tests** - Jest/Vitest for game logic
+- [x] **Unit tests** - Fixed: Set up Jest testing framework with jsdom environment. Created test utilities module (poker/tests/gameUtils.js) with testable functions extracted from app.js including pot odds calculation, chip formatting, card value mapping, hand strength formatting, raise validation, action permissions, and avatar generation. Added comprehensive test suite (poker/tests/gameUtils.test.js) with 32 tests covering all utility functions.
 - [x] **PWA support** - Fixed: Added manifest.json with app metadata and icons, created sw.js service worker with cache-first strategy for static assets, updated index.html with manifest link and service worker registration
 - [x] **Service worker** - Fixed: Service worker already implemented with cache-first strategy for static assets, proper cache versioning, offline API error handling, and message handling for skipWaiting
 
@@ -113,7 +113,7 @@
 
 ## 🚀 Deployment
 
-- [ ] **CI/CD pipeline** - GitHub Actions for testing and deployment
+- [x] **CI/CD pipeline** - Fixed: Created GitHub Actions workflow (.github/workflows/ci-cd.yml) with jobs for backend testing (pytest), frontend testing (Jest), and automatic Vercel deployment on main branch merges
 - [ ] **Staging environment** - Separate staging for testing
 - [ ] **Health checks** - Better health/monitoring endpoints
 - [ ] **Auto-scaling** - Handle traffic spikes
