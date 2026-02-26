@@ -581,6 +581,17 @@ let isMyTurn = false;
 let raiseAmount = 0;
 let pollIntervalId = null;
 let isRequestPending = false; // Lock to prevent race conditions
+let actionToken = null; // Anti-replay token for security
+
+// Helper function to update game state and extract action token
+function updateGameState(newState) {
+    gameState = newState;
+    // Extract and store action token if present (for security)
+    if (newState.action_token) {
+        actionToken = newState.action_token;
+        delete gameState.action_token; // Remove from state to avoid confusion
+    }
+}
 let turnStartTime = null;
 let turnTimerId = null;
 const TURN_TIME_LIMIT = 30000; // 30 seconds per turn
@@ -974,7 +985,7 @@ async function startGame() {
         const data = await response.json();
         gameId = data.game_id;
         playerId = data.player_id;
-        gameState = data.state;
+        updateGameState(data.state);
 
         // Clear chat for new game
         ChatManager.clear();
@@ -1018,7 +1029,7 @@ function startPolling() {
             }
             
             const newState = await response.json();
-            gameState = newState;
+            updateGameState(newState);
             
             // Update chat messages if present
             if (newState.chat_messages) {
@@ -1068,6 +1079,7 @@ async function playerAction(action) {
     try {
         const body = { player_id: playerId, action };
         if (amount !== null) body.amount = amount;
+        if (actionToken) body.action_token = actionToken; // Include anti-replay token
         
         const response = await fetch(`${API_BASE}/api/poker/games/${gameId}/action`, {
             method: 'POST',
@@ -1077,7 +1089,8 @@ async function playerAction(action) {
         
         if (!response.ok) throw new Error('Action failed');
         
-        gameState = await response.json();
+        const responseData = await response.json();
+        updateGameState(responseData);
         
         // Update chat messages if present
         if (gameState.chat_messages) {
@@ -1172,7 +1185,8 @@ async function nextHand() {
             throw new Error(err.detail || err.message || 'Failed to start next hand');
         }
 
-        gameState = await response.json();
+        const responseData = await response.json();
+        updateGameState(responseData);
         
         // Update chat messages if present
         if (gameState.chat_messages) {

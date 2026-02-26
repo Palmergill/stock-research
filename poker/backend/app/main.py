@@ -21,6 +21,7 @@ from .monitoring import performance_middleware, performance_monitor
 from .adaptive_ai import adaptive_ai_manager
 from .analytics import usage_analytics
 from .persistence import persistence, GamePersistence
+from .game_integrity import integrity_manager
 
 # Setup logging
 logger = get_logger()
@@ -94,6 +95,7 @@ class GameState(BaseModel):
     dealer_index: int = Field(..., description="Index of dealer button")
     last_action: Optional[str] = Field(None, description="Description of last action taken")
     winners: Optional[List[dict]] = Field(None, description="Winners from showdown with amounts won")
+    action_token: Optional[str] = Field(None, description="Token required for next action (anti-replay)")
 
 
 class CreateGameRequest(BaseModel):
@@ -147,6 +149,11 @@ class ActionRequest(BaseModel):
         le=1000000,
         description="Raise amount (required only for raise action)",
         examples=[100, 500]
+    )
+    action_token: Optional[str] = Field(
+        default=None,
+        description="Anti-replay token from game state (required when it's player's turn)",
+        examples=["a1b2c3d4e5f67890"]
     )
 
     @field_validator('player_id')
@@ -570,13 +577,21 @@ async def create_game(request: CreateGameRequest):
     
     # Initialize player tendency tracker
     adaptive_ai_manager.get_or_create_tracker(human.id, request.player_name)
+    
+    # Initialize integrity session for the player
+    integrity_manager.create_session(game_id, human.id)
 
     logger.info(f"Game {game_id} created successfully with {len(game.players)} players")
+
+    # Get initial state with action token
+    state = game.to_dict(for_player=human.id)
+    state['action_token'] = integrity_manager.generate_action_token(game_id, human.id)
+    integrity_manager.store_state_fingerprint(game_id, state)
 
     return {
         "game_id": game_id,
         "player_id": human.id,
-        "state": game.to_dict(for_player=human.id),
+        "state": state,
         "session_id": session_id
     }
 
@@ -604,7 +619,17 @@ async def get_game_state(game_id: str, player_id: str):
         raise HTTPException(status_code=404, detail="Game not found")
 
     game = games[game_id]
-    return game.to_dict(for_player=player_id)
+    state = game.to_dict(for_player=player_id)
+    
+    # Generate action token if it's this player's turn
+    current_player = game.get_current_player()
+    if current_player and current_player.id == player_id:
+        token = integrity_manager.generate_action_token(game_id, player_id)
+        if token:
+            state['action_token'] = token
+            integrity_manager.store_state_fingerprint(game_id, state)
+    
+    return state
 
 
 @app.post(
@@ -636,6 +661,14 @@ async def player_action(game_id: str, request: ActionRequest):
     if not current or current.id != request.player_id:
         logger.warning(f"Action attempted out of turn: game={game_id}, player={request.player_id}")
         raise HTTPException(status_code=400, detail="Not your turn")
+    
+    # Game integrity validation
+    is_valid, error_msg = integrity_manager.validate_action_request(
+        game_id, request.player_id, request.action, request.action_token
+    )
+    if not is_valid:
+        logger.warning(f"Integrity check failed: game={game_id}, player={request.player_id}, error={error_msg}")
+        raise HTTPException(status_code=400, detail=f"Security validation failed: {error_msg}")
 
     # Execute action
     logger.info(f"Player action: game={game_id}, player={request.player_id}, action={request.action}")
@@ -656,6 +689,9 @@ async def player_action(game_id: str, request: ActionRequest):
     if not success:
         logger.warning(f"Action failed: game={game_id}, action={request.action}")
         raise HTTPException(status_code=400, detail="Action failed")
+    
+    # Record successful action in integrity manager
+    integrity_manager.record_action(game_id, request.player_id, request.action, request.action_token)
     
     # Track player action for tendency analysis
     player = next((p for p in game.players if p.id == request.player_id), None)
@@ -772,7 +808,16 @@ async def next_hand(game_id: str, player_id: str):
     if ai_turns >= Config.MAX_AI_TURNS:
         logger.error(f"AI turn limit reached during blinds in game {game_id}")
 
-    return game.to_dict(for_player=player_id)
+    # Prepare response state with integrity token
+    state = game.to_dict(for_player=player_id)
+    current = game.get_current_player()
+    if current and current.id == player_id:
+        token = integrity_manager.generate_action_token(game_id, player_id)
+        if token:
+            state['action_token'] = token
+            integrity_manager.store_state_fingerprint(game_id, state)
+
+    return state
 
 
 @app.get(
@@ -1009,6 +1054,31 @@ async def trigger_persistence_save():
 async def performance_metrics():
     """Get API performance metrics and statistics"""
     return performance_monitor.get_stats()
+
+
+@app.get(
+    "/api/poker/health/integrity/{game_id}",
+    tags=["System"],
+    summary="Game integrity status",
+    description="Get integrity monitoring statistics for a game including active sessions and suspicious activity. Used for security monitoring.",
+    responses={
+        200: {"description": "Integrity status retrieved"},
+        400: {"description": "Invalid game ID format"},
+        404: {"description": "Game not found"}
+    }
+)
+async def integrity_status(game_id: str):
+    """Get game integrity status and suspicious activity logs"""
+    validate_game_id(game_id)
+    
+    if game_id not in games:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    return {
+        "game_id": game_id,
+        "integrity": integrity_manager.get_session_stats(game_id),
+        "suspicious_activity": integrity_manager.get_suspicious_activity(game_id)
+    }
 
 
 @app.get(
