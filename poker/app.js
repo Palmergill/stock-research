@@ -632,9 +632,6 @@ const elements = {
     timerText: document.getElementById('timer-text'),
     timerFill: document.getElementById('timer-fill'),
     loadingOverlay: document.getElementById('loading-overlay'),
-    themeToggle: document.getElementById('theme-toggle'),
-    darkModeToggle: document.getElementById('dark-mode-toggle'),
-    cardDeckToggle: document.getElementById('card-deck-toggle'),
     gameScreen: document.getElementById('game-screen'),
     statsBtn: document.getElementById('stats-btn'),
     statsModal: document.getElementById('stats-modal'),
@@ -862,21 +859,6 @@ document.addEventListener('DOMContentLoaded', () => {
     DarkModeManager.init();
     CardDeckManager.init();
     StatsManager.init();
-    
-    // Theme toggle button
-    if (elements.themeToggle) {
-        elements.themeToggle.addEventListener('click', () => ThemeManager.nextTheme());
-    }
-    
-    // Dark mode toggle button
-    if (elements.darkModeToggle) {
-        elements.darkModeToggle.addEventListener('click', () => DarkModeManager.toggle());
-    }
-
-    // Card deck toggle button
-    if (elements.cardDeckToggle) {
-        elements.cardDeckToggle.addEventListener('click', () => CardDeckManager.nextDeck());
-    }
 
     // Cleanup on page unload
     window.addEventListener('beforeunload', stopPolling);
