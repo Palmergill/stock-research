@@ -5,7 +5,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import BaseModel, Field, field_validator
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Any
 import uuid
 import asyncio
 import re
@@ -17,6 +17,8 @@ from .ai import AIManager
 from .config import Config, get_logger, set_correlation_id, clear_correlation_id
 from .metrics import metrics_manager
 from .monitoring import performance_middleware, performance_monitor
+from .adaptive_ai import adaptive_ai_manager
+from .analytics import usage_analytics
 
 # Setup logging
 logger = get_logger()
@@ -119,6 +121,7 @@ class CreateGameResponse(BaseModel):
     game_id: str = Field(..., description="Unique game identifier (8 characters)")
     player_id: str = Field(..., description="Player's unique identifier")
     state: GameState = Field(..., description="Initial game state")
+    session_id: str = Field(..., description="Analytics session identifier")
 
 
 class ActionRequest(BaseModel):
@@ -222,6 +225,41 @@ class GameMetricsResponse(BaseModel):
     total_pot_accumulated: int = Field(..., description="Sum of all pot sizes")
     phase_distribution: Dict[str, int] = Field(..., description="Count of hands ending in each phase")
     player_behaviors: List[PlayerBehaviorEntry] = Field(..., description="Behavior stats for each player")
+
+
+class PlayerTendencyResponse(BaseModel):
+    """Player tendency analysis response"""
+    player_name: str = Field(..., description="Player display name")
+    hands_played: int = Field(..., description="Total hands played")
+    hands_won: int = Field(..., description="Hands won")
+    win_rate: float = Field(..., description="Win rate (0-1)")
+    vpip: float = Field(..., description="Voluntarily Put $ In Pot percentage")
+    pfr: float = Field(..., description="Pre-flop raise percentage")
+    aggression_factor: float = Field(..., description="Aggression factor (raises/calls)")
+    fold_percentage: float = Field(..., description="Fold frequency")
+    showdown_percentage: float = Field(..., description="Hands reaching showdown")
+    bluff_frequency: float = Field(..., description="Estimated bluff frequency")
+    avg_decision_time_ms: float = Field(..., description="Average decision time in ms")
+    player_type: str = Field(..., description="Classified player type")
+    ai_adjustments: Dict[str, float] = Field(..., description="AI adjustment factors")
+    recommendations: List[str] = Field(..., description="Strategy recommendations")
+
+
+class UsageAnalyticsResponse(BaseModel):
+    """Usage analytics summary response"""
+    uptime_hours: float = Field(..., description="API uptime in hours")
+    active_sessions: int = Field(..., description="Currently active sessions")
+    active_sessions_5min: int = Field(..., description="Active sessions in last 5 minutes")
+    total_sessions: int = Field(..., description="Total sessions since startup")
+    unique_players_24h: int = Field(..., description="Unique players in last 24 hours")
+    avg_session_duration_minutes: float = Field(..., description="Average session duration")
+    total_requests: int = Field(..., description="Total API requests")
+    total_games_created: int = Field(..., description="Total games created")
+    total_hands_played: int = Field(..., description="Total hands played")
+    total_actions: int = Field(..., description="Total player actions")
+    requests_per_hour: float = Field(..., description="Average requests per hour")
+    today: Dict[str, Any] = Field(..., description="Today's statistics")
+    hourly_activity: Dict[str, int] = Field(..., description="Hourly request counts")
 
 
 class ErrorResponse(BaseModel):
@@ -340,6 +378,10 @@ async def rate_limit_middleware(request: Request, call_next):
     remaining = rate_limiter.get_remaining(client_ip)
     response.headers["X-RateLimit-Remaining"] = str(remaining)
     response.headers["X-RateLimit-Limit"] = str(rate_limiter.burst_size)
+    
+    # Track request in usage analytics (skip health checks)
+    if not request.url.path.startswith('/api/poker/health'):
+        usage_analytics.record_request()
     
     return response
 
@@ -472,13 +514,21 @@ async def create_game(request: CreateGameRequest):
     # Store game
     games[game_id] = game
     ai_managers[game_id] = ai_manager
+    
+    # Track usage analytics
+    session_id = usage_analytics.start_session(human.id, request.player_name)
+    usage_analytics.record_game_created(session_id)
+    
+    # Initialize player tendency tracker
+    adaptive_ai_manager.get_or_create_tracker(human.id, request.player_name)
 
     logger.info(f"Game {game_id} created successfully with {len(game.players)} players")
 
     return {
         "game_id": game_id,
         "player_id": human.id,
-        "state": game.to_dict(for_player=human.id)
+        "state": game.to_dict(for_player=human.id),
+        "session_id": session_id
     }
 
 
@@ -557,7 +607,27 @@ async def player_action(game_id: str, request: ActionRequest):
     if not success:
         logger.warning(f"Action failed: game={game_id}, action={request.action}")
         raise HTTPException(status_code=400, detail="Action failed")
-
+    
+    # Track player action for tendency analysis
+    player = next((p for p in game.players if p.id == request.player_id), None)
+    if player and player.is_human:
+        # Estimate hand strength for tracking (simplified)
+        from .ai import PokerAI
+        temp_ai = PokerAI()
+        hand_strength = temp_ai._estimate_hand_strength(game, player)
+        
+        adaptive_ai_manager.record_player_action(
+            player_id=request.player_id,
+            player_name=player.name,
+            action=request.action,
+            amount=request.amount or 0,
+            game_phase=game.phase,
+            hand_strength=hand_strength
+        )
+        
+        # Track usage analytics
+        usage_analytics.record_action()
+    
     # Process AI turns with turn limit protection and human-like timing
     ai_manager = ai_managers[game_id]
     ai_turns = 0
@@ -604,6 +674,32 @@ async def next_hand(game_id: str, player_id: str):
     # Only proceed if hand is complete
     if game.phase not in ['showdown', 'waiting']:
         raise HTTPException(status_code=400, detail="Hand still in progress")
+    
+    # Track hand completion for analytics
+    usage_analytics.record_hand_played()
+    
+    # Record hand results for player tendencies
+    human_player = next((p for p in game.players if p.id == player_id and p.is_human), None)
+    if human_player:
+        # Determine if human won and reached showdown
+        won = False
+        reached_showdown = game.phase == 'showdown'
+        pot_size = 0
+        
+        # Check if there are winners from the last hand
+        if hasattr(game, 'last_hand_winners') and game.last_hand_winners:
+            for winner in game.last_hand_winners:
+                if winner.get('player_id') == player_id:
+                    won = True
+                    pot_size = winner.get('amount', 0)
+                    break
+        
+        adaptive_ai_manager.record_hand_result(
+            player_id=player_id,
+            won=won,
+            reached_showdown=reached_showdown,
+            pot_size=pot_size
+        )
 
     logger.info(f"Starting next hand: game={game_id}, hand_number={game.hand_number + 1}")
 
@@ -777,6 +873,60 @@ async def detailed_health_check():
 async def performance_metrics():
     """Get API performance metrics and statistics"""
     return performance_monitor.get_stats()
+
+
+@app.get(
+    "/api/poker/analytics/usage",
+    response_model=UsageAnalyticsResponse,
+    tags=["Analytics"],
+    summary="Get usage analytics",
+    description="Retrieve comprehensive usage analytics including active sessions, player counts, request rates, and daily statistics.",
+    responses={
+        200: {"description": "Usage analytics retrieved", "model": UsageAnalyticsResponse}
+    }
+)
+async def get_usage_analytics():
+    """Get usage analytics and session statistics"""
+    usage_analytics.record_request()
+    return usage_analytics.get_summary()
+
+
+@app.get(
+    "/api/poker/analytics/player/{player_id}",
+    response_model=PlayerTendencyResponse,
+    tags=["Analytics"],
+    summary="Get player tendency analysis",
+    description="Retrieve detailed player tendency analysis including VPIP, PFR, aggression factor, player type classification, and AI adjustments.",
+    responses={
+        200: {"description": "Player analysis retrieved", "model": PlayerTendencyResponse},
+        404: {"description": "Player not found in analytics", "model": ErrorResponse}
+    }
+)
+async def get_player_analysis(player_id: str):
+    """Get detailed player tendency analysis"""
+    validate_player_id(player_id)
+    usage_analytics.record_request()
+    
+    analysis = adaptive_ai_manager.get_player_analysis(player_id)
+    if not analysis:
+        raise HTTPException(status_code=404, detail="Player not found in analytics data")
+    
+    return analysis
+
+
+@app.get(
+    "/api/poker/analytics/players",
+    tags=["Analytics"],
+    summary="Get all player analyses",
+    description="Retrieve tendency analysis for all tracked players.",
+    responses={
+        200: {"description": "All player analyses retrieved"}
+    }
+)
+async def get_all_player_analyses():
+    """Get analysis for all tracked players"""
+    usage_analytics.record_request()
+    return adaptive_ai_manager.get_all_analyses()
 
 
 @app.get(

@@ -852,13 +852,14 @@ const ChipStackVisualizer = {
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
-    // Initialize error boundary, sound manager, theme manager, dark mode, and stats
+    // Initialize error boundary, sound manager, theme manager, dark mode, stats, and chat
     ErrorBoundary.init();
     SoundManager.init();
     ThemeManager.init();
     DarkModeManager.init();
     CardDeckManager.init();
     StatsManager.init();
+    ChatManager.init();
 
     // Cleanup on page unload
     window.addEventListener('beforeunload', stopPolling);
@@ -975,6 +976,9 @@ async function startGame() {
         playerId = data.player_id;
         gameState = data.state;
 
+        // Clear chat for new game
+        ChatManager.clear();
+
         elements.yourName.textContent = name;
 
         hideLoading();
@@ -1015,6 +1019,12 @@ function startPolling() {
             
             const newState = await response.json();
             gameState = newState;
+            
+            // Update chat messages if present
+            if (newState.chat_messages) {
+                ChatManager.updateMessages(newState.chat_messages);
+            }
+            
             updateGameDisplay();
             
             if (gameState.phase === 'showdown') {
@@ -1068,6 +1078,12 @@ async function playerAction(action) {
         if (!response.ok) throw new Error('Action failed');
         
         gameState = await response.json();
+        
+        // Update chat messages if present
+        if (gameState.chat_messages) {
+            ChatManager.updateMessages(gameState.chat_messages);
+        }
+        
         hideRaiseControls();
         
         // Play chip sound for betting actions
@@ -1157,6 +1173,12 @@ async function nextHand() {
         }
 
         gameState = await response.json();
+        
+        // Update chat messages if present
+        if (gameState.chat_messages) {
+            ChatManager.updateMessages(gameState.chat_messages);
+        }
+        
         hideLoading();
         hideHandResult();
         updateGameDisplay();
@@ -1696,3 +1718,166 @@ function triggerHapticFeedback() {
         }
     }
 }
+
+// ===== CHAT MANAGER =====
+const ChatManager = {
+    messages: [],
+    lastMessageTime: 0,
+    isOpen: false,
+    hasNewMessages: false,
+
+    init() {
+        // Chat toggle button
+        const chatToggle = document.getElementById('btn-chat-toggle');
+        const chatPanel = document.getElementById('chat-panel');
+        const chatClose = document.getElementById('btn-close-chat');
+        const chatSend = document.getElementById('btn-send-chat');
+        const chatInput = document.getElementById('chat-input');
+
+        if (chatToggle) {
+            chatToggle.addEventListener('click', () => this.toggle());
+        }
+        if (chatClose) {
+            chatClose.addEventListener('click', () => this.close());
+        }
+        if (chatSend) {
+            chatSend.addEventListener('click', () => this.sendMessage());
+        }
+        if (chatInput) {
+            chatInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    this.sendMessage();
+                }
+            });
+        }
+
+        console.log('[Chat] Chat manager initialized');
+    },
+
+    toggle() {
+        this.isOpen = !this.isOpen;
+        const panel = document.getElementById('chat-panel');
+        const toggle = document.getElementById('btn-chat-toggle');
+
+        if (this.isOpen) {
+            panel.classList.remove('hidden');
+            toggle.classList.remove('has-new');
+            this.hasNewMessages = false;
+            this.scrollToBottom();
+            document.getElementById('chat-input')?.focus();
+        } else {
+            panel.classList.add('hidden');
+        }
+    },
+
+    close() {
+        this.isOpen = false;
+        document.getElementById('chat-panel')?.classList.add('hidden');
+    },
+
+    open() {
+        this.isOpen = true;
+        document.getElementById('chat-panel')?.classList.remove('hidden');
+        toggle.classList.remove('has-new');
+        this.hasNewMessages = false;
+        this.scrollToBottom();
+    },
+
+    async sendMessage() {
+        const input = document.getElementById('chat-input');
+        const message = input?.value?.trim();
+
+        if (!message || !gameId || !playerId) return;
+
+        try {
+            const response = await fetch(`${API_BASE}/api/poker/games/${gameId}/chat`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    player_id: playerId,
+                    message: message
+                })
+            });
+
+            if (response.ok) {
+                input.value = '';
+                // Message will appear on next poll
+            } else {
+                console.error('[Chat] Failed to send message');
+            }
+        } catch (error) {
+            console.error('[Chat] Error sending message:', error);
+        }
+    },
+
+    updateMessages(newMessages) {
+        if (!newMessages || newMessages.length === 0) return;
+
+        let hasNew = false;
+        newMessages.forEach(msg => {
+            // Check if we already have this message (by timestamp + player)
+            const exists = this.messages.some(m =>
+                m.timestamp === msg.timestamp && m.player_id === msg.player_id
+            );
+            if (!exists) {
+                this.messages.push(msg);
+                hasNew = true;
+                if (msg.timestamp > this.lastMessageTime) {
+                    this.lastMessageTime = msg.timestamp;
+                }
+            }
+        });
+
+        if (hasNew) {
+            this.renderMessages();
+            if (!this.isOpen) {
+                this.hasNewMessages = true;
+                document.getElementById('btn-chat-toggle')?.classList.add('has-new');
+            } else {
+                this.scrollToBottom();
+            }
+        }
+    },
+
+    renderMessages() {
+        const container = document.getElementById('chat-messages');
+        if (!container) return;
+
+        // Keep only last 50 messages for performance
+        const messagesToShow = this.messages.slice(-50);
+
+        container.innerHTML = messagesToShow.map(msg => {
+            const isMe = msg.player_id === playerId;
+            const className = isMe ? 'own' : 'other';
+            const name = isMe ? 'You' : msg.player_name;
+
+            return `
+                <div class="chat-message ${className}">
+                    <span class="chat-message-name">${name}</span>
+                    <div class="chat-message-text">${this.escapeHtml(msg.message)}</div>
+                </div>
+            `;
+        }).join('');
+    },
+
+    scrollToBottom() {
+        const container = document.getElementById('chat-messages');
+        if (container) {
+            container.scrollTop = container.scrollHeight;
+        }
+    },
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    },
+
+    clear() {
+        this.messages = [];
+        this.lastMessageTime = 0;
+        this.hasNewMessages = false;
+        const container = document.getElementById('chat-messages');
+        if (container) container.innerHTML = '';
+    }
+};

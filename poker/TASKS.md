@@ -25,7 +25,7 @@
 - [ ] **Tournament mode** - Sit & go tournaments with increasing blinds
 - [x] **Hand history** - Fixed: Each hand is now logged with timestamp, players, hole cards, community cards, pot size, winners, and action sequence. History accessible via `/api/poker/games/{game_id}/history` endpoint
 - [x] **Player statistics** - Fixed: Added StatsManager that tracks hands played, hands won, win rate, biggest pot won, net profit/loss, and best hand achieved. Data persists across sessions using localStorage. Stats view accessible via button on start screen with option to reset.
-- [ ] **Chat feature** - Simple chat between players
+- [x] **Chat feature** - Fixed: Added simple chat system between players with chat panel UI, message persistence in game state, and real-time updates via polling. Players can send messages up to 200 characters, chat history is limited to 100 messages per game, and the UI shows new message indicators when chat is closed.
 - [x] **Sound effects** - Fixed: Added Web Audio API sound manager with card deal, chip, win, and loss sounds. Sounds are generated programmatically (no external files needed) and respect browser autoplay policies.
 - [x] **Vibration on turn** - Fixed: Added haptic feedback via `navigator.vibrate([50, 100, 50])` when it's the player's turn, with mobile device detection and graceful fallback
 - [x] **All-in showdown** - Fixed: When all active players are all-in, the board runs out immediately (deals all remaining community cards at once) and goes straight to showdown. Implemented `_all_active_players_all_in()` and `_run_out_board()` methods in game.py.
@@ -72,7 +72,7 @@
 ### AI Improvements
 - [x] **More sophisticated AI** - Fixed: Added stack size consideration (calculates stack in BB and adjusts thresholds 0.7x-1.3x based on depth) and positional awareness (early/late position multipliers 0.85x-1.25x). AI now plays tighter with short stacks and looser in late position.
 - [x] **AI tells** - Fixed: Added human-like behavioral patterns including timing tells (fast/normal/deliberate/tanker patterns), betting styles (precise/rounded/psychological), decision delay calculation based on hand strength, and bet sizing patterns. Each bot gets unique tell patterns on initialization. Added `get_decision_delay()`, `get_bet_size()`, and `get_stats()` methods to PokerAI class.
-- [ ] **Adaptive AI** - AI adjusts to player tendencies
+- [x] **Adaptive AI** - Fixed: AI now tracks player tendencies (VPIP, PFR, aggression factor) and dynamically adjusts its strategy. Added player type classification (TAG, LAG, Rock, Calling Station, Nit) with specific counter-strategies. New endpoints: `/api/poker/analytics/player/{player_id}` and `/api/poker/analytics/players`
 - [x] **AI difficulty** - Fixed: Added configurable difficulty levels (easy/medium/hard/expert) with varying aggression, bluff frequency, and hand strength thresholds
 - [ ] **GTO approximation** - Game theory optimal play option
 
@@ -109,7 +109,7 @@
 - [x] **Player behavior** - Fixed: Added PlayerBehavior class that tracks fold/call/raise percentages, all-in frequency, and total actions per player. Integrated with game action logging to automatically record every player decision.
 - [x] **Error tracking** - Fixed: Added Sentry integration with automatic error reporting, environment-based configuration, FastAPI/Starlette integration, and performance profiling. Configurable via SENTRY_DSN, SENTRY_ENVIRONMENT, and SENTRY_TRACES_SAMPLE_RATE environment variables.
 - [x] **Performance monitoring** - Fixed: Added performance monitoring middleware that tracks API response times, per-endpoint statistics (count, avg/min/max/p95), overall metrics (p95, p99, average, median), slow request detection (500ms threshold), and X-Response-Time-Ms headers. New `/api/poker/health/performance` endpoint returns aggregated stats. Configurable via ENABLE_PERFORMANCE_MONITORING and SLOW_REQUEST_THRESHOLD_MS env vars.
-- [ ] **Usage analytics** - Track active users, session length
+- [x] **Usage analytics** - Fixed: Added comprehensive usage analytics tracking including active sessions, unique players, session duration, request rates, hourly activity, and daily statistics. Tracks games created, hands played, and player actions. New endpoint: `/api/poker/analytics/usage`
 
 ## 🚀 Deployment
 

@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [1.0.8] - 2025-02-25
+
+### Added
+- **Chat feature** - Simple chat system between players
+  - Chat panel UI with slide-in animation
+  - Real-time message updates via polling
+  - Message persistence in game state (last 100 messages)
+  - 200 character limit per message
+  - New message indicator when chat is closed
+  - Mobile-optimized responsive design
+  - Light/dark mode support
+  - Keyboard support (Enter to send)
+  - Message sanitization and HTML escaping for security
+
+## [1.0.7] - 2025-02-25
+
 ### Added
 - Comprehensive API documentation (API.md)
   - All endpoints documented with request/response schemas

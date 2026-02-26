@@ -216,3 +216,45 @@ async def health_check():
     # Cleanup old games and return count
     cleaned = cleanup_old_games()
     return {"status": "ok", "active_games": len(games), "cleaned_games": cleaned}
+
+
+# ===== CHAT ENDPOINTS =====
+
+class ChatRequest(BaseModel):
+    player_id: str
+    message: str
+
+
+@router.post("/games/{game_id}/chat")
+async def send_chat_message(game_id: str, request: ChatRequest):
+    """Send a chat message in a game"""
+    if game_id not in games:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    update_game_access(game_id)
+    game = games[game_id]
+    
+    # Validate player exists in game
+    player_exists = any(p.id == request.player_id for p in game.players)
+    if not player_exists:
+        raise HTTPException(status_code=403, detail="Player not in game")
+    
+    # Add message
+    success = game.add_chat_message(request.player_id, request.message)
+    if not success:
+        raise HTTPException(status_code=400, detail="Invalid message")
+    
+    return {"success": True, "message": "Message sent"}
+
+
+@router.get("/games/{game_id}/chat")
+async def get_chat_messages(game_id: str, since: float = 0):
+    """Get chat messages for a game"""
+    if game_id not in games:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    update_game_access(game_id)
+    game = games[game_id]
+    
+    messages = game.get_chat_messages(since)
+    return {"messages": messages}
