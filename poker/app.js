@@ -3,6 +3,45 @@ const API_BASE = window.location.hostname === 'localhost'
     ? 'http://localhost:8000'
     : 'https://stock-research-production-b3ac.up.railway.app';
 
+// CSRF Protection Utilities
+const CSRFManager = {
+    TOKEN_COOKIE: 'csrf_token',
+    HEADER_NAME: 'X-CSRF-Token',
+
+    // Get CSRF token from cookie
+    getToken() {
+        const match = document.cookie.match(new RegExp(`${this.TOKEN_COOKIE}=([^;]+)`));
+        return match ? decodeURIComponent(match[1]) : null;
+    },
+
+    // Get headers for state-changing requests (POST/PUT/PATCH/DELETE)
+    getHeaders(contentType = 'application/json') {
+        const headers = {
+            'Content-Type': contentType
+        };
+        const token = this.getToken();
+        if (token) {
+            headers[this.HEADER_NAME] = token;
+        }
+        return headers;
+    },
+
+    // Fetch wrapper that automatically adds CSRF token for state-changing methods
+    async fetch(url, options = {}) {
+        const method = (options.method || 'GET').toUpperCase();
+        const stateChangingMethods = ['POST', 'PUT', 'PATCH', 'DELETE'];
+
+        if (stateChangingMethods.includes(method)) {
+            options.headers = {
+                ...this.getHeaders(),
+                ...(options.headers || {})
+            };
+        }
+
+        return fetch(url, options);
+    }
+};
+
 // Avatar Manager - Generates and manages player avatars
 const AvatarManager = {
     // Emoji avatar sets for AI opponents
@@ -971,9 +1010,8 @@ async function startGame() {
         elements.startBtn.disabled = true;
         showLoading('Starting game...');
 
-        const response = await fetch(`${API_BASE}/api/poker/games`, {
+        const response = await CSRFManager.fetch(`${API_BASE}/api/poker/games`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ player_name: name })
         });
 
@@ -1081,9 +1119,8 @@ async function playerAction(action) {
         if (amount !== null) body.amount = amount;
         if (actionToken) body.action_token = actionToken; // Include anti-replay token
         
-        const response = await fetch(`${API_BASE}/api/poker/games/${gameId}/action`, {
+        const response = await CSRFManager.fetch(`${API_BASE}/api/poker/games/${gameId}/action`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body)
         });
         
@@ -1175,9 +1212,8 @@ async function nextHand() {
         elements.btnNextHand.disabled = true;
         showLoading('Dealing next hand...');
 
-        const response = await fetch(`${API_BASE}/api/poker/games/${gameId}/next-hand?player_id=${playerId}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
+        const response = await CSRFManager.fetch(`${API_BASE}/api/poker/games/${gameId}/next-hand?player_id=${playerId}`, {
+            method: 'POST'
         });
 
         if (!response.ok) {
@@ -1804,9 +1840,8 @@ const ChatManager = {
         if (!message || !gameId || !playerId) return;
 
         try {
-            const response = await fetch(`${API_BASE}/api/poker/games/${gameId}/chat`, {
+            const response = await CSRFManager.fetch(`${API_BASE}/api/poker/games/${gameId}/chat`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     player_id: playerId,
                     message: message

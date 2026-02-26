@@ -4,5 +4,33 @@
     { "source": "/poker/(.*)", "destination": "/poker/$1" },
     { "source": "/stock-research/(.*)", "destination": "/stock-research/$1" },
     { "source": "/(.*)", "destination": "/$1" }
+  ],
+  "headers": [
+    {
+      "source": "/poker/(.*\\.(js|css|json|ico|png|svg|woff|woff2|ttf|eot))",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" },
+        { "key": "CDN-Cache-Control", "value": "max-age=31536000" },
+        { "key": "Vercel-CDN-Cache-Control", "value": "max-age=31536000" }
+      ]
+    },
+    {
+      "source": "/poker/app.js",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=3600, must-revalidate" }
+      ]
+    },
+    {
+      "source": "/poker/style.css",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=3600, must-revalidate" }
+      ]
+    },
+    {
+      "source": "/poker/index.html",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
+      ]
+    }
   ]
 }

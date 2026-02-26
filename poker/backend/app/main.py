@@ -22,6 +22,7 @@ from .adaptive_ai import adaptive_ai_manager
 from .analytics import usage_analytics
 from .persistence import persistence, GamePersistence
 from .game_integrity import integrity_manager
+from .csrf import CSRFMiddleware, get_csrf_token
 
 # Setup logging
 logger = get_logger()
@@ -355,6 +356,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# CSRF protection middleware (after CORS so cookies work correctly)
+app.add_middleware(CSRFMiddleware)
 
 
 @app.middleware("http")
@@ -1170,6 +1174,31 @@ async def get_game_metrics(game_id: str):
         }
 
     return metrics.get_summary()
+
+
+# =============================================================================
+# CSRF Token Endpoint
+# =============================================================================
+
+class CSRFTokenResponse(BaseModel):
+    """CSRF token response"""
+    csrf_token: str = Field(..., description="CSRF token to include in X-CSRF-Token header for state-changing requests")
+
+
+@app.get("/api/poker/csrf-token", tags=["Security"], response_model=CSRFTokenResponse)
+async def get_csrf_token_endpoint(request: Request):
+    """
+    Get a CSRF token for making state-changing requests.
+    
+    The token is also set as a cookie. For POST/PUT/PATCH/DELETE requests,
+    include the token in the X-CSRF-Token header.
+    """
+    token = get_csrf_token(request)
+    if not token:
+        # If no cookie exists, a new one will be set by the middleware
+        # Return a placeholder - the actual token comes from the cookie
+        return CSRFTokenResponse(csrf_token="check_cookie")
+    return CSRFTokenResponse(csrf_token=token)
 
 
 @app.get("/", tags=["System"], include_in_schema=False)

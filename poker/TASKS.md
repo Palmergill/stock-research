@@ -99,7 +99,7 @@
 
 - [x] **Input validation** - Fixed: Added comprehensive server-side validation using Pydantic validators for player names (1-20 chars, sanitized), player IDs (alphanumeric), action types (fold/check/call/raise only), raise amounts (0-1M bounds), and game IDs (format validation with regex)
 - [x] **Rate limiting** - Fixed: Implemented in-memory rate limiter with 20 req/min burst per IP, 1-minute block on violation, with proper headers (X-RateLimit-Remaining, X-RateLimit-Limit) and health check exemption
-- [ ] **CSRF protection** - If adding auth
+- [x] **CSRF protection** - Fixed: Added CSRF protection middleware using double-submit cookie pattern. CSRF tokens are generated per-session and validated on state-changing requests (POST/PUT/PATCH/DELETE). Frontend includes CSRFManager utility that automatically adds X-CSRF-Token header to requests. Exempt paths include health checks and documentation endpoints.
 - [x] **Game integrity** - Fixed: Added comprehensive game integrity system with action tokens (prevents replay attacks), player session validation, per-player rate limiting (30 actions/min), state fingerprinting for tamper detection, and suspicious activity monitoring. New `/api/poker/health/integrity/{game_id}` endpoint for security monitoring.
 - [x] **HTTPS enforcement** - Fixed: Added HTTPS enforcement middleware that redirects HTTP to HTTPS in production (non-DEBUG mode), with health check exemption to avoid breaking monitoring
 
@@ -118,7 +118,7 @@
 - [x] **Health checks** - Fixed: Added Kubernetes-style readiness probe (`/api/poker/health/ready`) and liveness probe (`/api/poker/health/live`) endpoints. Also added persistence status endpoint and manual save trigger.
 - [ ] **Auto-scaling** - Handle traffic spikes
 - [ ] **Backup strategy** - Backup game data if persisted
-- [ ] **CDN** - Serve static assets from CDN
+- [x] **CDN** - Fixed: Added cache-control headers in vercel.json for optimal CDN performance. Static assets (images, fonts, etc.) cached for 1 year with immutable flag. JavaScript and CSS files cached for 1 hour with must-revalidate. HTML files set to no-cache to ensure fresh content. Vercel CDN automatically serves cached content from edge locations.
 
 ## 📝 Documentation
 
