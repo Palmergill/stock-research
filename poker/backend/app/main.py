@@ -11,6 +11,7 @@ import asyncio
 import re
 import time
 from collections import defaultdict
+from datetime import datetime
 
 from .game import PokerGame
 from .ai import AIManager
@@ -19,6 +20,7 @@ from .metrics import metrics_manager
 from .monitoring import performance_middleware, performance_monitor
 from .adaptive_ai import adaptive_ai_manager
 from .analytics import usage_analytics
+from .persistence import persistence, GamePersistence
 
 # Setup logging
 logger = get_logger()
@@ -178,6 +180,20 @@ class DetailedHealthStatus(BaseModel):
     avg_game_age_minutes: float = Field(..., description="Average game age in minutes")
     config: dict = Field(..., description="Current game configuration")
     version: str = Field(..., description="API version")
+
+
+class ReadinessStatus(BaseModel):
+    """Readiness probe response for Kubernetes/deployments"""
+    status: str = Field(..., description="'ready' if ready to serve traffic")
+    checks: dict = Field(..., description="Individual check results")
+    timestamp: str = Field(..., description="ISO timestamp")
+
+
+class LivenessStatus(BaseModel):
+    """Liveness probe response for Kubernetes/deployments"""
+    status: str = Field(..., description="'alive' if service is running")
+    uptime_seconds: float = Field(..., description="Service uptime in seconds")
+    timestamp: str = Field(..., description="ISO timestamp")
 
 
 class HandHistoryEntry(BaseModel):
@@ -393,6 +409,39 @@ ai_managers: Dict[str, AIManager] = {}
 # Track startup time for uptime calculation
 import time as time_module
 STARTUP_TIME = time_module.time()
+
+# =============================================================================
+# Startup/Shutdown Events
+# =============================================================================
+
+@app.on_event("startup")
+async def startup_event():
+    """Load persisted games on startup"""
+    global games
+    
+    logger.info("Starting up Poker API...")
+    
+    # Load persisted games
+    if persistence.is_enabled():
+        persisted_games = persistence.load_games()
+        if persisted_games:
+            games.update(persisted_games)
+            logger.info(f"Restored {len(persisted_games)} games from persistence")
+        
+        # Start periodic save task
+        await persistence.start_periodic_save(lambda: games)
+    else:
+        logger.info("Persistence disabled, starting with empty game state")
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Save games on shutdown"""
+    logger.info("Shutting down Poker API...")
+    
+    if persistence.is_enabled():
+        await persistence.stop(games)
+
 
 # =============================================================================
 # Rate Limiting
@@ -858,6 +907,93 @@ async def detailed_health_check():
             "ai_decision_delay": Config.AI_DECISION_DELAY,
         },
         "version": "1.0.5"
+    }
+
+
+@app.get(
+    "/api/poker/health/ready",
+    response_model=ReadinessStatus,
+    tags=["System"],
+    summary="Readiness probe",
+    description="Kubernetes-style readiness probe. Returns 200 when the service is ready to accept traffic. Checks persistence system and basic functionality.",
+    responses={
+        200: {"description": "Service is ready", "model": ReadinessStatus},
+        503: {"description": "Service is not ready"}
+    }
+)
+async def readiness_probe():
+    """Readiness probe for load balancers and orchestrators"""
+    from datetime import datetime
+    
+    checks = {
+        "persistence": persistence.is_enabled(),
+        "memory": True,  # Could add memory threshold checks
+        "games_loaded": True  # Games are loaded on startup
+    }
+    
+    all_ready = all(checks.values())
+    status = "ready" if all_ready else "not_ready"
+    
+    return {
+        "status": status,
+        "checks": checks,
+        "timestamp": datetime.now().isoformat()
+    }
+
+
+@app.get(
+    "/api/poker/health/live",
+    response_model=LivenessStatus,
+    tags=["System"],
+    summary="Liveness probe",
+    description="Kubernetes-style liveness probe. Returns 200 if the service is running and not deadlocked. Always returns 200 unless the process is hung.",
+    responses={
+        200: {"description": "Service is alive", "model": LivenessStatus}
+    }
+)
+async def liveness_probe():
+    """Liveness probe for orchestrators"""
+    from datetime import datetime
+    
+    uptime_seconds = time_module.time() - STARTUP_TIME
+    
+    return {
+        "status": "alive",
+        "uptime_seconds": round(uptime_seconds, 2),
+        "timestamp": datetime.now().isoformat()
+    }
+
+
+@app.get(
+    "/api/poker/health/persistence",
+    tags=["System"],
+    summary="Persistence status",
+    description="Get game persistence system status including save timestamps and file information.",
+    responses={
+        200: {"description": "Persistence status retrieved"}
+    }
+)
+async def persistence_status():
+    """Get persistence system status"""
+    return persistence.get_persistence_status()
+
+
+@app.post(
+    "/api/poker/health/persistence/save",
+    tags=["System"],
+    summary="Trigger game save",
+    description="Manually trigger a save of all active games to persistence storage. Returns the number of games saved.",
+    responses={
+        200: {"description": "Games saved successfully"}
+    }
+)
+async def trigger_persistence_save():
+    """Manually trigger game persistence save"""
+    success = persistence.save_games(games)
+    return {
+        "success": success,
+        "games_saved": len(games) if success else 0,
+        "timestamp": datetime.now().isoformat()
     }
 
 

@@ -6,7 +6,7 @@
 - [x] **Side pot calculation** - Fixed: Now properly calculates and awards side pots when players go all-in for different amounts
 - [x] **Hand strength evaluation bug** - Fixed: `_is_straight` now correctly identifies wheel straights (A-5)
 - [x] **AI infinite loop protection** - Fixed: Added `MAX_AI_TURNS` config with proper enforcement in action and next-hand endpoints (enforced in `/api/poker/games/{game_id}/action` with error logging if limit reached)
-- [ ] **Game state persistence** - Games stored in memory are lost on backend restart (consider Redis or DB)
+- [x] **Game state persistence** - Fixed: Added file-based persistence system (`persistence.py`) that saves games every 5 minutes and on shutdown. Games are automatically restored on startup if less than 24 hours old. Configurable via environment variables.
 
 ### Medium Priority
 - [x] **Raise amount validation** - Fixed: Raise button now hidden when player can't afford minimum raise
@@ -115,7 +115,7 @@
 
 - [x] **CI/CD pipeline** - Fixed: Created GitHub Actions workflow (.github/workflows/ci-cd.yml) with jobs for backend testing (pytest), frontend testing (Jest), and automatic Vercel deployment on main branch merges
 - [ ] **Staging environment** - Separate staging for testing
-- [ ] **Health checks** - Better health/monitoring endpoints
+- [x] **Health checks** - Fixed: Added Kubernetes-style readiness probe (`/api/poker/health/ready`) and liveness probe (`/api/poker/health/live`) endpoints. Also added persistence status endpoint and manual save trigger.
 - [ ] **Auto-scaling** - Handle traffic spikes
 - [ ] **Backup strategy** - Backup game data if persisted
 - [ ] **CDN** - Serve static assets from CDN

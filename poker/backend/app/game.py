@@ -142,6 +142,8 @@ class PokerGame:
         self.winners: List[Dict] = []
         self.last_action: Optional[Dict] = None
         self.hand_number: int = 0
+        self.created_at = datetime.now()
+        self.chat_messages: List[Dict[str, Any]] = []
         
         # Hand history
         self.hand_history: List[HandHistory] = []

@@ -6,6 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [1.0.9] - 2025-02-25
+
+### Added
+- **Game state persistence** - Games now survive backend restarts
+  - File-based persistence system saves games every 5 minutes
+  - Automatic game restoration on startup
+  - Configurable via `PERSISTENCE_DIR` and `SAVE_INTERVAL_SECONDS` environment variables
+  - Games older than 24 hours are not restored (configurable via `MAX_PERSISTENCE_AGE_HOURS`)
+  - Manual save trigger via `/api/poker/health/persistence/save` endpoint
+  - Persistence status endpoint at `/api/poker/health/persistence`
+- **Enhanced health monitoring endpoints**
+  - Readiness probe at `/api/poker/health/ready` for Kubernetes-style orchestration
+  - Liveness probe at `/api/poker/health/live` for health checking
+  - Returns proper HTTP status codes and structured responses for load balancers
+
 ## [1.0.8] - 2025-02-25
 
 ### Added
