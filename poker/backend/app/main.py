@@ -23,6 +23,7 @@ from .analytics import usage_analytics
 from .persistence import persistence, GamePersistence
 from .game_integrity import integrity_manager
 from .csrf import CSRFMiddleware, get_csrf_token
+from .tournament import tournament_manager, TournamentStatus
 
 # Setup logging
 logger = get_logger()
@@ -1431,6 +1432,225 @@ async def get_spectator_count(game_id: str):
         "spectators": spectator_counts.get(game_id, 0),
         "timestamp": datetime.utcnow().isoformat()
     }
+
+
+# =============================================================================
+# Tournament Mode - Sit & Go Tournaments
+# =============================================================================
+
+class CreateTournamentRequest(BaseModel):
+    """Request to create a new tournament"""
+    player_name: str = Field(
+        default="Player",
+        min_length=1,
+        max_length=20,
+        description="Player's display name (1-20 characters)",
+        examples=["TournamentPro"]
+    )
+    max_players: int = Field(
+        default=6,
+        ge=2,
+        le=10,
+        description="Maximum number of players (2-10)",
+        examples=[6, 9]
+    )
+    buy_in: int = Field(
+        default=1000,
+        ge=100,
+        le=100000,
+        description="Tournament buy-in amount",
+        examples=[1000, 5000]
+    )
+
+    @field_validator('player_name')
+    @classmethod
+    def sanitize_player_name(cls, v: str) -> str:
+        v = v.strip()
+        v = ''.join(c for c in v if c.isprintable() and ord(c) < 128)
+        v = ' '.join(v.split())
+        return v[:20]
+
+
+class CreateTournamentResponse(BaseModel):
+    """Response after creating a tournament"""
+    tournament_id: str = Field(..., description="Unique tournament identifier")
+    game_id: str = Field(..., description="Associated game ID")
+    player_id: str = Field(..., description="Player's unique identifier")
+    state: dict = Field(..., description="Tournament state")
+
+
+class TournamentStateResponse(BaseModel):
+    """Tournament state response"""
+    tournament_id: str = Field(..., description="Unique tournament identifier")
+    status: str = Field(..., description="Tournament status")
+    max_players: int = Field(..., description="Maximum players allowed")
+    registered_players: int = Field(..., description="Number of registered players")
+    active_players: int = Field(..., description="Players still in tournament")
+    eliminated_players: int = Field(..., description="Eliminated players count")
+    buy_in: int = Field(..., description="Entry fee")
+    total_prize_pool: int = Field(..., description="Total prize pool")
+    current_level: dict = Field(..., description="Current blind level")
+    level_index: int = Field(..., description="Current level number")
+    time_in_level: Optional[int] = Field(None, description="Seconds in current level")
+    time_remaining_in_level: Optional[int] = Field(None, description="Seconds remaining")
+    players: List[dict] = Field(..., description="All tournament players")
+    prizes: List[dict] = Field(..., description="Prize distribution")
+    game_id: Optional[str] = Field(None, description="Associated game ID")
+    can_start: bool = Field(..., description="Whether tournament can start")
+
+
+class TournamentListResponse(BaseModel):
+    """List of tournaments response"""
+    tournaments: List[dict] = Field(..., description="List of tournament summaries")
+
+
+@app.post(
+    "/api/poker/tournaments",
+    response_model=CreateTournamentResponse,
+    tags=["Tournament"],
+    summary="Create new tournament",
+    description="Create a new Sit & Go tournament with increasing blinds.",
+    responses={
+        201: {"description": "Tournament created", "model": CreateTournamentResponse},
+        422: {"description": "Invalid parameters", "model": ErrorResponse}
+    }
+)
+async def create_tournament(request: CreateTournamentRequest):
+    """Create a new Sit & Go tournament"""
+    logger.info(f"Creating tournament for player: {request.player_name}")
+    
+    # Create tournament
+    tournament = tournament_manager.create_tournament(
+        max_players=request.max_players,
+        buy_in=request.buy_in
+    )
+    
+    # Create associated game
+    game_id = str(uuid.uuid4())[:8]
+    game = PokerGame(game_id)
+    
+    # Set tournament blinds as starting blinds
+    game.small_blind = tournament.current_blind_level.small_blind
+    game.big_blind = tournament.current_blind_level.big_blind
+    
+    # Add human player
+    human = game.add_player(request.player_name, is_human=True)
+    tournament.register_player(human.id, request.player_name, is_human=True)
+    
+    # Add AI bots to fill seats
+    ai_manager = AIManager(game)
+    ai_names = ["Alex", "Bob", "Charlie", "Diana", "Eve", "Frank", "Grace", "Henry", "Ivy"][:request.max_players-1]
+    for name in ai_names:
+        bot = game.add_player(name, is_human=False)
+        ai_manager.add_bot(name)
+        tournament.register_player(bot.id, name, is_human=False)
+    
+    # Start the game and tournament
+    game.start_hand()
+    tournament.start_tournament(game_id)
+    
+    # Store game
+    games[game_id] = game
+    ai_managers[game_id] = ai_manager
+    
+    # Track usage
+    session_id = usage_analytics.start_session(human.id, request.player_name)
+    usage_analytics.record_game_created(session_id)
+    adaptive_ai_manager.get_or_create_tracker(human.id, request.player_name)
+    integrity_manager.create_session(game_id, human.id)
+    
+    logger.info(f"Tournament {tournament.tournament_id} created with game {game_id}")
+    
+    return {
+        "tournament_id": tournament.tournament_id,
+        "game_id": game_id,
+        "player_id": human.id,
+        "state": tournament.to_dict()
+    }
+
+
+@app.get(
+    "/api/poker/tournaments/{tournament_id}",
+    response_model=TournamentStateResponse,
+    tags=["Tournament"],
+    summary="Get tournament state",
+    description="Get current state of a tournament including blinds, players, and prizes.",
+    responses={
+        200: {"description": "Tournament state retrieved", "model": TournamentStateResponse},
+        404: {"description": "Tournament not found", "model": ErrorResponse}
+    }
+)
+async def get_tournament(tournament_id: str):
+    """Get tournament state"""
+    tournament = tournament_manager.get_tournament(tournament_id)
+    if not tournament:
+        raise HTTPException(status_code=404, detail="Tournament not found")
+    
+    # Check if blinds should advance
+    tournament.check_level_advance()
+    
+    # Update game blinds if level changed
+    if tournament.game_id and tournament.game_id in games:
+        game = games[tournament.game_id]
+        current_level = tournament.current_blind_level
+        if game.small_blind != current_level.small_blind or game.big_blind != current_level.big_blind:
+            game.small_blind = current_level.small_blind
+            game.big_blind = current_level.big_blind
+            logger.info(f"Tournament {tournament_id} blind level advanced: {current_level.small_blind}/{current_level.big_blind}")
+    
+    return tournament.to_dict()
+
+
+@app.get(
+    "/api/poker/tournaments",
+    response_model=TournamentListResponse,
+    tags=["Tournament"],
+    summary="List tournaments",
+    description="List all tournaments, optionally filtered by status.",
+    responses={
+        200: {"description": "Tournaments list retrieved", "model": TournamentListResponse}
+    }
+)
+async def list_tournaments(status: Optional[str] = None):
+    """List all tournaments"""
+    tournaments = tournament_manager.list_tournaments(status)
+    return {
+        "tournaments": [t.to_dict() for t in tournaments]
+    }
+
+
+@app.post(
+    "/api/poker/tournaments/{tournament_id}/advance-level",
+    tags=["Tournament"],
+    summary="Advance blind level",
+    description="Manually advance to the next blind level (for testing).",
+    responses={
+        200: {"description": "Level advanced"},
+        400: {"description": "Cannot advance level"},
+        404: {"description": "Tournament not found"}
+    }
+)
+async def advance_tournament_level(tournament_id: str):
+    """Manually advance tournament blind level"""
+    tournament = tournament_manager.get_tournament(tournament_id)
+    if not tournament:
+        raise HTTPException(status_code=404, detail="Tournament not found")
+    
+    if tournament.advance_level():
+        # Update game blinds
+        if tournament.game_id and tournament.game_id in games:
+            game = games[tournament.game_id]
+            current_level = tournament.current_blind_level
+            game.small_blind = current_level.small_blind
+            game.big_blind = current_level.big_blind
+        
+        return {
+            "success": True,
+            "message": "Blind level advanced",
+            "new_level": tournament.current_blind_level.to_dict()
+        }
+    else:
+        raise HTTPException(status_code=400, detail="Cannot advance level - tournament not active")
 
 
 @app.on_event("startup")

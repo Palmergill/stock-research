@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-02-25
+
+### Added
+- **Tournament mode** - Sit & Go tournaments with increasing blinds
+  - Configurable tournament structure (2-10 players, custom buy-in)
+  - Standard 15-level blind structure starting at 10/20, doubling approximately every 10 minutes
+  - Automatic blind level advancement with time tracking
+  - Player elimination tracking with final position assignment
+  - Prize pool distribution (50% 1st place, 30% 2nd place, 20% 3rd place)
+  - Tournament status management (waiting/active/completed)
+  - New API endpoints:
+    - `POST /api/poker/tournaments` - Create new tournament
+    - `GET /api/poker/tournaments` - List all tournaments
+    - `GET /api/poker/tournaments/{id}` - Get tournament state
+    - `POST /api/poker/tournaments/{id}/advance-level` - Manually advance blinds
+  - Integration with existing game system - blinds auto-update in running games
+
 ## [1.0.9] - 2025-02-25
 
 ### Added

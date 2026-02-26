@@ -22,7 +22,7 @@
 ## ✨ Features to Add
 
 ### Game Features
-- [ ] **Tournament mode** - Sit & go tournaments with increasing blinds
+- [x] **Tournament mode** - Fixed: Added Sit & Go tournament system with configurable blind structure. Features include automatic blind level advancement every 10 minutes, player elimination tracking with final positions, prize pool distribution (50%/30%/20% for 1st/2nd/3rd), tournament status management (waiting/active/completed), and dedicated API endpoints for creating, listing, and managing tournaments.
 - [x] **Hand history** - Fixed: Each hand is now logged with timestamp, players, hole cards, community cards, pot size, winners, and action sequence. History accessible via `/api/poker/games/{game_id}/history` endpoint
 - [x] **Player statistics** - Fixed: Added StatsManager that tracks hands played, hands won, win rate, biggest pot won, net profit/loss, and best hand achieved. Data persists across sessions using localStorage. Stats view accessible via button on start screen with option to reset.
 - [x] **Chat feature** - Fixed: Added simple chat system between players with chat panel UI, message persistence in game state, and real-time updates via polling. Players can send messages up to 200 characters, chat history is limited to 100 messages per game, and the UI shows new message indicators when chat is closed.
