@@ -1593,11 +1593,11 @@ function showHandResult() {
 
     const winner = gameState.winners[0];
     const isMe = winner.id === playerId;
+    const myPlayer = gameState.players.find(p => p.id === playerId);
 
     // Record stats for hand result (only once per hand)
     if (!handResultRecorded) {
         handResultRecorded = true;
-        const myPlayer = gameState.players.find(p => p.id === playerId);
         if (isMe) {
             // Get hand strength text if available
             const handStrengthEl = elements.handStrength.querySelector('.hand-strength-text');
@@ -1618,14 +1618,46 @@ function showHandResult() {
     
     elements.resultTitle.textContent = isMe ? '🎉 You Win!' : `${winner.name} Wins`;
     
-    let detailsHTML = `<p style="font-size: 1.2rem; margin-bottom: 8px;">${winner.name}</p>`;
-    detailsHTML += `<p style="font-size: 1.5rem; color: #10b981; font-weight: 700; margin-bottom: 15px;">+${winner.amount} chips</p>`;
+    let detailsHTML = '';
     
-    // Show winner's hand
+    // Winner info
+    detailsHTML += `<div class="result-section">`;
+    detailsHTML += `<div class="result-winner">${winner.name}</div>`;
+    detailsHTML += `<div class="result-amount">+${winner.amount} chips</div>`;
+    detailsHTML += `</div>`;
+    
+    // Your hole cards (if you have cards)
+    if (myPlayer && myPlayer.hand && myPlayer.hand.length > 0) {
+        detailsHTML += `<div class="result-section">`;
+        detailsHTML += `<div class="result-section-label">Your Cards</div>`;
+        detailsHTML += `<div class="result-cards">`;
+        detailsHTML += myPlayer.hand.map(c => renderCard(c)).join('');
+        detailsHTML += `</div>`;
+        detailsHTML += `</div>`;
+    }
+    
+    // Community cards
+    if (gameState.community_cards && gameState.community_cards.length > 0) {
+        detailsHTML += `<div class="result-section">`;
+        detailsHTML += `<div class="result-section-label">Community Cards</div>`;
+        detailsHTML += `<div class="result-cards">`;
+        detailsHTML += gameState.community_cards.map(c => renderCard(c)).join('');
+        detailsHTML += `</div>`;
+        detailsHTML += `</div>`;
+    }
+    
+    // Best 5-card hand
     if (winner.hand && winner.hand.length > 0) {
-        detailsHTML += `<p style="font-size: 0.9rem; color: #94a3b8; margin-bottom: 8px;">Winning Hand</p>`;
-        detailsHTML += `<div style="display: flex; justify-content: center; gap: 8px; margin-bottom: 15px;">`;
+        detailsHTML += `<div class="result-section">`;
+        detailsHTML += `<div class="result-section-label">Best 5-Card Hand</div>`;
+        detailsHTML += `<div class="result-cards">`;
         detailsHTML += winner.hand.map(c => renderCard(c)).join('');
+        detailsHTML += `</div>`;
+        // Get hand name from evaluation
+        const handStrength = evaluateHandStrength(winner.hand, []);
+        if (handStrength) {
+            detailsHTML += `<div class="result-hand-name">${handStrength}</div>`;
+        }
         detailsHTML += `</div>`;
     }
     
