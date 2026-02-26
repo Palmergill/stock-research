@@ -961,7 +961,8 @@
             padding: 6px 10px;
             background: rgba(0,0,0,0.3);
             border-radius: 8px;
-            min-width: 60px;
+            width: 70px;
+            flex-shrink: 0;
             transition: all 0.2s ease;
         }
         
@@ -971,12 +972,8 @@
             border: 1px solid rgba(255,255,255,0.05);
         }
 
-        .opponent.folded .opponent-name::after {
-            content: " (FOLDED)";
-            font-size: 8px;
-            color: #ef4444;
-            font-weight: 700;
-            letter-spacing: 0.5px;
+        .opponent.folded .opponent-name {
+            color: #64748b;
         }
 
         .opponent.folded .card-back {
@@ -1893,9 +1890,6 @@
 
         <!-- Game Screen -->
         <div id="game-screen" class="screen theme-green card-deck-classic">
-            <!-- Gesture Hint for Mobile -->
-            <div class="gesture-hint" id="gesture-hint">👈 Swipe left to fold • Double-tap to call 👉</div>
-
             <!-- Header -->
             <div class="game-header">
                 <div class="hand-info">
