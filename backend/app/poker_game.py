@@ -202,7 +202,11 @@ class PokerGame:
     def get_current_player(self) -> Optional[Player]:
         if not self.players:
             return None
-        return self.players[self.current_player_index]
+        player = self.players[self.current_player_index]
+        # Skip folded or all-in players
+        if player.folded or player.is_all_in:
+            return None
+        return player
     
     def action_fold(self, player_id: str) -> bool:
         player = self._get_player(player_id)
@@ -374,9 +378,9 @@ class PokerGame:
         # Reset round tracking
         self.acted_this_round = set()
         
-        # Find first active player after dealer for next round
+        # Find first active player after dealer for next round (skip folded AND all-in players)
         self.current_player_index = (self.dealer_index + 1) % len(self.players)
-        while self.players[self.current_player_index].folded:
+        while self.players[self.current_player_index].folded or self.players[self.current_player_index].is_all_in:
             self.current_player_index = (self.current_player_index + 1) % len(self.players)
         
         self.round_start_player = self.current_player_index
