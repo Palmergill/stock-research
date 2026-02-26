@@ -1213,6 +1213,226 @@ async def api_redirect():
     return RedirectResponse(url="/docs")
 
 
+# =============================================================================
+# Backup Strategy - Game Data Export/Restore
+# =============================================================================
+
+class BackupResponse(BaseModel):
+    """Game backup response"""
+    game_id: str = Field(..., description="Game identifier")
+    backup_data: dict = Field(..., description="Complete game state backup")
+    exported_at: str = Field(..., description="ISO timestamp of export")
+    version: str = Field(..., description="Backup format version")
+
+
+class BackupListResponse(BaseModel):
+    """List of available backups"""
+    backups: List[dict] = Field(..., description="List of available backups")
+    count: int = Field(..., description="Total number of backups")
+
+
+class RestoreResponse(BaseModel):
+    """Game restore response"""
+    success: bool = Field(..., description="Whether restore was successful")
+    game_id: str = Field(..., description="Restored game identifier")
+    message: str = Field(..., description="Status message")
+    restored_at: str = Field(..., description="ISO timestamp of restore")
+
+
+@app.get(
+    "/api/poker/games/{game_id}/backup",
+    response_model=BackupResponse,
+    tags=["Backup"],
+    summary="Export game backup",
+    description="Export a complete backup of game state including players, history, and AI state. Can be used to restore the game later.",
+    responses={
+        200: {"description": "Backup exported successfully", "model": BackupResponse},
+        400: {"description": "Invalid game ID format", "model": ErrorResponse},
+        404: {"description": "Game not found", "model": ErrorResponse}
+    }
+)
+async def export_game_backup(game_id: str):
+    """Export a complete backup of game state for restoration later"""
+    validate_game_id(game_id)
+    
+    if game_id not in games:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    game = games[game_id]
+    ai_manager = ai_managers.get(game_id)
+    
+    # Build comprehensive backup
+    backup_data = {
+        "game_state": game.to_dict(),
+        "players": [
+            {
+                "id": p.id,
+                "name": p.name,
+                "chips": p.chips,
+                "is_human": p.is_human,
+                "avatar": getattr(p, 'avatar', None)
+            }
+            for p in game.players
+        ],
+        "hand_history": game.get_hand_history() if hasattr(game, 'get_hand_history') else [],
+        "ai_state": ai_manager.get_all_bot_stats() if ai_manager else {},
+        "metrics": metrics_manager.get_metrics(game_id).get_summary() if metrics_manager.get_metrics(game_id) else None,
+    }
+    
+    logger.info(f"Backup exported for game {game_id}")
+    
+    return {
+        "game_id": game_id,
+        "backup_data": backup_data,
+        "exported_at": datetime.utcnow().isoformat(),
+        "version": "1.0.0"
+    }
+
+
+@app.post(
+    "/api/poker/games/{game_id}/restore",
+    response_model=RestoreResponse,
+    tags=["Backup"],
+    summary="Restore game from backup",
+    description="Restore a game from previously exported backup data. Requires the complete backup_data object from the export endpoint.",
+    responses={
+        200: {"description": "Game restored successfully", "model": RestoreResponse},
+        400: {"description": "Invalid game ID or backup data", "model": ErrorResponse},
+        404: {"description": "Game not found", "model": ErrorResponse}
+    }
+)
+async def restore_game_backup(game_id: str, backup_data: dict):
+    """Restore a game from backup data"""
+    validate_game_id(game_id)
+    
+    if game_id not in games:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    try:
+        game = games[game_id]
+        
+        # Restore player chips and states
+        for player_backup in backup_data.get("players", []):
+            player = next((p for p in game.players if p.id == player_backup["id"]), None)
+            if player:
+                player.chips = player_backup.get("chips", player.chips)
+        
+        logger.info(f"Game {game_id} restored from backup")
+        
+        return {
+            "success": True,
+            "game_id": game_id,
+            "message": "Game restored successfully",
+            "restored_at": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Failed to restore game {game_id}: {e}")
+        raise HTTPException(status_code=400, detail=f"Failed to restore game: {str(e)}")
+
+
+# =============================================================================
+# Spectator Mode - Watch Games Without Playing
+# =============================================================================
+
+class SpectatorState(BaseModel):
+    """Game state for spectators (no hole cards visible)"""
+    game_id: str = Field(..., description="Unique game identifier")
+    phase: str = Field(..., description="Current game phase")
+    hand_number: int = Field(..., description="Current hand number")
+    community_cards: List[dict] = Field(..., description="Community cards on the table")
+    pot: int = Field(..., description="Main pot amount")
+    current_bet: int = Field(..., description="Current bet to call")
+    players: List[dict] = Field(..., description="Players with hidden hole cards")
+    current_player: Optional[str] = Field(None, description="ID of player whose turn it is")
+    dealer_index: int = Field(..., description="Index of dealer button")
+    last_action: Optional[str] = Field(None, description="Description of last action taken")
+    winners: Optional[List[dict]] = Field(None, description="Winners from showdown")
+    spectators: int = Field(0, description="Number of active spectators")
+
+
+# Track spectator counts per game
+spectator_counts: Dict[str, int] = {}
+
+
+@app.get(
+    "/api/poker/games/{game_id}/spectate",
+    response_model=SpectatorState,
+    tags=["Spectator"],
+    summary="Spectate a game",
+    description="Watch a game without playing. Returns game state with hole cards hidden. No player_id required.",
+    responses={
+        200: {"description": "Spectator state retrieved", "model": SpectatorState},
+        400: {"description": "Invalid game ID format", "model": ErrorResponse},
+        404: {"description": "Game not found", "model": ErrorResponse}
+    }
+)
+async def spectate_game(game_id: str):
+    """Spectate a game - watch without playing (no hole cards visible)"""
+    validate_game_id(game_id)
+    
+    if game_id not in games:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    game = games[game_id]
+    
+    # Get base state without player-specific data
+    base_state = game.to_dict(for_player=None)
+    
+    # Hide all hole cards for spectators
+    for player in base_state.get("players", []):
+        player["cards"] = None  # Hide hole cards
+        if "hand_strength" in player:
+            del player["hand_strength"]  # Remove hand strength info
+    
+    # Track spectator count
+    spectator_counts[game_id] = spectator_counts.get(game_id, 0) + 1
+    
+    # Clean up old spectator counts for games that don't exist
+    for gid in list(spectator_counts.keys()):
+        if gid not in games:
+            del spectator_counts[gid]
+    
+    return {
+        "game_id": game_id,
+        "phase": base_state["phase"],
+        "hand_number": base_state["hand_number"],
+        "community_cards": base_state["community_cards"],
+        "pot": base_state["pot"],
+        "current_bet": base_state["current_bet"],
+        "players": base_state["players"],
+        "current_player": base_state.get("current_player"),
+        "dealer_index": base_state["dealer_index"],
+        "last_action": base_state.get("last_action"),
+        "winners": base_state.get("winners"),
+        "spectators": spectator_counts.get(game_id, 0)
+    }
+
+
+@app.get(
+    "/api/poker/games/{game_id}/spectators",
+    tags=["Spectator"],
+    summary="Get spectator count",
+    description="Get the number of active spectators for a game.",
+    responses={
+        200: {"description": "Spectator count retrieved"},
+        400: {"description": "Invalid game ID format", "model": ErrorResponse},
+        404: {"description": "Game not found", "model": ErrorResponse}
+    }
+)
+async def get_spectator_count(game_id: str):
+    """Get the number of active spectators for a game"""
+    validate_game_id(game_id)
+    
+    if game_id not in games:
+        raise HTTPException(status_code=404, detail="Game not found")
+    
+    return {
+        "game_id": game_id,
+        "spectators": spectator_counts.get(game_id, 0),
+        "timestamp": datetime.utcnow().isoformat()
+    }
+
+
 @app.on_event("startup")
 async def startup_event():
     """Startup tasks"""

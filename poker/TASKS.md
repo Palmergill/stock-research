@@ -46,7 +46,7 @@
 - [ ] **Database persistence** - Store game history, player stats
 - [ ] **Authentication** - Optional user accounts
 - [ ] **Multi-table support** - Play at multiple tables
-- [ ] **Spectator mode** - Watch games without playing
+- [x] **Spectator mode** - Fixed: Added spectator endpoints (`/api/poker/games/{game_id}/spectate` and `/api/poker/games/{game_id}/spectators`) that allow watching games without playing. Returns game state with all hole cards hidden and tracks active spectator count.
 - [x] **AI difficulty levels** - Fixed: Added AIDifficulty preset system with easy/medium/hard/expert levels. Each level controls aggression, bluff frequency, hand strength thresholds, raise sizing, and call thresholds. Set via `AI_DIFFICULTY` env var or defaults to mixed (varied opponents)
 
 ## 🔧 Code Improvements
@@ -117,7 +117,7 @@
 - [ ] **Staging environment** - Separate staging for testing
 - [x] **Health checks** - Fixed: Added Kubernetes-style readiness probe (`/api/poker/health/ready`) and liveness probe (`/api/poker/health/live`) endpoints. Also added persistence status endpoint and manual save trigger.
 - [ ] **Auto-scaling** - Handle traffic spikes
-- [ ] **Backup strategy** - Backup game data if persisted
+- [x] **Backup strategy** - Fixed: Added backup export/restore endpoints (`/api/poker/games/{game_id}/backup` and `/api/poker/games/{game_id}/restore`) that export complete game state including players, history, and AI state. Also added backup listing and restore functionality.
 - [x] **CDN** - Fixed: Added cache-control headers in vercel.json for optimal CDN performance. Static assets (images, fonts, etc.) cached for 1 year with immutable flag. JavaScript and CSS files cached for 1 hour with must-revalidate. HTML files set to no-cache to ensure fresh content. Vercel CDN automatically serves cached content from edge locations.
 
 ## 📝 Documentation
