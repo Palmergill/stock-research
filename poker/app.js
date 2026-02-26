@@ -1626,12 +1626,13 @@ function showHandResult() {
     detailsHTML += `<div class="result-amount">+${winner.amount} chips</div>`;
     detailsHTML += `</div>`;
     
-    // Your hole cards (if you have cards)
-    if (myPlayer && myPlayer.hand && myPlayer.hand.length > 0) {
+    // Winner's hole cards
+    const winnerPlayer = gameState.players.find(p => p.id === winner.id);
+    if (winnerPlayer && winnerPlayer.hand && winnerPlayer.hand.length > 0) {
         detailsHTML += `<div class="result-section">`;
-        detailsHTML += `<div class="result-section-label">Your Cards</div>`;
+        detailsHTML += `<div class="result-section-label">${winner.name}'s Cards</div>`;
         detailsHTML += `<div class="result-cards">`;
-        detailsHTML += myPlayer.hand.map(c => renderCard(c)).join('');
+        detailsHTML += winnerPlayer.hand.map(c => renderCard(c)).join('');
         detailsHTML += `</div>`;
         detailsHTML += `</div>`;
     }
