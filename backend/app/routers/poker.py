@@ -66,8 +66,8 @@ async def create_game(request: CreateGameRequest):
     
     # Add AI bots with varying aggression
     ai_manager = AIManager(game)
-    ai_manager.add_bot("Alex", aggression=0.3)  # Tight
-    ai_manager.add_bot("Bob", aggression=0.5)  # Balanced
+    ai_manager.add_bot("Shelby", aggression=0.3)  # Tight
+    ai_manager.add_bot("Freya", aggression=0.5)  # Balanced
     ai_manager.add_bot("Charlie", aggression=0.7)  # Loose
     ai_manager.add_bot("Diana", aggression=0.6)  # Aggressive
     ai_manager.add_bot("Eve", aggression=0.4)  # Balanced
