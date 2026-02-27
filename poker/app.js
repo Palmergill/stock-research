@@ -1410,7 +1410,7 @@ function renderCard(card, isPlayerCard = false, dealIndex = null) {
         animationClass = 'new-card';
     }
     
-    return `<div class="card ${animationClass} ${isRed ? '' : 'black'}">${rank}${suitSymbol}</div>`;
+    return `<div class="card ${animationClass} ${isRed ? 'red' : 'black'}">${rank}${suitSymbol}</div>`;
 }
 
 function evaluateHandStrength(playerCards, communityCards) {
