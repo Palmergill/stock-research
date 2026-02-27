@@ -131,10 +131,7 @@ class PokerGame:
         self.last_ai_action: Optional[Dict] = None  # Track last AI action for display
         self.hand_number: int = 0
         self.acted_this_round: set = set()  # Track who has acted in current betting round
-        self.round_start_player: int = 0  # Who started this betting round
-        self.chat_messages: List[ChatMessage] = []  # Chat history
-        self.max_chat_history: int = 100  # Limit chat history to prevent memory bloat
-    
+        self.round_start_player: int = 0  # Who started this betting round    
     def add_player(self, name: str, is_human: bool = False) -> Player:
         player_id = f"p{len(self.players)}"
         player = Player(
@@ -557,42 +554,6 @@ class PokerGame:
                     'amount': total_winnings[p.id],
                     'hand': [c.to_dict() for c in p.hand]
                 })
-    
-    def add_chat_message(self, player_id: str, message: str) -> bool:
-        """Add a chat message from a player"""
-        # Find player
-        player = None
-        for p in self.players:
-            if p.id == player_id:
-                player = p
-                break
-        
-        if not player:
-            return False
-        
-        # Sanitize message (limit length, remove excessive whitespace)
-        message = message.strip()[:200]  # Max 200 characters
-        if not message:
-            return False
-        
-        # Add message
-        chat_msg = ChatMessage(
-            player_id=player_id,
-            player_name=player.name,
-            message=message,
-            timestamp=time.time()
-        )
-        self.chat_messages.append(chat_msg)
-        
-        # Trim history if needed
-        if len(self.chat_messages) > self.max_chat_history:
-            self.chat_messages = self.chat_messages[-self.max_chat_history:]
-        
-        return True
-    
-    def get_chat_messages(self, since: float = 0) -> List[dict]:
-        """Get chat messages since a given timestamp"""
-        return [msg.to_dict() for msg in self.chat_messages if msg.timestamp > since]
     
     def to_dict(self, for_player: Optional[str] = None) -> dict:
         """Convert game state to dict for API response"""
