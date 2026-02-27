@@ -1514,6 +1514,98 @@ function evaluateHandStrength(playerCards, communityCards) {
     return `${getRankName(highCard)} High`;
 }
 
+// Get hand name from exactly 5 cards (for winner display)
+function getHandNameFrom5Cards(cards) {
+    if (!cards || cards.length !== 5) return null;
+    
+    const ranks = cards.map(c => c.rank);
+    const suits = cards.map(c => c.suit);
+    
+    // Count ranks
+    const rankCounts = {};
+    ranks.forEach(r => rankCounts[r] = (rankCounts[r] || 0) + 1);
+    const counts = Object.values(rankCounts).sort((a, b) => b - a);
+    
+    // Count suits
+    const suitCounts = {};
+    suits.forEach(s => suitCounts[s] = (suitCounts[s] || 0) + 1);
+    const maxSuitCount = Math.max(...Object.values(suitCounts));
+    
+    // Check for flush
+    const isFlush = maxSuitCount === 5;
+    
+    // Check for straight
+    const uniqueRanks = [...new Set(ranks)].sort((a, b) => b - a);
+    let isStraight = false;
+    let straightHigh = 0;
+    
+    if (uniqueRanks.length === 5) {
+        if (uniqueRanks[0] - uniqueRanks[4] === 4) {
+            isStraight = true;
+            straightHigh = uniqueRanks[0];
+        }
+        // Check wheel (A-5)
+        else if (uniqueRanks.includes(14) && uniqueRanks.includes(5) && 
+            uniqueRanks.includes(4) && uniqueRanks.includes(3) && uniqueRanks.includes(2)) {
+            isStraight = true;
+            straightHigh = 5;
+        }
+    }
+    
+    // Get rank names
+    const rankNames = { 14: 'Ace', 13: 'King', 12: 'Queen', 11: 'Jack' };
+    const getRankName = (rank) => rankNames[rank] || rank;
+    
+    const getRanksWithCount = (n) => {
+        return Object.entries(rankCounts)
+            .filter(([r, c]) => c === n)
+            .map(([r, c]) => parseInt(r))
+            .sort((a, b) => b - a);
+    };
+    
+    // Determine hand name
+    if (isFlush && isStraight) {
+        if (straightHigh === 14) return 'Royal Flush! 👑';
+        return `Straight Flush`;
+    }
+    
+    if (counts[0] === 4) {
+        const quadRank = getRanksWithCount(4)[0];
+        return `Four of a Kind - ${getRankName(quadRank)}s`;
+    }
+    
+    if (counts[0] === 3 && counts[1] === 2) {
+        const tripRank = getRanksWithCount(3)[0];
+        const pairRank = getRanksWithCount(2)[0];
+        return `Full House - ${getRankName(tripRank)}s full of ${getRankName(pairRank)}s`;
+    }
+    
+    if (isFlush) return 'Flush';
+    
+    if (isStraight) {
+        return `Straight - ${getRankName(straightHigh)} high`;
+    }
+    
+    if (counts[0] === 3) {
+        const tripRank = getRanksWithCount(3)[0];
+        return `Three of a Kind - ${getRankName(tripRank)}s`;
+    }
+    
+    if (counts[0] === 2 && counts[1] === 2) {
+        const pairs = getRanksWithCount(2);
+        return `Two Pair - ${getRankName(pairs[0])}s and ${getRankName(pairs[1])}s`;
+    }
+    
+    if (counts[0] === 2) {
+        const pairRank = getRanksWithCount(2)[0];
+        return `Pair of ${getRankName(pairRank)}s`;
+    }
+    
+    // High card
+    const highCard = Math.max(...ranks);
+    return `${getRankName(highCard)} High`;
+}
+
 function updateActionButtons() {
     if (!gameState || gameState.phase === 'showdown') {
         elements.actionButtons.classList.add('hidden');
@@ -1649,10 +1741,10 @@ function showHandResult() {
         detailsHTML += `<div class="result-cards">`;
         detailsHTML += winner.hand.map(c => renderCard(c)).join('');
         detailsHTML += `</div>`;
-        // Get hand name from evaluation
-        const handStrength = evaluateHandStrength(winner.hand, []);
-        if (handStrength) {
-            detailsHTML += `<div class="result-hand-name">${handStrength}</div>`;
+        // Get hand name from the 5 winning cards
+        const handName = getHandNameFrom5Cards(winner.hand);
+        if (handName) {
+            detailsHTML += `<div class="result-hand-name">${handName}</div>`;
         }
         detailsHTML += `</div>`;
     }
