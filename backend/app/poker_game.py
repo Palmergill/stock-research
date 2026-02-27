@@ -417,6 +417,21 @@ class PokerGame:
         
         return best
     
+    def _get_best_hand_cards(self, cards: List[Card]) -> List[Card]:
+        """Returns the actual 5 cards that make up the best hand"""
+        from itertools import combinations
+        
+        best_rank = (HandRank.HIGH_CARD.value, [0])
+        best_cards = cards[:5]  # Default to first 5
+        
+        for combo in combinations(cards, 5):
+            rank = self._evaluate_five_card_hand(list(combo))
+            if rank > best_rank:
+                best_rank = rank
+                best_cards = list(combo)
+        
+        return best_cards
+    
     def _evaluate_five_card_hand(self, cards: List[Card]) -> tuple:
         """Evaluate a 5-card hand and return (rank, tiebreakers)"""
         ranks = sorted([c.rank.value for c in cards], reverse=True)
@@ -544,15 +559,17 @@ class PokerGame:
                 total_winnings[w.id] += amount
                 w.chips += amount
         
-        # Set winners for display
+        # Set winners for display with best 5-card hand
         self.winners = []
         for p in active_players:
             if total_winnings[p.id] > 0:
+                # Get the best 5-card hand for this player
+                best_hand_cards = self._get_best_hand_cards(p.hand + self.community_cards)
                 self.winners.append({
                     'id': p.id,
                     'name': p.name,
                     'amount': total_winnings[p.id],
-                    'hand': [c.to_dict() for c in p.hand]
+                    'hand': [c.to_dict() for c in best_hand_cards]
                 })
     
     def to_dict(self, for_player: Optional[str] = None) -> dict:
