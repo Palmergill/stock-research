@@ -570,6 +570,5 @@ class PokerGame:
             'last_action': self.last_action,
             'last_ai_action': self.last_ai_action,
             'hand_number': self.hand_number,
-            'min_raise': self.min_raise,
-            'chat_messages': [msg.to_dict() for msg in self.chat_messages[-20:]]  # Include last 20 messages
+            'min_raise': self.min_raise
         }
