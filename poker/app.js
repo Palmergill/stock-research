@@ -687,7 +687,12 @@ const elements = {
     statsModal: document.getElementById('stats-modal'),
     statsContent: document.getElementById('stats-content'),
     btnCloseStats: document.getElementById('btn-close-stats'),
-    btnResetStats: document.getElementById('btn-reset-stats')
+    btnResetStats: document.getElementById('btn-reset-stats'),
+    buyBackOverlay: document.getElementById('buy-back-overlay'),
+    buyBackDetails: document.getElementById('buy-back-details'),
+    finalChipCount: document.getElementById('final-chip-count'),
+    btnBuyBack: document.getElementById('btn-buy-back'),
+    btnEndGame: document.getElementById('btn-end-game')
 };
 
 // Theme Manager
@@ -970,6 +975,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 showStats();
             }
         });
+    }
+
+    // Buy-back button listeners
+    if (elements.btnBuyBack) {
+        elements.btnBuyBack.addEventListener('click', buyBackIn);
+    }
+    if (elements.btnEndGame) {
+        elements.btnEndGame.addEventListener('click', endGame);
     }
 });
 
@@ -1684,6 +1697,12 @@ function showHandResult() {
     const isMe = winner.id === playerId;
     const myPlayer = gameState.players.find(p => p.id === playerId);
 
+    // Check if player is out of chips
+    if (myPlayer && myPlayer.chips <= 0) {
+        showBuyBackOverlay();
+        return;
+    }
+
     // Record stats for hand result (only once per hand)
     if (!handResultRecorded) {
         handResultRecorded = true;
@@ -1757,6 +1776,92 @@ function showHandResult() {
 
 function hideHandResult() {
     elements.handResult.classList.add('hidden');
+}
+
+function showBuyBackOverlay() {
+    const myPlayer = gameState.players.find(p => p.id === playerId);
+    if (elements.finalChipCount) {
+        elements.finalChipCount.textContent = `Final: ${myPlayer?.chips || 0} chips`;
+    }
+    
+    // Play loss sound
+    SoundManager.playLoss();
+    
+    if (elements.buyBackOverlay) {
+        elements.buyBackOverlay.classList.remove('hidden');
+    }
+}
+
+function hideBuyBackOverlay() {
+    if (elements.buyBackOverlay) {
+        elements.buyBackOverlay.classList.add('hidden');
+    }
+}
+
+async function buyBackIn() {
+    // Add 1000 chips to player
+    const myPlayer = gameState.players.find(p => p.id === playerId);
+    if (myPlayer) {
+        myPlayer.chips += 1000;
+    }
+    
+    hideBuyBackOverlay();
+    
+    // Start next hand
+    await nextHand();
+}
+
+function endGame() {
+    hideBuyBackOverlay();
+    
+    // Show final stats
+    const stats = StatsManager.getFormattedStats();
+    const myPlayer = gameState.players.find(p => p.id === playerId);
+    const finalChips = myPlayer?.chips || 0;
+    
+    // Create end game summary
+    let summaryHTML = `
+        <div style="text-align: center; margin-bottom: 20px;">
+            <h3 style="color: #ffd700; margin-bottom: 10px;">🎮 Game Over</h3>
+            <p style="font-size: 1.2rem;">Final Chip Count: <span style="color: ${finalChips >= 1000 ? '#10b981' : '#ef4444'}; font-weight: 700;">${finalChips}</span></p>
+            <p style="font-size: 0.9rem; color: #94a3b8; margin-top: 5px;">Started with: 1000 chips</p>
+        </div>
+        <div class="stat-row">
+            <span class="stat-label">Hands Played</span>
+            <span class="stat-value">${stats.handsPlayed}</span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-label">Hands Won</span>
+            <span class="stat-value gold">${stats.handsWon}</span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-label">Win Rate</span>
+            <span class="stat-value gold">${stats.winRate}%</span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-label">Biggest Pot Won</span>
+            <span class="stat-value gold">${stats.biggestPotWon} chips</span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-label">Net Profit/Loss</span>
+            <span class="stat-value ${stats.netProfit >= 0 ? 'positive' : 'negative'}">${stats.netProfit >= 0 ? '+' : ''}${stats.netProfit} chips</span>
+        </div>
+        <div class="stat-row">
+            <span class="stat-label">Best Hand</span>
+            <span class="stat-value">${stats.bestHand}</span>
+        </div>
+    `;
+    
+    elements.statsContent.innerHTML = summaryHTML;
+    elements.statsModal.classList.remove('hidden');
+    
+    // Reset game state after showing stats
+    setTimeout(() => {
+        gameState = null;
+        playerId = null;
+        gameId = null;
+        switchScreen('start');
+    }, 100);
 }
 
 function showStats() {
