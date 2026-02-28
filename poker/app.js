@@ -1410,7 +1410,9 @@ function renderCard(card, isPlayerCard = false, dealIndex = null) {
         animationClass = 'new-card';
     }
     
-    return `<div class="card ${animationClass} ${isRed ? 'red' : 'black'}">${rank}${suitSymbol}</div>`;
+    // Use inline style for color to ensure it works
+    const colorStyle = isRed ? 'color:#dc3545' : 'color:#1a1a2e';
+    return `<div class="card ${animationClass} ${isRed ? 'red' : 'black'}" style="${colorStyle}">${rank}${suitSymbol}</div>`;
 }
 
 function evaluateHandStrength(playerCards, communityCards) {
