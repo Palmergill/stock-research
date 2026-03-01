@@ -1301,11 +1301,12 @@ function updateGameDisplay() {
         const cardsHTML = myPlayer.hand.map((card, index) => renderCard(card, true, index)).join('');
         elements.yourCards.innerHTML = cardsHTML;
         
-        // Show hand strength
+        // Show hand strength (only update if changed to prevent re-animation)
         const handStrength = evaluateHandStrength(myPlayer.hand, gameState.community_cards);
-        if (handStrength) {
+        const currentStrength = elements.handStrength.textContent;
+        if (handStrength && handStrength !== currentStrength) {
             elements.handStrength.innerHTML = `<span class="hand-strength-text">${handStrength}</span>`;
-        } else {
+        } else if (!handStrength) {
             elements.handStrength.innerHTML = '';
         }
         
