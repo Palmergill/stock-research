@@ -616,6 +616,7 @@ document.head.appendChild(errorStyles);
 let gameState = null;
 let playerId = null;
 let gameId = null;
+let buyBackChips = 0; // Track chips added from buy-backs
 let isMyTurn = false;
 let raiseAmount = 0;
 let pollIntervalId = null;
@@ -1017,6 +1018,7 @@ async function startGame() {
     // Clear seen cards and reset deal sequence for new game
     seenCards.clear();
     resetCardDealSequence();
+    buyBackChips = 0; // Reset buy-back chips for new game
 
     try {
         elements.startBtn.disabled = true;
@@ -1233,8 +1235,13 @@ async function nextHand() {
         const responseData = await response.json();
         updateGameState(responseData);
         
-        // Update chat messages if present
-        if (gameState.chat_messages) {
+        // Apply any buy-back chips that were added
+        if (buyBackChips > 0) {
+            const myPlayer = gameState.players.find(p => p.id === playerId);
+            if (myPlayer) {
+                myPlayer.chips += buyBackChips;
+            }
+            buyBackChips = 0; // Reset after applying
         }
         
         hideLoading();
@@ -1800,7 +1807,10 @@ function hideBuyBackOverlay() {
 }
 
 async function buyBackIn() {
-    // Add 1000 chips to player
+    // Track buy-back chips to preserve after next hand
+    buyBackChips += 1000;
+    
+    // Add 1000 chips to player locally
     const myPlayer = gameState.players.find(p => p.id === playerId);
     if (myPlayer) {
         myPlayer.chips += 1000;
@@ -1864,6 +1874,7 @@ function endGame() {
         gameState = null;
         playerId = null;
         gameId = null;
+        buyBackChips = 0;
         switchScreen('start');
     }, 100);
 }
