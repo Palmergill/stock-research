@@ -1807,8 +1807,11 @@ async function buyBackIn() {
     
     hideBuyBackOverlay();
     
-    // Start next hand
-    await nextHand();
+    // Update display to show new chip count
+    updateGameDisplay();
+    
+    // Show regular hand result popup with Next Hand button
+    elements.handResult.classList.remove('hidden');
 }
 
 function endGame() {
