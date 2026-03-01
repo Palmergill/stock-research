@@ -199,11 +199,17 @@ class PokerGame:
     def get_current_player(self) -> Optional[Player]:
         if not self.players:
             return None
-        player = self.players[self.current_player_index]
-        # Skip folded or all-in players
-        if player.folded or player.is_all_in:
-            return None
-        return player
+        
+        # Find the next active player who hasn't folded and isn't all-in
+        for _ in range(len(self.players)):
+            player = self.players[self.current_player_index]
+            if not player.folded and not player.is_all_in:
+                return player
+            # Move to next player
+            self.current_player_index = (self.current_player_index + 1) % len(self.players)
+        
+        # All remaining players are folded or all-in
+        return None
     
     def action_fold(self, player_id: str) -> bool:
         player = self._get_player(player_id)

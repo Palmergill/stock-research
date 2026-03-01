@@ -85,10 +85,15 @@ async def create_game(request: CreateGameRequest):
     # Cleanup old games periodically
     cleanup_old_games()
     
-    # Process AI turns until it's human's turn
+    # Process AI turns until it's human's turn or hand is complete
     max_turns = 20
     turns = 0
     while turns < max_turns:
+        # Check if hand is over (all players all-in or showdown)
+        active_players = [p for p in game.players if not p.folded and not p.is_all_in]
+        if len(active_players) <= 1 or game.phase == 'showdown':
+            break
+        
         current = game.get_current_player()
         if not current or current.is_human:
             break
@@ -114,13 +119,19 @@ async def get_game_state(game_id: str, player_id: str, process_ai: bool = True):
     
     # Process only ONE AI turn per request so frontend can see each action
     if process_ai and game.phase != 'showdown':
-        current = game.get_current_player()
-        if current and not current.is_human:
-            ai_manager = ai_managers[game_id]
-            # Process just one turn - frontend will poll again for next
-            ai_manager.process_bot_turn()
-            # 1.5-second delay before responding so player sees the action
-            await asyncio.sleep(1.5)
+        # Check if all remaining players are all-in - auto advance
+        active_players = [p for p in game.players if not p.folded and not p.is_all_in]
+        if len(active_players) <= 1:
+            # Auto advance phase if everyone is all-in
+            game._advance_phase()
+        else:
+            current = game.get_current_player()
+            if current and not current.is_human:
+                ai_manager = ai_managers[game_id]
+                # Process just one turn - frontend will poll again for next
+                ai_manager.process_bot_turn()
+                # 1.5-second delay before responding so player sees the action
+                await asyncio.sleep(1.5)
     
     return game.to_dict(for_player=player_id)
 
