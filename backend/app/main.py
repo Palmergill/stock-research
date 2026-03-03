@@ -39,7 +39,7 @@ app.include_router(poker.router)
 
 @app.get("/health")
 async def health():
-    return {"status": "ok"}
+    return {"status": "ok", "version": "1.2.1"}
 
 # Serve static files (frontend)
 static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
