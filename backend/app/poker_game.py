@@ -131,7 +131,12 @@ class PokerGame:
         self.last_ai_action: Optional[Dict] = None  # Track last AI action for display
         self.hand_number: int = 0
         self.acted_this_round: set = set()  # Track who has acted in current betting round
-        self.round_start_player: int = 0  # Who started this betting round    
+        self.round_start_player: int = 0  # Who started this betting round
+        # Multiplayer support
+        self.game_type: str = "single"  # "single" or "multiplayer"
+        self.max_players: int = 6
+        self.waiting_for_players: bool = False
+    
     def add_player(self, name: str, is_human: bool = False) -> Player:
         player_id = f"p{len(self.players)}"
         player = Player(
@@ -593,5 +598,8 @@ class PokerGame:
             'last_action': self.last_action,
             'last_ai_action': self.last_ai_action,
             'hand_number': self.hand_number,
-            'min_raise': self.min_raise
+            'min_raise': self.min_raise,
+            'game_type': getattr(self, 'game_type', 'single'),
+            'max_players': getattr(self, 'max_players', 6),
+            'waiting_for_players': getattr(self, 'waiting_for_players', False)
         }
