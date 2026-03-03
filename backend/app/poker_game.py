@@ -133,9 +133,9 @@ class PokerGame:
         self.acted_this_round: set = set()  # Track who has acted in current betting round
         self.round_start_player: int = 0  # Who started this betting round
         # Multiplayer support
-        self.game_type: str = "single"  # "single" or "multiplayer"
-        self.max_players: int = 6
-        self.waiting_for_players: bool = False
+        self.game_type = "single"  # "single" or "multiplayer"
+        self.max_players = 6
+        self.waiting_for_players = False
     
     def add_player(self, name: str, is_human: bool = False) -> Player:
         player_id = f"p{len(self.players)}"

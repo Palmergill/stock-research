@@ -1,5 +1,5 @@
 """
-Poker Game API Router
+Poker Game API Router - Simplified for debugging
 """
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -54,12 +54,7 @@ class ActionRequest(BaseModel):
 @router.post("/games")
 async def create_game(request: CreateGameRequest):
     """Create a new poker game"""
-    import logging
-    logger = logging.getLogger(__name__)
-    
     game_id = str(uuid.uuid4())[:8]
-    logger.info(f"Creating {request.game_type} game: {game_id}")
-    
     game = PokerGame(game_id)
     game.game_type = request.game_type
     game.max_players = request.max_players
@@ -125,10 +120,10 @@ async def join_game(request: JoinGameRequest):
     
     game = games[request.game_id]
     
-    if game.game_type != "multiplayer":
+    if getattr(game, 'game_type', 'single') != "multiplayer":
         raise HTTPException(status_code=400, detail="Cannot join single player game")
     
-    if len(game.players) >= game.max_players:
+    if len(game.players) >= getattr(game, 'max_players', 6):
         raise HTTPException(status_code=400, detail="Game is full")
     
     if game.phase != 'waiting':
@@ -154,7 +149,7 @@ async def start_multiplayer_game(game_id: str, player_id: str):
     
     game = games[game_id]
     
-    if game.game_type != "multiplayer":
+    if getattr(game, 'game_type', 'single') != "multiplayer":
         raise HTTPException(status_code=400, detail="Not a multiplayer game")
     
     if len(game.players) < 2:
@@ -179,16 +174,18 @@ async def get_game_state(game_id: str, player_id: str, process_ai: bool = True):
     game = games[game_id]
     
     # Process AI turns for single player
-    if process_ai and game.game_type == "single" and game.phase != 'showdown' and game.phase != 'waiting':
+    is_single_player = getattr(game, 'game_type', 'single') == 'single'
+    if process_ai and is_single_player and game.phase not in ('showdown', 'waiting'):
         active = [p for p in game.players if not p.folded and not p.is_all_in]
         if len(active) <= 1:
             game._advance_phase()
         else:
             current = game.get_current_player()
             if current and not current.is_human:
-                ai_manager = ai_managers[game_id]
-                ai_manager.process_bot_turn()
-                await asyncio.sleep(1.5)
+                ai_manager = ai_managers.get(game_id)
+                if ai_manager:
+                    ai_manager.process_bot_turn()
+                    await asyncio.sleep(1.5)
     
     return game.to_dict(for_player=player_id)
 
@@ -221,49 +218,46 @@ async def player_action(game_id: str, request: ActionRequest):
         raise HTTPException(status_code=400, detail="Action failed")
     
     # Process AI turns for single player
-    if game.game_type == "single":
-        ai_manager = ai_managers[game_id]
-        max_turns = 20
-        turns = 0
-        while turns < max_turns:
-            current = game.get_current_player()
-            if not current or current.is_human or game.phase == 'showdown':
-                break
-            await asyncio.sleep(0.5)
-            ai_manager.process_bot_turn()
-            turns += 1
+    if getattr(game, 'game_type', 'single') == "single":
+        ai_manager = ai_managers.get(game_id)
+        if ai_manager:
+            max_turns = 20
+            turns = 0
+            while turns < max_turns:
+                current = game.get_current_player()
+                if not current or current.is_human or game.phase == 'showdown':
+                    break
+                await asyncio.sleep(0.5)
+                ai_manager.process_bot_turn()
+                turns += 1
     
     return game.to_dict(for_player=request.player_id)
 
 @router.post("/games/{game_id}/next-hand")
 async def next_hand(game_id: str, player_id: str):
     """Start next hand"""
-    import logging
-    logger = logging.getLogger(__name__)
-    
-    logger.info(f"Next hand requested for game {game_id}, player {player_id}")
-    
     if game_id not in games:
         raise HTTPException(status_code=404, detail="Game not found")
     
     game = games[game_id]
     
-    if game.phase not in ['showdown', 'waiting']:
+    if game.phase not in ('showdown', 'waiting'):
         raise HTTPException(status_code=400, detail="Hand still in progress")
     
     game.dealer_index = (game.dealer_index + 1) % len(game.players)
     game.start_hand()
     
     # Process AI turns for single player
-    if game.game_type == "single":
-        ai_manager = ai_managers[game_id]
-        current = game.get_current_player()
-        turns = 0
-        while current and not current.is_human and turns < 10:
-            await asyncio.sleep(0.3)
-            ai_manager.process_bot_turn()
+    if getattr(game, 'game_type', 'single') == "single":
+        ai_manager = ai_managers.get(game_id)
+        if ai_manager:
             current = game.get_current_player()
-            turns += 1
+            turns = 0
+            while current and not current.is_human and turns < 10:
+                await asyncio.sleep(0.3)
+                ai_manager.process_bot_turn()
+                current = game.get_current_player()
+                turns += 1
     
     return game.to_dict(for_player=player_id)
 
