@@ -205,15 +205,18 @@ class PokerGame:
         if not self.players:
             return None
         
-        # Find the next active player who hasn't folded and isn't all-in
-        for _ in range(len(self.players)):
-            player = self.players[self.current_player_index]
-            if not player.folded and not player.is_all_in:
-                return player
-            # Move to next player
-            self.current_player_index = (self.current_player_index + 1) % len(self.players)
+        player = self.players[self.current_player_index]
+        # Only skip folded players - all-in players need to be "current" for _is_round_complete
+        if not player.folded:
+            return player
         
-        # All remaining players are folded or all-in
+        # If current player folded, find next non-folded player
+        for _ in range(len(self.players)):
+            self.current_player_index = (self.current_player_index + 1) % len(self.players)
+            player = self.players[self.current_player_index]
+            if not player.folded:
+                return player
+        
         return None
     
     def action_fold(self, player_id: str) -> bool:
@@ -333,25 +336,29 @@ class PokerGame:
         for _ in range(len(self.players)):
             self.current_player_index = (self.current_player_index + 1) % len(self.players)
             player = self.players[self.current_player_index]
+            # Skip folded and all-in players (they don't need to act)
             if not player.folded and not player.is_all_in:
                 break
     
     def _is_round_complete(self) -> bool:
+        # Get players who still need to act (not folded, not all-in)
         active_players = [p for p in self.players if not p.folded and not p.is_all_in]
-        if len(active_players) <= 1:
-            return True
         
-        # Check if all active players have matched the current bet
-        for p in active_players:
+        # Get all non-folded players (including all-in) for bet matching check
+        non_folded = [p for p in self.players if not p.folded]
+        
+        # Check if all non-folded players have matched the current bet
+        for p in non_folded:
             if p.bet < self.current_bet:
                 return False
         
-        # Check if everyone has had a chance to act
-        # and we're back to the starting player (or they've acted)
+        # Check if all active players have had a chance to act
         for p in active_players:
             if p.id not in self.acted_this_round:
                 return False
         
+        # If there's only one active player left and they've acted, round is complete
+        # (everyone else is all-in or folded)
         return True
     
     def _advance_phase(self):
@@ -386,9 +393,10 @@ class PokerGame:
         # Reset round tracking
         self.acted_this_round = set()
         
-        # Find first active player after dealer for next round (skip folded AND all-in players)
+        # Find first active player after dealer for next round (skip folded players only)
+        # All-in players still get cards dealt, they just don't bet
         self.current_player_index = (self.dealer_index + 1) % len(self.players)
-        while self.players[self.current_player_index].folded or self.players[self.current_player_index].is_all_in:
+        while self.players[self.current_player_index].folded:
             self.current_player_index = (self.current_player_index + 1) % len(self.players)
         
         self.round_start_player = self.current_player_index
