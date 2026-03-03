@@ -643,7 +643,9 @@ let handResultRecorded = false; // Prevent duplicate stat recording
 // DOM Elements
 const screens = {
     start: document.getElementById('start-screen'),
-    game: document.getElementById('game-screen')
+    game: document.getElementById('game-screen'),
+    join: document.getElementById('join-screen'),
+    lobby: document.getElementById('lobby-screen')
 };
 
 const elements = {
@@ -929,7 +931,41 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    elements.startBtn.addEventListener('click', startGame);
+    elements.startBtn.addEventListener('click', () => startGame('single'));
+    
+    // Multiplayer buttons
+    const createMultiplayerBtn = document.getElementById('create-multiplayer-btn');
+    const joinMultiplayerBtn = document.getElementById('join-multiplayer-btn');
+    const joinBtn = document.getElementById('join-btn');
+    const backToStartBtn = document.getElementById('back-to-start');
+    const startMultiplayerBtn = document.getElementById('start-multiplayer-btn');
+    const leaveLobbyBtn = document.getElementById('leave-lobby-btn');
+    
+    if (createMultiplayerBtn) {
+        createMultiplayerBtn.addEventListener('click', () => createMultiplayerGame());
+    }
+    if (joinMultiplayerBtn) {
+        joinMultiplayerBtn.addEventListener('click', () => switchScreen('join'));
+    }
+    if (joinBtn) {
+        joinBtn.addEventListener('click', () => joinMultiplayerGame());
+    }
+    if (backToStartBtn) {
+        backToStartBtn.addEventListener('click', () => switchScreen('start'));
+    }
+    if (startMultiplayerBtn) {
+        startMultiplayerBtn.addEventListener('click', () => startMultiplayerGame());
+    }
+    if (leaveLobbyBtn) {
+        leaveLobbyBtn.addEventListener('click', () => {
+            stopPolling();
+            gameId = null;
+            playerId = null;
+            gameState = null;
+            switchScreen('start');
+        });
+    }
+    
     elements.btnFold.addEventListener('click', () => playerAction('fold'));
     elements.btnCall.addEventListener('click', () => playerAction('call'));
     elements.btnRaise.addEventListener('click', showRaiseControls);
@@ -1012,13 +1048,13 @@ function hideLoading() {
     }
 }
 
-async function startGame() {
+async function startGame(gameType = 'single') {
     const name = elements.playerName.value.trim() || 'Palmer';
 
     // Clear seen cards and reset deal sequence for new game
     seenCards.clear();
     resetCardDealSequence();
-    buyBackChips = 0; // Reset buy-back chips for new game
+    buyBackChips = 0;
 
     try {
         elements.startBtn.disabled = true;
@@ -1026,7 +1062,10 @@ async function startGame() {
 
         const response = await CSRFManager.fetch(`${API_BASE}/api/poker/games`, {
             method: 'POST',
-            body: JSON.stringify({ player_name: name })
+            body: JSON.stringify({ 
+                player_name: name,
+                game_type: gameType
+            })
         });
 
         if (!response.ok) {
@@ -1039,29 +1078,177 @@ async function startGame() {
         playerId = data.player_id;
         updateGameState(data.state);
 
-        // Clear chat for new game
-
         elements.yourName.textContent = name;
 
         hideLoading();
-        switchScreen('game');
-        updateGameDisplay();
-
-        // Poll for updates
-        startPolling();
+        
+        if (gameType === 'multiplayer' && data.waiting) {
+            // Show lobby for multiplayer
+            showLobby(data);
+        } else {
+            switchScreen('game');
+            updateGameDisplay();
+            startPolling();
+        }
 
     } catch (error) {
         console.error('Error starting game:', error);
         hideLoading();
         ErrorBoundary.show('Failed to start game. Please try again.', 'error');
         elements.startBtn.disabled = false;
-        elements.startBtn.textContent = 'Play Now';
+    }
+}
+
+// Multiplayer functions
+async function createMultiplayerGame() {
+    await startGame('multiplayer');
+}
+
+function showLobby(data) {
+    switchScreen('lobby');
+    document.getElementById('lobby-game-id').textContent = `Game ID: ${data.game_id}`;
+    updateLobbyPlayers(data.players);
+    
+    // Show start button only for host (first player)
+    const isHost = data.players[0]?.id === playerId;
+    const startBtn = document.getElementById('start-multiplayer-btn');
+    if (isHost && startBtn) {
+        startBtn.classList.remove('hidden');
+    }
+    
+    // Poll for lobby updates
+    startLobbyPolling();
+}
+
+function updateLobbyPlayers(players) {
+    const container = document.getElementById('lobby-players');
+    if (!container) return;
+    
+    container.innerHTML = players.map((p, i) => `
+        <div style="padding: 8px; background: rgba(255,255,255,0.1); border-radius: 8px; margin-bottom: 8px;">
+            ${i === 0 ? '👑 ' : ''}${p.name} ${p.id === playerId ? '(You)' : ''}
+        </div>
+    `).join('');
+    
+    const statusEl = document.getElementById('lobby-status');
+    if (statusEl) {
+        if (players.length < 2) {
+            statusEl.textContent = 'Waiting for more players...';
+        } else {
+            statusEl.textContent = `${players.length} players ready!`;
+        }
+    }
+}
+
+let lobbyPollInterval = null;
+
+function startLobbyPolling() {
+    if (lobbyPollInterval) clearInterval(lobbyPollInterval);
+    
+    lobbyPollInterval = setInterval(async () => {
+        if (!gameId) {
+            clearInterval(lobbyPollInterval);
+            return;
+        }
+        
+        try {
+            const response = await fetch(`${API_BASE}/api/poker/games/${gameId}?player_id=${playerId}&process_ai=false`);
+            if (response.ok) {
+                const data = await response.json();
+                updateLobbyPlayers(data.players);
+                
+                // Check if game has started
+                if (data.phase !== 'waiting') {
+                    clearInterval(lobbyPollInterval);
+                    updateGameState(data);
+                    switchScreen('game');
+                    updateGameDisplay();
+                    startPolling();
+                }
+            }
+        } catch (e) {
+            console.error('Lobby poll error:', e);
+        }
+    }, 2000);
+}
+
+async function joinMultiplayerGame() {
+    const gameIdInput = document.getElementById('join-game-id');
+    const name = elements.playerName.value.trim() || 'Palmer';
+    const joinGameId = gameIdInput?.value?.trim();
+    
+    if (!joinGameId) {
+        ErrorBoundary.show('Please enter a Game ID', 'error');
+        return;
+    }
+    
+    try {
+        const response = await CSRFManager.fetch(`${API_BASE}/api/poker/games/join`, {
+            method: 'POST',
+            body: JSON.stringify({ 
+                game_id: joinGameId,
+                player_name: name
+            })
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.detail || 'Failed to join game');
+        }
+        
+        const data = await response.json();
+        gameId = data.game_id;
+        playerId = data.player_id;
+        
+        elements.yourName.textContent = name;
+        
+        if (data.waiting) {
+            showLobby(data);
+        } else {
+            updateGameState(data.state);
+            switchScreen('game');
+            updateGameDisplay();
+            startPolling();
+        }
+        
+    } catch (error) {
+        console.error('Error joining game:', error);
+        ErrorBoundary.show(error.message || 'Failed to join game', 'error');
+    }
+}
+
+async function startMultiplayerGame() {
+    if (!gameId) return;
+    
+    try {
+        const response = await CSRFManager.fetch(`${API_BASE}/api/poker/games/${gameId}/start?player_id=${playerId}`, {
+            method: 'POST'
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.detail || 'Failed to start game');
+        }
+        
+        const data = await response.json();
+        clearInterval(lobbyPollInterval);
+        updateGameState(data);
+        switchScreen('game');
+        updateGameDisplay();
+        startPolling();
+        
+    } catch (error) {
+        console.error('Error starting game:', error);
+        ErrorBoundary.show(error.message || 'Failed to start game', 'error');
     }
 }
 
 function startPolling() {
     // Clear any existing polling
     stopPolling();
+    
+    // Don't process AI for multiplayer games
+    const processAI = gameState?.game_type !== 'multiplayer';
     
     pollIntervalId = setInterval(async () => {
         if (!gameId || !playerId) {
@@ -1070,10 +1257,9 @@ function startPolling() {
         }
         
         try {
-            const response = await fetch(`${API_BASE}/api/poker/games/${gameId}?player_id=${playerId}&process_ai=true`);
+            const response = await fetch(`${API_BASE}/api/poker/games/${gameId}?player_id=${playerId}&process_ai=${processAI}`);
             if (!response.ok) {
                 if (response.status === 404) {
-                    // Game no longer exists, stop polling
                     stopPolling();
                 }
                 return;
@@ -1081,11 +1267,6 @@ function startPolling() {
             
             const newState = await response.json();
             updateGameState(newState);
-            
-            // Update chat messages if present
-            if (newState.chat_messages) {
-            }
-            
             updateGameDisplay();
             
             if (gameState.phase === 'showdown') {
@@ -1095,7 +1276,6 @@ function startPolling() {
             
         } catch (error) {
             console.error('Polling error:', error);
-            // Don't show error toast for polling - it's too frequent
         }
     }, 1000);
 }
@@ -1373,7 +1553,10 @@ function updateGameDisplay() {
 function renderOpponent(player) {
     const isCurrent = gameState.current_player === player.id;
     const showCards = gameState.phase === 'showdown' && !player.folded;
-    const avatar = AvatarManager.getBotAvatar(player.name);
+    // Use bot avatar for AI, generate from name for humans
+    const avatar = player.is_human 
+        ? AvatarManager.getPlayerAvatar(player.name)
+        : AvatarManager.getBotAvatar(player.name);
 
     return `
         <div class="opponent ${player.folded ? 'folded' : ''} ${isCurrent ? 'active-turn' : ''}">

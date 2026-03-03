@@ -1671,7 +1671,9 @@
             <p class="subtitle">No-Limit Poker</p>
             <div class="start-form">
                 <input type="text" id="player-name" placeholder="Your name" maxlength="12" value="Palmer">
-                <button id="start-btn" class="btn-primary">Play Now</button>
+                <button id="start-btn" class="btn-primary">Play vs AI</button>
+                <button id="create-multiplayer-btn" class="btn-secondary" style="margin-top: 10px;">Create Multiplayer Game</button>
+                <button id="join-multiplayer-btn" class="btn-secondary" style="margin-top: 10px;">Join Multiplayer Game</button>
             </div>
             <div class="game-info">
                 <p>• 5 AI Opponents</p>
@@ -1679,6 +1681,33 @@
                 <p>• Blinds 10/20</p>
             </div>
             <button id="stats-btn" class="btn-secondary" style="margin-top: 30px; max-width: 200px;">📊 Statistics</button>
+        </div>
+
+        <!-- Join Game Screen -->
+        <div id="join-screen" class="screen">
+            <div class="logo">♠♥♣♦</div>
+            <h1>Join Game</h1>
+            <div class="start-form">
+                <input type="text" id="join-game-id" placeholder="Enter Game ID" maxlength="8">
+                <button id="join-btn" class="btn-primary">Join Game</button>
+                <button id="back-to-start" class="btn-secondary" style="margin-top: 10px;">Back</button>
+            </div>
+        </div>
+
+        <!-- Lobby Screen -->
+        <div id="lobby-screen" class="screen">
+            <div class="logo">♠♥♣♦</div>
+            <h1>Game Lobby</h1>
+            <div class="start-form" style="text-align: center;">
+                <p id="lobby-game-id" style="font-size: 1.2rem; margin-bottom: 10px;"></p>
+                <p style="color: #94a3b8; margin-bottom: 20px;">Share this Game ID with friends!</p>
+                <div id="lobby-players" style="margin-bottom: 20px;">
+                    <!-- Players list populated by JS -->
+                </div>
+                <p id="lobby-status" style="color: #ffd700; margin-bottom: 20px;">Waiting for players...</p>
+                <button id="start-multiplayer-btn" class="btn-primary hidden">Start Game</button>
+                <button id="leave-lobby-btn" class="btn-secondary" style="margin-top: 10px;">Leave</button>
+            </div>
         </div>
 
         <!-- Loading Overlay -->
