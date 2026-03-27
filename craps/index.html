@@ -1023,9 +1023,11 @@
                     isComeOutRoll = false;
                     document.getElementById('pointDisplay').textContent = 'POINT: ' + point;
                     messages.push('Point is ' + point);
-                    // Show point popup if there's a pass line bet without odds
+                    // Show point popup if there's a pass line or don't pass bet without odds
                     if (bets.passLine > 0 && oddsBets.passLine === 0) {
-                        setTimeout(() => showPointPopup(point), 500);
+                        setTimeout(() => showPointPopup(point, 'passLine'), 500);
+                    } else if (bets.dontPass > 0 && oddsBets.dontPass === 0) {
+                        setTimeout(() => showPointPopup(point, 'dontPass'), 500);
                     }
                 }
             } else {
@@ -1075,6 +1077,10 @@
                     } else {
                         dontComePoint = total;
                         messages.push("Don't Come point: " + dontComePoint);
+                        // Show point popup for Don't Come bet if no odds yet
+                        if (bets.dontCome > 0 && oddsBets.dontCome === 0) {
+                            setTimeout(() => showPointPopup(dontComePoint, 'dontCome'), 500);
+                        }
                     }
                 } else if (bets.dontCome > 0 && dontComePoint) {
                     if (total === 7) {
@@ -1171,7 +1177,7 @@
 
         // ── Point Popup ──
         let pointPopupTimer = null;
-        let currentPopupBetType = 'passLine'; // 'passLine' or 'come'
+        let currentPopupBetType = 'passLine'; // 'passLine', 'dontPass', 'come', or 'dontCome'
 
         function showPointPopup(pt, betType = 'passLine') {
             const popup = document.getElementById('pointPopup');
@@ -1181,9 +1187,17 @@
 
             currentPopupBetType = betType;
             pointNum.textContent = pt;
-            popupText.textContent = betType === 'come' 
-                ? 'Take odds on your Come bet?' 
-                : 'Take odds on your Pass Line bet?';
+            
+            // Set appropriate text based on bet type
+            if (betType === 'come') {
+                popupText.textContent = 'Take odds on your Come bet?';
+            } else if (betType === 'dontCome') {
+                popupText.textContent = "Take lay odds on your Don't Come bet?";
+            } else if (betType === 'dontPass') {
+                popupText.textContent = "Take lay odds on your Don't Pass bet?";
+            } else {
+                popupText.textContent = 'Take odds on your Pass Line bet?';
+            }
 
             // Reset timer animation
             timerBar.style.animation = 'none';
@@ -1209,7 +1223,19 @@
 
         function takeOddsFromPopup(multiplier) {
             const betType = currentPopupBetType;
-            const pt = betType === 'come' ? comePoint : point;
+            
+            // Determine the correct point based on bet type
+            let pt;
+            if (betType === 'come') {
+                pt = comePoint;
+            } else if (betType === 'dontCome') {
+                pt = dontComePoint;
+            } else if (betType === 'dontPass') {
+                pt = point;
+            } else {
+                pt = point;
+            }
+            
             const flatBet = bets[betType];
 
             if (!pt || flatBet === 0) {
