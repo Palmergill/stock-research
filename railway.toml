@@ -2,7 +2,7 @@
 builder = "nixpacks"
 
 [deploy]
-startCommand = "cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+startCommand = "./start-railway.sh"
 healthcheckPath = "/health"
 healthcheckTimeout = 30
 restartPolicyType = "on_failure"
@@ -10,6 +10,6 @@ restartPolicyType = "on_failure"
 [environments]
 [environments.production]
 [environments.production.deploy]
-startCommand = "cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+startCommand = "./start-railway.sh"
 healthcheckPath = "/health"
 healthcheckTimeout = 30
