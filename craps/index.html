@@ -555,7 +555,7 @@
         <div class="point-popup-content">
             <h2>🎯 POINT ESTABLISHED</h2>
             <div class="point-number" id="popupPointNumber">6</div>
-            <div class="point-text">Take odds on your Pass Line bet?</div>
+            <div class="point-text" id="popupText">Take odds on your Pass Line bet?</div>
             <div class="odds-buttons" id="popupOddsButtons">
                 <button class="odds-btn" onclick="takeOddsFromPopup(1)">1x</button>
                 <button class="odds-btn" onclick="takeOddsFromPopup(2)">2x</button>
@@ -1041,6 +1041,10 @@
                     } else {
                         comePoint = total;
                         messages.push('Come point: ' + comePoint);
+                        // Show point popup for Come bet if no odds yet
+                        if (bets.come > 0 && oddsBets.come === 0) {
+                            setTimeout(() => showPointPopup(comePoint, 'come'), 500);
+                        }
                     }
                 } else if (bets.come > 0 && comePoint) {
                     if (total === comePoint) {
@@ -1155,13 +1159,19 @@
 
         // ── Point Popup ──
         let pointPopupTimer = null;
+        let currentPopupBetType = 'passLine'; // 'passLine' or 'come'
 
-        function showPointPopup(pt) {
+        function showPointPopup(pt, betType = 'passLine') {
             const popup = document.getElementById('pointPopup');
             const pointNum = document.getElementById('popupPointNumber');
+            const popupText = document.getElementById('popupText');
             const timerBar = document.getElementById('popupTimer');
 
+            currentPopupBetType = betType;
             pointNum.textContent = pt;
+            popupText.textContent = betType === 'come' 
+                ? 'Take odds on your Come bet?' 
+                : 'Take odds on your Pass Line bet?';
 
             // Reset timer animation
             timerBar.style.animation = 'none';
@@ -1186,25 +1196,29 @@
         }
 
         function takeOddsFromPopup(multiplier) {
-            if (!point || bets.passLine === 0) {
+            const betType = currentPopupBetType;
+            const pt = betType === 'come' ? comePoint : point;
+            const flatBet = bets[betType];
+
+            if (!pt || flatBet === 0) {
                 closePointPopup();
                 return;
             }
 
-            const maxMult = oddsMultipliers[point];
+            const maxMult = oddsMultipliers[pt];
             let oddsAmt = 0;
 
             if (multiplier === 'max') {
-                oddsAmt = bets.passLine * maxMult;
+                oddsAmt = flatBet * maxMult;
             } else {
-                oddsAmt = bets.passLine * multiplier;
+                oddsAmt = flatBet * multiplier;
             }
 
             // Cap at what player can afford
             oddsAmt = Math.min(oddsAmt, balance);
 
             if (oddsAmt >= 5) {
-                oddsBets.passLine += oddsAmt;
+                oddsBets[betType] += oddsAmt;
                 balance -= oddsAmt;
                 updateBalance();
                 updateAllDisplays();
