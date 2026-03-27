@@ -657,3 +657,304 @@
     </script>
 </body>
 </html>
+            if (totalBets === 0) {
+                document.getElementById('status').textContent = 'Place a bet first!';
+                return;
+            }
+            
+            document.getElementById('rollBtn').disabled = true;
+            document.getElementById('status').textContent = 'Rolling...';
+            
+            // Animate dice
+            let rolls = 0;
+            const interval = setInterval(() => {
+                renderDie('die1', Math.floor(Math.random() * 6) + 1);
+                renderDie('die2', Math.floor(Math.random() * 6) + 1);
+                rolls++;
+                if (rolls >= 15) {
+                    clearInterval(interval);
+                    finalizeRoll();
+                }
+            }, 60);
+        }
+        
+        function finalizeRoll() {
+            const d1 = Math.floor(Math.random() * 6) + 1;
+            const d2 = Math.floor(Math.random() * 6) + 1;
+            const total = d1 + d2;
+            
+            renderDie('die1', d1);
+            renderDie('die2', d2);
+            resolveRoll(total);
+            
+            document.getElementById('rollBtn').disabled = false;
+        }
+        
+        function resolveRoll(total) {
+            let winnings = 0;
+            let messages = [];
+            
+            // Center bets (one-roll)
+            if (bets.any7 > 0) {
+                if (total === 7) {
+                    winnings += bets.any7 * 5;
+                    messages.push('Any 7 wins!');
+                }
+                bets.any7 = 0;
+            }
+            if (bets.anyCraps > 0) {
+                if ([2,3,12].includes(total)) {
+                    winnings += bets.anyCraps * 8;
+                    messages.push('Any Craps wins!');
+                }
+                bets.anyCraps = 0;
+            }
+            if (bets.craps2 > 0) {
+                if (total === 2) {
+                    winnings += bets.craps2 * 31;
+                    messages.push('Craps 2 wins!');
+                }
+                bets.craps2 = 0;
+            }
+            if (bets.craps3 > 0) {
+                if (total === 3) {
+                    winnings += bets.craps3 * 16;
+                    messages.push('Craps 3 wins!');
+                }
+                bets.craps3 = 0;
+            }
+            if (bets.craps12 > 0) {
+                if (total === 12) {
+                    winnings += bets.craps12 * 31;
+                    messages.push('Craps 12 wins!');
+                }
+                bets.craps12 = 0;
+            }
+            if (bets.yo11 > 0) {
+                if (total === 11) {
+                    winnings += bets.yo11 * 16;
+                    messages.push('Yo 11 wins!');
+                }
+                bets.yo11 = 0;
+            }
+            if (bets.field > 0) {
+                if ([2,3,4,9,10,11,12].includes(total)) {
+                    const payout = total === 2 || total === 12 ? 3 : 2;
+                    winnings += bets.field * payout;
+                    messages.push('Field wins!');
+                }
+                bets.field = 0;
+            }
+            
+            // Hardways
+            const isHard = d1 === d2;
+            if (bets.hard4 > 0) {
+                if (total === 4 && isHard) {
+                    winnings += bets.hard4 * 8;
+                    messages.push('Hard 4 wins!');
+                } else if (total === 4 || total === 7) {
+                    bets.hard4 = 0;
+                }
+            }
+            if (bets.hard6 > 0) {
+                if (total === 6 && isHard) {
+                    winnings += bets.hard6 * 10;
+                    messages.push('Hard 6 wins!');
+                } else if (total === 6 || total === 7) {
+                    bets.hard6 = 0;
+                }
+            }
+            if (bets.hard8 > 0) {
+                if (total === 8 && isHard) {
+                    winnings += bets.hard8 * 10;
+                    messages.push('Hard 8 wins!');
+                } else if (total === 8 || total === 7) {
+                    bets.hard8 = 0;
+                }
+            }
+            if (bets.hard10 > 0) {
+                if (total === 10 && isHard) {
+                    winnings += bets.hard10 * 8;
+                    messages.push('Hard 10 wins!');
+                } else if (total === 10 || total === 7) {
+                    bets.hard10 = 0;
+                }
+            }
+            
+            if (isComeOutRoll) {
+                // Come-out roll
+                if (total === 7 || total === 11) {
+                    // Pass Line wins
+                    if (bets.passLine > 0) {
+                        winnings += bets.passLine * 2;
+                        messages.push('Pass Line wins!');
+                    }
+                    // Clear Don't Pass
+                    bets.dontPass = 0;
+                    messages.push('Natural!');
+                    resetRound();
+                } else if ([2,3,12].includes(total)) {
+                    // Don't Pass wins (except 12 is push)
+                    if (bets.dontPass > 0) {
+                        if (total !== 12) {
+                            winnings += bets.dontPass * 2;
+                            messages.push("Don't Pass wins!");
+                        } else {
+                            winnings += bets.dontPass; // Push
+                            messages.push("Don't Pass pushes on 12");
+                        }
+                    }
+                    // Clear Pass Line
+                    bets.passLine = 0;
+                    messages.push('Craps!');
+                    resetRound();
+                } else {
+                    // Point established
+                    point = total;
+                    isComeOutRoll = false;
+                    document.getElementById('point').textContent = 'POINT: ' + point;
+                    messages.push('Point is ' + point);
+                }
+            } else {
+                // Point phase
+                
+                // Come bet resolution
+                if (bets.come > 0 && !comePoint) {
+                    if (total === 7 || total === 11) {
+                        winnings += bets.come * 2;
+                        messages.push('Come wins!');
+                        bets.come = 0;
+                    } else if ([2,3,12].includes(total)) {
+                        bets.come = 0;
+                    } else {
+                        comePoint = total;
+                        messages.push('Come point: ' + comePoint);
+                    }
+                } else if (bets.come > 0 && comePoint) {
+                    if (total === comePoint) {
+                        winnings += bets.come * 2;
+                        messages.push('Come wins!');
+                        bets.come = 0;
+                        comePoint = null;
+                    } else if (total === 7) {
+                        bets.come = 0;
+                        comePoint = null;
+                    }
+                }
+                
+                // Don't Come resolution
+                if (bets.dontCome > 0 && !dontComePoint) {
+                    if (total === 2 || total === 3) {
+                        winnings += bets.dontCome * 2;
+                        messages.push("Don't Come wins!");
+                        bets.dontCome = 0;
+                    } else if (total === 7 || total === 11) {
+                        bets.dontCome = 0;
+                    } else if (total === 12) {
+                        winnings += bets.dontCome; // Push
+                        bets.dontCome = 0;
+                    } else {
+                        dontComePoint = total;
+                        messages.push("Don't Come point: " + dontComePoint);
+                    }
+                } else if (bets.dontCome > 0 && dontComePoint) {
+                    if (total === 7) {
+                        winnings += bets.dontCome * 2;
+                        messages.push("Don't Come wins!");
+                        bets.dontCome = 0;
+                        dontComePoint = null;
+                    } else if (total === dontComePoint) {
+                        bets.dontCome = 0;
+                        dontComePoint = null;
+                    }
+                }
+                
+                // Pass/Don't Pass
+                if (total === point) {
+                    if (bets.passLine > 0) {
+                        winnings += bets.passLine * 2;
+                        messages.push('Pass Line wins!');
+                    }
+                    messages.push('Hit the point!');
+                    resetRound();
+                } else if (total === 7) {
+                    if (bets.dontPass > 0) {
+                        winnings += bets.dontPass * 2;
+                        messages.push("Don't Pass wins!");
+                    }
+                    messages.push('Seven out!');
+                    resetRound();
+                }
+                
+                // Place bets
+                if (total === 4 && bets.place4 > 0) { winnings += Math.floor(bets.place4 * 9/5) + bets.place4; messages.push('Place 4 wins!'); }
+                if (total === 5 && bets.place5 > 0) { winnings += Math.floor(bets.place5 * 7/5) + bets.place5; messages.push('Place 5 wins!'); }
+                if (total === 6 && bets.place6 > 0) { winnings += Math.floor(bets.place6 * 7/6) + bets.place6; messages.push('Place 6 wins!'); }
+                if (total === 8 && bets.place8 > 0) { winnings += Math.floor(bets.place8 * 7/6) + bets.place8; messages.push('Place 8 wins!'); }
+                if (total === 9 && bets.place9 > 0) { winnings += Math.floor(bets.place9 * 7/5) + bets.place9; messages.push('Place 9 wins!'); }
+                if (total === 10 && bets.place10 > 0) { winnings += Math.floor(bets.place10 * 9/5) + bets.place10; messages.push('Place 10 wins!'); }
+                
+                // Buy bets
+                if (total === 4 && bets.buy4 > 0) { winnings += bets.buy4 * 3; messages.push('Buy 4 wins!'); }
+                if (total === 10 && bets.buy10 > 0) { winnings += bets.buy10 * 3; messages.push('Buy 10 wins!'); }
+                
+                // Lay bets (win on 7)
+                if (total === 7) {
+                    if (bets.lay4 > 0) { winnings += Math.floor(bets.lay4 * 1/2) + bets.lay4; messages.push('Lay 4 wins!'); }
+                    if (bets.lay5 > 0) { winnings += Math.floor(bets.lay5 * 2/3) + bets.lay5; messages.push('Lay 5 wins!'); }
+                    if (bets.lay6 > 0) { winnings += Math.floor(bets.lay6 * 5/6) + bets.lay6; messages.push('Lay 6 wins!'); }
+                    if (bets.lay8 > 0) { winnings += Math.floor(bets.lay8 * 5/6) + bets.lay8; messages.push('Lay 8 wins!'); }
+                    if (bets.lay9 > 0) { winnings += Math.floor(bets.lay9 * 2/3) + bets.lay9; messages.push('Lay 9 wins!'); }
+                    if (bets.lay10 > 0) { winnings += Math.floor(bets.lay10 * 1/2) + bets.lay10; messages.push('Lay 10 wins!'); }
+                } else {
+                    // Lay bets lose when their number hits
+                    if (total === 4) bets.lay4 = 0;
+                    if (total === 5) bets.lay5 = 0;
+                    if (total === 6) bets.lay6 = 0;
+                    if (total === 8) bets.lay8 = 0;
+                    if (total === 9) bets.lay9 = 0;
+                    if (total === 10) bets.lay10 = 0;
+                }
+                
+                // Clear place/buy bets on 7
+                if (total === 7) {
+                    bets.place4 = bets.place5 = bets.place6 = bets.place8 = bets.place9 = bets.place10 = 0;
+                    bets.buy4 = bets.buy10 = 0;
+                }
+            }
+            
+            balance += winnings;
+            updateBalance();
+            updateBetDisplay();
+            
+            const statusMsg = messages.length > 0 ? messages.join(' • ') : (isComeOutRoll ? 'Roll again' : 'Rolled ' + total);
+            document.getElementById('status').textContent = statusMsg;
+        }
+        
+        function resetRound() {
+            point = null;
+            comePoint = null;
+            dontComePoint = null;
+            isComeOutRoll = true;
+            document.getElementById('point').textContent = '';
+            
+            // Clear line bets
+            bets.passLine = 0;
+            bets.dontPass = 0;
+            bets.come = 0;
+            bets.dontCome = 0;
+            
+            // Clear place/buy/lay
+            bets.place4 = bets.place5 = bets.place6 = bets.place8 = bets.place9 = bets.place10 = 0;
+            bets.buy4 = bets.buy10 = 0;
+            bets.lay4 = bets.lay5 = bets.lay6 = bets.lay8 = bets.lay9 = bets.lay10 = 0;
+            
+            updateBetDisplay();
+        }
+        
+        // Initialize
+        updateBalance();
+        updateBetDisplay();
+    </script>
+</body>
+</html>
