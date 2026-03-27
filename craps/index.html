@@ -1113,7 +1113,8 @@
                         }
                     }
                     messages.push('Hit the point!');
-                    resetRound();
+                    // Only clear Pass Line and Don't Pass, keep Come/Don't Come
+                    resetPassLineRound();
                 } else if (total === 7) {
                     if (bets.dontPass > 0) {
                         winnings += bets.dontPass * 2;
@@ -1140,6 +1141,17 @@
                 ? messages.join(' \u2022 ')
                 : (isComeOutRoll ? 'Place bets & roll' : 'Rolled ' + total);
             document.getElementById('gameStatus').textContent = statusMsg;
+        }
+
+        function resetPassLineRound() {
+            // Only clear Pass Line related bets, keep Come/Don't Come
+            point = null;
+            isComeOutRoll = true;
+            document.getElementById('pointDisplay').textContent = '';
+
+            // Clear only Pass Line and Don't Pass
+            bets.passLine = 0; bets.dontPass = 0;
+            oddsBets.passLine = 0; oddsBets.dontPass = 0;
         }
 
         function resetRound() {
