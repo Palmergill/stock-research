@@ -2,7 +2,7 @@
 builder = "nixpacks"
 
 [deploy]
-startCommand = "./start-railway.sh"
+startCommand = "bash start-railway.sh"
 healthcheckPath = "/health"
 healthcheckTimeout = 30
 restartPolicyType = "on_failure"
@@ -10,6 +10,6 @@ restartPolicyType = "on_failure"
 [environments]
 [environments.production]
 [environments.production.deploy]
-startCommand = "./start-railway.sh"
+startCommand = "bash start-railway.sh"
 healthcheckPath = "/health"
 healthcheckTimeout = 30
