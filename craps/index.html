@@ -1004,6 +1004,7 @@
             }
 
             // ── Come Out Roll ──
+            let justEstablishedPoint = false;
             if (isComeOutRoll) {
                 if (total === 7 || total === 11) {
                     if (bets.passLine > 0) { winnings += bets.passLine * 2; messages.push('Pass Line wins!'); }
@@ -1021,6 +1022,7 @@
                 } else {
                     point = total;
                     isComeOutRoll = false;
+                    justEstablishedPoint = true;
                     document.getElementById('pointDisplay').textContent = 'POINT: ' + point;
                     messages.push('Point is ' + point);
                     // Show point popup if there's a pass line or don't pass bet without odds
@@ -1103,7 +1105,8 @@
             }
 
             // ── Point Phase (Pass Line only) ──
-            if (!isComeOutRoll) {
+            // Skip if we just established the point this roll
+            if (!isComeOutRoll && !justEstablishedPoint) {
 
                 // Place bets (win on their number, lose on 7)
                 if (total === 4 && bets.place4 > 0) { winnings += Math.floor(bets.place4 * 9/5) + bets.place4; messages.push('Place 4 wins!'); }
