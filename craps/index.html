@@ -1026,8 +1026,9 @@
                     // Show point popup if there's a pass line or don't pass bet without odds
                     if (bets.passLine > 0 && oddsBets.passLine === 0) {
                         setTimeout(() => showPointPopup(point, 'passLine'), 500);
-                    } else if (bets.dontPass > 0 && oddsBets.dontPass === 0) {
-                        setTimeout(() => showPointPopup(point, 'dontPass'), 500);
+                    }
+                    if (bets.dontPass > 0 && oddsBets.dontPass === 0) {
+                        setTimeout(() => showPointPopup(point, 'dontPass'), 600);
                     }
                 }
             } else {
@@ -1079,7 +1080,7 @@
                         messages.push("Don't Come point: " + dontComePoint);
                         // Show point popup for Don't Come bet if no odds yet
                         if (bets.dontCome > 0 && oddsBets.dontCome === 0) {
-                            setTimeout(() => showPointPopup(dontComePoint, 'dontCome'), 500);
+                            setTimeout(() => showPointPopup(dontComePoint, 'dontCome'), 700);
                         }
                     }
                 } else if (bets.dontCome > 0 && dontComePoint) {
