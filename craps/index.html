@@ -342,6 +342,92 @@
         .modal-btn.confirm { background: linear-gradient(180deg, #c9a227, #a08020); color: #1a472a; font-weight: 700; border: 2px solid #ffd700; }
         .modal-btn.remove { background: #5c0000; color: #ff6b6b; border: 2px solid #ff6b6b; }
 
+        /* Point Established Popup */
+        .point-popup {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85);
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 300;
+        }
+        .point-popup.active { display: flex; }
+        .point-popup-content {
+            background: linear-gradient(180deg, #1a472a, #0d3320);
+            padding: 28px;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 340px;
+            border: 3px solid #c9a227;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+        .point-popup h2 {
+            color: #ffd700;
+            font-size: 1.4rem;
+            margin-bottom: 8px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+        .point-popup .point-number {
+            font-size: 4rem;
+            font-weight: 700;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            margin: 16px 0;
+        }
+        .point-popup .point-text {
+            color: #c9a227;
+            font-size: 1rem;
+            margin-bottom: 20px;
+        }
+        .odds-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .odds-btn {
+            padding: 14px 8px;
+            background: linear-gradient(180deg, #2d5a3d, #1a472a);
+            border: 2px solid #c9a227;
+            border-radius: 10px;
+            color: #ffd700;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .odds-btn:active { background: linear-gradient(180deg, #1a472a, #0d3320); }
+        .odds-btn.max-btn {
+            grid-column: span 3;
+            background: linear-gradient(180deg, #c9a227, #a08020);
+            color: #1a472a;
+            border-color: #ffd700;
+        }
+        .odds-btn.max-btn:active { background: linear-gradient(180deg, #a08020, #806010); }
+        .point-popup .skip-btn {
+            padding: 12px 24px;
+            background: transparent;
+            border: 2px solid rgba(201,162,39,0.5);
+            border-radius: 8px;
+            color: #c9a227;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+        .point-popup .skip-btn:active { background: rgba(201,162,39,0.1); }
+        .point-popup .timer-bar {
+            height: 4px;
+            background: #c9a227;
+            border-radius: 2px;
+            margin-top: 16px;
+            animation: timerCountdown 10s linear forwards;
+        }
+        @keyframes timerCountdown {
+            from { width: 100%; }
+            to { width: 0%; }
+        }
+
         footer {
             text-align: center;
             padding: 16px;
@@ -461,6 +547,23 @@
                 <button class="modal-btn cancel" onclick="closeBetModal()">Cancel</button>
                 <button class="modal-btn confirm" onclick="confirmBet()">Place Bet</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Point Established Popup -->
+    <div class="point-popup" id="pointPopup">
+        <div class="point-popup-content">
+            <h2>🎯 POINT ESTABLISHED</h2>
+            <div class="point-number" id="popupPointNumber">6</div>
+            <div class="point-text">Take odds on your Pass Line bet?</div>
+            <div class="odds-buttons" id="popupOddsButtons">
+                <button class="odds-btn" onclick="takeOddsFromPopup(1)">1x</button>
+                <button class="odds-btn" onclick="takeOddsFromPopup(2)">2x</button>
+                <button class="odds-btn" onclick="takeOddsFromPopup(3)">3x</button>
+                <button class="odds-btn max-btn" onclick="takeOddsFromPopup('max')">Max Odds</button>
+            </div>
+            <button class="skip-btn" onclick="closePointPopup()">Skip</button>
+            <div class="timer-bar" id="popupTimer"></div>
         </div>
     </div>
 
@@ -920,6 +1023,10 @@
                     isComeOutRoll = false;
                     document.getElementById('pointDisplay').textContent = 'POINT: ' + point;
                     messages.push('Point is ' + point);
+                    // Show point popup if there's a pass line bet without odds
+                    if (bets.passLine > 0 && oddsBets.passLine === 0) {
+                        setTimeout(() => showPointPopup(point), 500);
+                    }
                 }
             } else {
                 // ── Point Phase ──
@@ -1044,6 +1151,66 @@
 
             // Clear place bets
             bets.place4 = bets.place5 = bets.place6 = bets.place8 = bets.place9 = bets.place10 = 0;
+        }
+
+        // ── Point Popup ──
+        let pointPopupTimer = null;
+
+        function showPointPopup(pt) {
+            const popup = document.getElementById('pointPopup');
+            const pointNum = document.getElementById('popupPointNumber');
+            const timerBar = document.getElementById('popupTimer');
+
+            pointNum.textContent = pt;
+
+            // Reset timer animation
+            timerBar.style.animation = 'none';
+            timerBar.offsetHeight; // trigger reflow
+            timerBar.style.animation = 'timerCountdown 10s linear forwards';
+
+            popup.classList.add('active');
+
+            // Auto-close after 10 seconds
+            pointPopupTimer = setTimeout(() => {
+                closePointPopup();
+            }, 10000);
+        }
+
+        function closePointPopup() {
+            const popup = document.getElementById('pointPopup');
+            popup.classList.remove('active');
+            if (pointPopupTimer) {
+                clearTimeout(pointPopupTimer);
+                pointPopupTimer = null;
+            }
+        }
+
+        function takeOddsFromPopup(multiplier) {
+            if (!point || bets.passLine === 0) {
+                closePointPopup();
+                return;
+            }
+
+            const maxMult = oddsMultipliers[point];
+            let oddsAmt = 0;
+
+            if (multiplier === 'max') {
+                oddsAmt = bets.passLine * maxMult;
+            } else {
+                oddsAmt = bets.passLine * multiplier;
+            }
+
+            // Cap at what player can afford
+            oddsAmt = Math.min(oddsAmt, balance);
+
+            if (oddsAmt >= 5) {
+                oddsBets.passLine += oddsAmt;
+                balance -= oddsAmt;
+                updateBalance();
+                updateAllDisplays();
+            }
+
+            closePointPopup();
         }
 
         // ── Initialize ──
