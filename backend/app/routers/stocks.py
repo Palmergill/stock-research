@@ -1,12 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List
-import os
 from app.database import get_db
 from app.services.stock_data_client import stock_data_client
 from app.services.stock_data import search_stocks
 from app.services.polygon_client import polygon_client
-from app.services.finnhub_client import finnhub_estimates_client
 
 router = APIRouter(prefix="/api/stocks", tags=["stocks"])
 
@@ -20,47 +18,6 @@ async def search_stocks_endpoint(q: str = Query(..., min_length=1), limit: int =
         results = search_stocks(q, limit)
     return {"results": results, "query": q}
 
-@router.get("/{ticker}/debug/finnhub")
-async def debug_finnhub(ticker: str):
-    """Debug endpoint to see raw Finnhub earnings data"""
-    try:
-        if not finnhub_estimates_client.is_configured():
-            return {"error": "Finnhub API key not configured"}
-        
-        estimates = finnhub_estimates_client.get_earnings_estimates(ticker)
-        return {
-            "ticker": ticker.upper(),
-            "finnhub_configured": True,
-            "count": len(estimates) if estimates else 0,
-            "estimates": estimates
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.get("/{ticker}/debug")
-async def debug_polygon(ticker: str):
-    """Debug endpoint to see raw Polygon data"""
-    try:
-        import requests
-        api_key = os.getenv("POLYGON_API_KEY", "")
-        
-        # Get ticker details
-        details_url = f"https://api.polygon.io/v3/reference/tickers/{ticker.upper()}?apiKey={api_key}"
-        details_resp = requests.get(details_url, timeout=10)
-        details = details_resp.json() if details_resp.ok else {"error": details_resp.text}
-        
-        # Get financials
-        financials_url = f"https://api.polygon.io/vX/reference/financials?ticker={ticker.upper()}&timeframe=quarterly&limit=4&apiKey={api_key}"
-        fin_resp = requests.get(financials_url, timeout=10)
-        financials = fin_resp.json() if fin_resp.ok else {"error": fin_resp.text}
-        
-        return {
-            "ticker": ticker.upper(),
-            "details": details,
-            "financials": financials
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/{ticker}/earnings")
 async def get_earnings(ticker: str, db: Session = Depends(get_db)):
