@@ -13,7 +13,7 @@ COPY backend/ .
 RUN mkdir -p /data
 
 ENV DATABASE_URL="sqlite:////data/stock_data.db"
-ENV USE_MOCK_DATA="true"
+ENV USE_REAL_DATA="false"
 
 EXPOSE 8000
 
