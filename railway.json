@@ -1,14 +1,12 @@
 {
-  "name": "stock-research",
+  "$schema": "https://railway.com/railway.schema.json",
   "build": {
-    "dockerfile": "Dockerfile"
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "Dockerfile"
   },
-  "env": {
-    "DATABASE_URL": "sqlite:///./stock_data.db",
-    "USE_REAL_DATA": "false"
-  },
-  "healthcheck": {
-    "path": "/health",
-    "port": 8000
+  "deploy": {
+    "healthcheckPath": "/health",
+    "healthcheckTimeout": 30,
+    "restartPolicyType": "ON_FAILURE"
   }
 }
