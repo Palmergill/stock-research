@@ -1,4 +1,4 @@
-const API_BASE = 'https://stock-research-production-b3ac.up.railway.app/api';
+const API_BASE = '/api';
 
 let currentTicker = '';
 

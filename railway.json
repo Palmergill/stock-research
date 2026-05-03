@@ -3,7 +3,7 @@
   "build": {
     "dockerfile": "Dockerfile"
   },
-  "startCommand": "bash start-railway.sh",
+  "startCommand": "sh -c 'uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}'",
   "env": {
     "DATABASE_URL": "sqlite:///./stock_data.db",
     "USE_REAL_DATA": "false"
