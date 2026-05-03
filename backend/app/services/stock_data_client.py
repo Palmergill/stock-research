@@ -159,7 +159,7 @@ class StockDataClient:
             fetched_at = datetime.fromisoformat(fetched_at_iso.replace('Z', '+00:00'))
             age = datetime.utcnow() - fetched_at.replace(tzinfo=None)
             return round(age.total_seconds() / 3600, 1)
-        except:
+        except Exception:
             return 0
     
     def _save_polygon_data(self, ticker: str, data: dict, db) -> dict:

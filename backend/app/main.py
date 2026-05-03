@@ -10,7 +10,7 @@ app = FastAPI(title="Stock Research API", version="0.2.0-p5")
 
 # CORS - allow frontend to call backend
 # Allow all origins for development (restrict in production)
-allowed_origins_str = os.getenv("ALLOWED_ORIGINS", "*")
+allowed_origins_str = os.getenv("ALLOWED_ORIGINS", "https://palmergill.com")
 if allowed_origins_str == "*":
     # Allow all origins
     app.add_middleware(

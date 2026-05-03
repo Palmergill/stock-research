@@ -338,7 +338,7 @@ class PolygonClient:
                             if check_date in price_by_date:
                                 price = price_by_date[check_date]
                                 break
-                    except:
+                    except Exception:
                         pass
                 
                 if price:
@@ -470,7 +470,7 @@ class PolygonClient:
                                 value = value_data
                             if value is not None:
                                 return float(value)
-                    except:
+                    except Exception:
                         continue
             
             # Calculate ROE and Debt-to-Equity from balance sheet if not found
@@ -652,7 +652,7 @@ class PolygonClient:
                 return "Q3"
             else:
                 return "Q4"
-        except:
+        except Exception:
             return "Q"
     
     # ==================== NEW CALCULATION METHODS ====================
@@ -706,7 +706,7 @@ class PolygonClient:
             
             # Get EBITDA
             ebitda = None
-            for key in ["ebitda", " EBITDA"]:
+            for key in ["ebitda", "EBITDA"]:
                 ebitda_data = income.get(key)
                 if isinstance(ebitda_data, dict):
                     ebitda = ebitda_data.get("value")

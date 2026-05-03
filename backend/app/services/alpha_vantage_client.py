@@ -79,7 +79,7 @@ class AlphaVantageClient:
             return None
         try:
             return float(value)
-        except:
+        except Exception:
             return None
 
 # Singleton instance

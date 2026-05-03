@@ -93,7 +93,7 @@ class FinnhubEstimatesClient:
                     else:
                         # Try to parse as date
                         fiscal_date = period
-                except:
+                except Exception:
                     fiscal_date = None
                 
                 earnings_data.append({

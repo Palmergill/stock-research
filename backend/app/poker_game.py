@@ -531,19 +531,23 @@ class PokerGame:
     
     def _award_pot(self, winners: List[Player]):
         """Award pot with proper side pot calculation"""
-        # Get all non-folded players sorted by total contribution
         active_players = [p for p in self.players if not p.folded]
-        sorted_players = sorted(active_players, key=lambda p: p.total_bet)
-        
+        # Include folded players for size calculation so their chips aren't lost
+        all_sorted = sorted(self.players, key=lambda p: p.total_bet)
+
         # Calculate side pots
         side_pots = []
         previous_bet = 0
-        
-        for player in sorted_players:
+
+        for player in all_sorted:
             if player.total_bet > previous_bet:
-                # Create a side pot for the difference
-                pot_size = (player.total_bet - previous_bet) * len(sorted_players)
-                eligible_players = [p for p in sorted_players if p.total_bet >= player.total_bet]
+                # Contributors to this tier: everyone who put in at least this much
+                contributors = [p for p in all_sorted if p.total_bet >= player.total_bet]
+                pot_size = (player.total_bet - previous_bet) * len(contributors)
+                # Only non-folded players can win this tier
+                eligible_players = [p for p in active_players if p.total_bet >= player.total_bet]
+                if not eligible_players:
+                    eligible_players = active_players
                 side_pots.append({
                     'size': pot_size,
                     'eligible': eligible_players,
