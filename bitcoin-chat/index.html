@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bitcoin Chat</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <main class="app-shell">
+        <section class="chat-panel" aria-label="Bitcoin chat">
+            <header class="topbar">
+                <a href="/" class="back-link" aria-label="Back to projects">&larr;</a>
+                <div>
+                    <h1>Bitcoin Chat</h1>
+                    <p id="nodeStatus">Checking node status...</p>
+                </div>
+                <div class="height-pill" id="heightPill">Height --</div>
+            </header>
+
+            <div class="suggestions" aria-label="Suggested prompts">
+                <button type="button" data-prompt="What is the latest block?">Latest block</button>
+                <button type="button" data-prompt="What are mempool fees like right now?">Mempool fees</button>
+                <button type="button" data-prompt="Is my node synced?">Node status</button>
+                <button type="button" data-prompt="How many BTC were mined today?">Mined today</button>
+            </div>
+
+            <div id="messages" class="messages" aria-live="polite"></div>
+
+            <form id="chatForm" class="composer">
+                <label class="sr-only" for="messageInput">Ask about Bitcoin blockchain data</label>
+                <textarea id="messageInput" rows="1" placeholder="Ask about blocks, transactions, fees, or node sync..." maxlength="1000" required></textarea>
+                <button type="submit" aria-label="Send message">
+                    <span>Send</span>
+                </button>
+            </form>
+        </section>
+    </main>
+    <script src="app.js"></script>
+</body>
+</html>
