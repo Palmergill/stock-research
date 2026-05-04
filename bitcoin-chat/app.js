@@ -7,6 +7,7 @@ const chatForm = document.getElementById('chatForm');
 const messageInput = document.getElementById('messageInput');
 const nodeStatus = document.getElementById('nodeStatus');
 const heightPill = document.getElementById('heightPill');
+const chatPanel = document.querySelector('.chat-panel');
 
 let sessionId = localStorage.getItem('bitcoinChatSessionId');
 
@@ -123,6 +124,51 @@ function setBusy(isBusy) {
     chatForm.querySelector('button').disabled = isBusy;
     messageInput.disabled = isBusy;
 }
+
+function canScrollMessages() {
+    return messagesEl.scrollHeight > messagesEl.clientHeight;
+}
+
+function shouldKeepNativeScroll(target) {
+    return target.closest('.messages, textarea, pre, .suggestions');
+}
+
+function normalizeWheelDelta(event) {
+    if (event.deltaMode === WheelEvent.DOM_DELTA_LINE) {
+        return event.deltaY * 32;
+    }
+    if (event.deltaMode === WheelEvent.DOM_DELTA_PAGE) {
+        return event.deltaY * messagesEl.clientHeight;
+    }
+    return event.deltaY;
+}
+
+chatPanel.addEventListener('wheel', (event) => {
+    if (!canScrollMessages() || shouldKeepNativeScroll(event.target)) return;
+    event.preventDefault();
+    messagesEl.scrollTop += normalizeWheelDelta(event) * 1.8;
+}, { passive: false });
+
+let touchStartY = null;
+
+chatPanel.addEventListener('touchstart', (event) => {
+    if (shouldKeepNativeScroll(event.target)) return;
+    touchStartY = event.touches[0]?.clientY ?? null;
+}, { passive: true });
+
+chatPanel.addEventListener('touchmove', (event) => {
+    if (touchStartY === null || !canScrollMessages() || shouldKeepNativeScroll(event.target)) return;
+    const currentY = event.touches[0]?.clientY ?? touchStartY;
+    const deltaY = touchStartY - currentY;
+    if (deltaY === 0) return;
+    event.preventDefault();
+    messagesEl.scrollTop += deltaY;
+    touchStartY = currentY;
+}, { passive: false });
+
+chatPanel.addEventListener('touchend', () => {
+    touchStartY = null;
+});
 
 messageInput.addEventListener('input', () => {
     messageInput.style.height = 'auto';

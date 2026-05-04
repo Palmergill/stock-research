@@ -1,7 +1,7 @@
 {
-  "name": "stock-research",
+  "name": "palmergill-site",
   "version": "1.0.0",
-  "description": "Stock research app with poker game",
+  "description": "Personal project site with shared API-backed apps",
   "scripts": {
     "test": "jest",
     "test:watch": "jest --watch",

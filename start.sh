@@ -1,28 +1,26 @@
 #!/bin/bash
 
-echo "🦞 Starting Stock Research App..."
+echo "Starting Palmer Gill local site..."
 
-# Start backend
-echo "Starting backend on http://localhost:8000..."
-cd backend
+ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
+LOG_DIR="$ROOT_DIR/logs"
+mkdir -p "$LOG_DIR"
+
+# Start local site and API
+echo "Starting local site and API on http://localhost:8000..."
+cd "$ROOT_DIR/backend"
 source venv/bin/activate
-uvicorn app.main:app --reload &
+LOCAL_SITE_ROOT=true uvicorn app.main:app --reload >> "$LOG_DIR/backend.log" 2>&1 &
 BACKEND_PID=$!
-cd ..
-
-# Start frontend
-echo "Starting frontend on http://localhost:5173..."
-cd frontend
-npm run dev &
-FRONTEND_PID=$!
-cd ..
+cd "$ROOT_DIR"
 
 echo ""
-echo "✅ Both servers started!"
-echo "📊 Open http://localhost:5173 in your browser"
+echo "✅ Local site started!"
+echo "📊 Open http://localhost:8000 in your browser"
+echo "📝 Logs: $LOG_DIR/backend.log"
 echo ""
-echo "Press Ctrl+C to stop both servers"
+echo "Press Ctrl+C to stop the server"
 
 # Wait for interrupt
-trap "kill $BACKEND_PID $FRONTEND_PID; exit" INT
+trap "kill $BACKEND_PID; exit" INT
 wait

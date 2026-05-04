@@ -6,7 +6,7 @@ from app.database_migration import init_db_with_migration
 from app.routers import bitcoin, stocks, poker
 import os
 
-app = FastAPI(title="Stock Research API", version="0.2.0-p5")
+app = FastAPI(title="Palmer Gill API", version="0.2.0-p5")
 
 # CORS - allow frontend to call backend
 # Allow all origins for development (restrict in production)
@@ -42,11 +42,31 @@ app.include_router(bitcoin.router)
 async def health():
     return {"status": "ok", "version": "1.2.1"}
 
-# Serve static files (frontend)
-static_dir = os.path.join(os.path.dirname(__file__), "..", "static")
-if os.path.exists(static_dir):
-    app.mount("/static", StaticFiles(directory=static_dir), name="static")
+# Static site serving is only enabled for local development. Production should
+# treat this FastAPI app as the API service; the public site is hosted separately.
+backend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+repo_root = os.path.abspath(os.path.join(backend_dir, ".."))
+local_site_root_enabled = os.getenv("LOCAL_SITE_ROOT", "").lower() in {"1", "true", "yes"}
+
+if local_site_root_enabled:
+    for route, folder in {
+        "/stock-research": "stock-research",
+        "/poker": "poker",
+        "/craps": "craps",
+        "/bitcoin-chat": "bitcoin-chat",
+    }.items():
+        directory = os.path.join(repo_root, folder)
+        if os.path.exists(directory):
+            app.mount(route, StaticFiles(directory=directory, html=True), name=folder)
 
 @app.get("/")
 async def root():
-    return FileResponse(os.path.join(static_dir, "index.html"))
+    if local_site_root_enabled:
+        return FileResponse(os.path.join(repo_root, "index.html"))
+    return {
+        "service": "Palmer Gill API",
+        "status": "ok",
+        "docs": "/docs",
+        "health": "/health",
+        "local_site": "Set LOCAL_SITE_ROOT=true to serve local static pages from this process.",
+    }

@@ -5,7 +5,9 @@ __pycache__/
 *.db
 stock_data.db
 node_modules/
+.npm-cache/
 dist/
+logs/
 .env
 .DS_Store
 .vercel

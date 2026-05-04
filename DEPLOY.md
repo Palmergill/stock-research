@@ -1,88 +1,47 @@
-# Stock Research App - Deployment Guide
+# Deployment
 
-## Railway Deployment (Backend + Frontend)
+The site is split into static project pages and a shared API backend.
 
-### Option 1: Monorepo Deploy (Recommended)
+## Static Site
 
-1. **Push to GitHub**
-   ```bash
-   git init
-   git add .
-   git commit -m "Initial commit"
-   git branch -M main
-   git remote add origin https://github.com/YOUR_USERNAME/stock-research.git
-   git push -u origin main
-   ```
+The active static site lives at the repo root:
 
-2. **Connect to Railway**
-   - Go to https://railway.app
-   - Click "New Project" → "Deploy from GitHub repo"
-   - Select your repo
-   - Railway will use `railway.toml` to deploy the backend
+- `index.html`
+- `stock-research/`
+- `poker/`
+- `craps/`
+- `bitcoin-chat/`
 
-3. **Set Environment Variables**
-   In Railway dashboard → Variables:
-   ```
-   DATABASE_URL = sqlite:////data/stock_data.db
-   USE_MOCK_DATA = true
-   ALLOWED_ORIGINS = https://your-frontend-domain.com
-   ```
+Production static hosting should serve those files directly. `vercel.json` rewrites `/api/*` requests to the Railway backend.
 
-4. **Add Volume for SQLite**
-   Railway dashboard → Volumes → Add Volume:
-   - Mount path: `/data`
-   - Size: 1GB (plenty for SQLite)
+## API Backend
 
-5. **Get your backend URL**
-   After deploy, Railway gives you a URL like:
-   `https://stock-research-production.up.railway.app`
-
-### Option 2: Separate Frontend (Vercel/Netlify)
-
-If you want the frontend on Vercel for faster static hosting:
-
-1. **Update frontend API URL**
-   ```bash
-   cd frontend
-   echo "VITE_API_URL=https://your-railway-backend.up.railway.app" > .env.production
-   ```
-
-2. **Deploy frontend to Vercel**
-   ```bash
-   npm i -g vercel
-   vercel
-   ```
-
-3. **Update Railway CORS**
-   Add your Vercel domain to `ALLOWED_ORIGINS`
-
-## Local Development
+Railway builds from the root `Dockerfile`, which installs `backend/requirements.txt` and runs:
 
 ```bash
-# Terminal 1 - Backend
-cd backend
-source venv/bin/activate
-uvicorn app.main:app --reload
-
-# Terminal 2 - Frontend  
-cd frontend
-npm run dev
+uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
 ```
 
-Open http://localhost:5173
+Health check:
 
-## Switching to Real Data
+```text
+/health
+```
 
-1. Get free API key from https://www.alphavantage.co/support/#api-key
-2. Set in Railway:
-   ```
-   USE_MOCK_DATA = false
-   ALPHA_VANTAGE_API_KEY = your_key_here
-   ```
-3. Redeploy
+## Local
 
-## Troubleshooting
+Use:
 
-- **SQLite locked errors**: Make sure the volume is mounted at `/data`
-- **CORS errors**: Check `ALLOWED_ORIGINS` includes your frontend domain
-- **No data loading**: Check `USE_MOCK_DATA` setting
+```bash
+./start.sh
+```
+
+This runs the API and active static pages together at:
+
+```text
+http://127.0.0.1:8000
+```
+
+## Archived Code
+
+Legacy frontends and design demos live under `archive/`. They are retained for reference, but are not active deployment targets.
