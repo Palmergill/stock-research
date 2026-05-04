@@ -1,7 +1,5 @@
 // Poker Game Frontend - Option A: Bottom Focus Design
-const API_BASE = window.location.hostname === 'localhost'
-    ? 'http://localhost:8000'
-    : 'https://stock-research-production-f566.up.railway.app';
+const API_BASE = '';
 
 // CSRF Protection Utilities
 const CSRFManager = {
@@ -2193,4 +2191,3 @@ function triggerHapticFeedback() {
         }
     }
 }
-

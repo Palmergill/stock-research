@@ -8,6 +8,7 @@
     "test:coverage": "jest --coverage"
   },
   "dependencies": {
+    "@vercel/functions": "^3.5.0",
     "chart.js": "^4.5.1"
   },
   "devDependencies": {

@@ -28,6 +28,12 @@ From the repo root:
 
 That sets `LOCAL_SITE_ROOT=true`, which serves the root portfolio page and active project folders from the same FastAPI process.
 
+To require Basic Auth for local app routes and `/api/*`, run:
+
+```bash
+APP_AUTH_USERNAME=palmer APP_AUTH_PASSWORD=your-password ./start.sh
+```
+
 ## Useful URLs
 
 - `http://127.0.0.1:8000/` - local site root when `LOCAL_SITE_ROOT=true`

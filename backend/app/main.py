@@ -1,12 +1,81 @@
-from fastapi import FastAPI
+import base64
+import secrets
+
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, PlainTextResponse
 from app.database_migration import init_db_with_migration
 from app.routers import bitcoin, stocks, poker
 import os
 
 app = FastAPI(title="Palmer Gill API", version="0.2.0-p5")
+
+AUTH_REALM = "Palmer Gill Apps"
+PROTECTED_PATH_PREFIXES = (
+    "/api",
+    "/stock-research",
+    "/poker",
+    "/craps",
+    "/bitcoin-chat",
+)
+
+
+def app_auth_config():
+    password = os.getenv("APP_AUTH_PASSWORD")
+    if not password:
+        return None
+    return {
+        "username": os.getenv("APP_AUTH_USERNAME", "palmer"),
+        "password": password,
+    }
+
+
+def basic_auth_credentials(authorization: str | None):
+    if not authorization or not authorization.startswith("Basic "):
+        return None
+
+    try:
+        decoded = base64.b64decode(authorization.removeprefix("Basic ")).decode("utf-8")
+        username, password = decoded.split(":", 1)
+        return username, password
+    except (ValueError, UnicodeDecodeError):
+        return None
+
+
+def is_protected_path(path: str):
+    return any(path == prefix or path.startswith(f"{prefix}/") for prefix in PROTECTED_PATH_PREFIXES)
+
+
+def auth_challenge():
+    return PlainTextResponse(
+        "Authentication required",
+        status_code=401,
+        headers={"WWW-Authenticate": f'Basic realm="{AUTH_REALM}", charset="UTF-8"'},
+    )
+
+
+@app.middleware("http")
+async def require_app_auth(request: Request, call_next):
+    if not is_protected_path(request.url.path):
+        return await call_next(request)
+
+    config = app_auth_config()
+    if not config:
+        return await call_next(request)
+
+    credentials = basic_auth_credentials(request.headers.get("authorization"))
+    if not credentials:
+        return auth_challenge()
+
+    username, password = credentials
+    if not (
+        secrets.compare_digest(username, config["username"])
+        and secrets.compare_digest(password, config["password"])
+    ):
+        return auth_challenge()
+
+    return await call_next(request)
 
 # CORS - allow frontend to call backend
 # Allow all origins for development (restrict in production)
