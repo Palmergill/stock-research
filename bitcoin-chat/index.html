@@ -12,6 +12,10 @@
             <header class="topbar">
                 <a href="/" class="back-link" aria-label="Back to projects">&larr;</a>
                 <div>
+                    <div class="eyebrow">
+                        <span class="status-dot" aria-hidden="true"></span>
+                        <span>Read-only node console</span>
+                    </div>
                     <h1>Bitcoin Chat</h1>
                     <p id="nodeStatus">Checking node status...</p>
                 </div>
@@ -32,6 +36,7 @@
                 <textarea id="messageInput" rows="1" placeholder="Ask about blocks, transactions, fees, or node sync..." maxlength="1000" required></textarea>
                 <button type="submit" aria-label="Send message">
                     <span>Send</span>
+                    <span aria-hidden="true">&rarr;</span>
                 </button>
             </form>
         </section>

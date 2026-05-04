@@ -18,7 +18,17 @@ const starterMessage = {
 function addMessage({ role, text, data, warnings, toolsUsed, loading = false, error = false }) {
     const el = document.createElement('article');
     el.className = `message ${role}${loading ? ' loading' : ''}${error ? ' error' : ''}`;
-    el.textContent = text;
+    if (loading) {
+        const loadingText = document.createElement('span');
+        loadingText.textContent = text;
+        const dots = document.createElement('span');
+        dots.className = 'typing-dots';
+        dots.setAttribute('aria-hidden', 'true');
+        dots.innerHTML = '<span></span><span></span><span></span>';
+        el.append(loadingText, dots);
+    } else {
+        el.textContent = text;
+    }
 
     if (toolsUsed?.length || warnings?.length) {
         const meta = document.createElement('div');
