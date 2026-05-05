@@ -1,6 +1,7 @@
 :root {
     --site-nav-width: 72px;
     --site-nav-expanded-width: 248px;
+    --site-nav-mobile-height: 56px;
     --site-nav-z: 10000;
 }
 
@@ -171,15 +172,20 @@ body.has-site-nav {
 }
 
 @media (max-width: 899px) {
+    body.has-site-nav {
+        padding-top: var(--site-nav-mobile-height);
+    }
+
     .site-nav {
-        inset: 0;
-        width: auto;
-        height: 0;
+        inset: 0 0 auto 0;
+        width: 100vw;
+        height: var(--site-nav-mobile-height);
         background: #050914;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.12);
         border-right: 0;
         backdrop-filter: none;
         -webkit-backdrop-filter: none;
-        pointer-events: none;
+        pointer-events: auto;
     }
 
     .site-nav.is-open {
@@ -190,8 +196,8 @@ body.has-site-nav {
     }
 
     .site-nav__toggle {
-        position: fixed;
-        top: max(12px, env(safe-area-inset-top));
+        position: absolute;
+        top: max(6px, env(safe-area-inset-top));
         left: max(12px, env(safe-area-inset-left));
         z-index: calc(var(--site-nav-z) + 2);
         display: grid;
@@ -204,6 +210,17 @@ body.has-site-nav {
         color: #ffffff;
         cursor: pointer;
         pointer-events: auto;
+    }
+
+    body.has-site-nav .screen {
+        top: var(--site-nav-mobile-height);
+        height: calc(100vh - var(--site-nav-mobile-height));
+        height: calc(100dvh - var(--site-nav-mobile-height));
+    }
+
+    body.has-site-nav .app-shell {
+        height: calc(100vh - var(--site-nav-mobile-height));
+        height: calc(100dvh - var(--site-nav-mobile-height));
     }
 
     .site-nav__panel {
