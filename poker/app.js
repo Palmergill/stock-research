@@ -24,12 +24,25 @@ const CSRFManager = {
         return headers;
     },
 
+    async ensureToken() {
+        if (this.getToken()) return;
+        try {
+            await fetch(`${API_BASE}/api/poker/csrf-token`, {
+                method: 'GET',
+                credentials: 'same-origin'
+            });
+        } catch (error) {
+            console.log('[CSRF] Token bootstrap failed:', error.message);
+        }
+    },
+
     // Fetch wrapper that automatically adds CSRF token for state-changing methods
     async fetch(url, options = {}) {
         const method = (options.method || 'GET').toUpperCase();
         const stateChangingMethods = ['POST', 'PUT', 'PATCH', 'DELETE'];
 
         if (stateChangingMethods.includes(method)) {
+            await this.ensureToken();
             options.headers = {
                 ...this.getHeaders(),
                 ...(options.headers || {})
@@ -614,7 +627,6 @@ document.head.appendChild(errorStyles);
 let gameState = null;
 let playerId = null;
 let gameId = null;
-let buyBackChips = 0; // Track chips added from buy-backs
 let isMyTurn = false;
 let raiseAmount = 0;
 let pollIntervalId = null;
@@ -1052,7 +1064,6 @@ async function startGame(gameType = 'single') {
     // Clear seen cards and reset deal sequence for new game
     seenCards.clear();
     resetCardDealSequence();
-    buyBackChips = 0;
 
     try {
         elements.startBtn.disabled = true;
@@ -1412,15 +1423,6 @@ async function nextHand() {
 
         const responseData = await response.json();
         updateGameState(responseData);
-        
-        // Apply any buy-back chips that were added
-        if (buyBackChips > 0) {
-            const myPlayer = gameState.players.find(p => p.id === playerId);
-            if (myPlayer) {
-                myPlayer.chips += buyBackChips;
-            }
-            buyBackChips = 0; // Reset after applying
-        }
         
         hideLoading();
         hideHandResult();
@@ -1988,22 +1990,31 @@ function hideBuyBackOverlay() {
 }
 
 async function buyBackIn() {
-    // Track buy-back chips to preserve after next hand
-    buyBackChips += 1000;
-    
-    // Add 1000 chips to player locally
-    const myPlayer = gameState.players.find(p => p.id === playerId);
-    if (myPlayer) {
-        myPlayer.chips += 1000;
+    if (isRequestPending || !gameId || !playerId) return;
+
+    isRequestPending = true;
+    try {
+        const response = await CSRFManager.fetch(`${API_BASE}/api/poker/games/${gameId}/buy-back`, {
+            method: 'POST',
+            body: JSON.stringify({ player_id: playerId, amount: 1000 })
+        });
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.detail || err.message || 'Buy-back failed');
+        }
+
+        const responseData = await response.json();
+        updateGameState(responseData);
+        hideBuyBackOverlay();
+        updateGameDisplay();
+        elements.handResult.classList.remove('hidden');
+    } catch (error) {
+        console.error('Buy-back failed:', error);
+        ErrorBoundary.show(error.message || 'Buy-back failed. Please try again.', 'error');
+    } finally {
+        isRequestPending = false;
     }
-    
-    hideBuyBackOverlay();
-    
-    // Update display to show new chip count
-    updateGameDisplay();
-    
-    // Show regular hand result popup with Next Hand button
-    elements.handResult.classList.remove('hidden');
 }
 
 function endGame() {
@@ -2055,7 +2066,6 @@ function endGame() {
         gameState = null;
         playerId = null;
         gameId = null;
-        buyBackChips = 0;
         switchScreen('start');
     }, 100);
 }

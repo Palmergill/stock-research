@@ -37,6 +37,8 @@ class GameStateEncoder(json.JSONEncoder):
             return obj.name
         if isinstance(obj, Rank):
             return obj.value
+        if hasattr(obj, "to_dict"):
+            return obj.to_dict()
         return super().default(obj)
 
 
@@ -92,7 +94,7 @@ def game_to_dict(game: PokerGame) -> dict:
         "deck": {
             "cards": [c.to_dict() for c in game.deck.cards]
         },
-        "side_pots": game.side_pots,
+        "side_pots": getattr(game, "side_pots", []),
         "last_action": game.last_action,
         "hand_history": game.hand_history,
         "chat_messages": game.chat_messages,

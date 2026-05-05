@@ -166,6 +166,19 @@ class ActionRequest(BaseModel):
         return v
 
 
+class BuyBackRequest(BaseModel):
+    """Request to add chips between hands"""
+    player_id: str = Field(..., min_length=1, max_length=10)
+    amount: int = Field(default=1000, gt=0, le=1000000)
+
+    @field_validator('player_id')
+    @classmethod
+    def validate_player_id(cls, v: str) -> str:
+        if not re.match(r'^[a-zA-Z0-9]+$', v):
+            raise ValueError('Player ID must be alphanumeric')
+        return v
+
+
 class ActionResponse(GameState):
     """Response after player action (includes AI turn processing)"""
     pass
@@ -734,6 +747,42 @@ async def player_action(game_id: str, request: ActionRequest):
     if ai_turns >= Config.MAX_AI_TURNS:
         logger.error(f"AI turn limit reached in game {game_id} - possible infinite loop")
 
+    return game.to_dict(for_player=request.player_id)
+
+
+@app.post(
+    "/api/poker/games/{game_id}/buy-back",
+    response_model=GameState,
+    tags=["Gameplay"],
+    summary="Buy back into a game",
+    description="Add chips for a player between completed hands.",
+    responses={
+        200: {"description": "Buy-back applied", "model": GameState},
+        400: {"description": "Hand still in progress or invalid request", "model": ErrorResponse},
+        404: {"description": "Game or player not found", "model": ErrorResponse}
+    }
+)
+async def buy_back(game_id: str, request: BuyBackRequest):
+    """Add chips for a busted player before the next hand."""
+    validate_game_id(game_id)
+    validate_player_id(request.player_id)
+
+    if game_id not in games:
+        raise HTTPException(status_code=404, detail="Game not found")
+
+    game = games[game_id]
+    if game.phase not in ['showdown', 'waiting']:
+        raise HTTPException(status_code=400, detail="Buy-back is only available between hands")
+
+    player = next((p for p in game.players if p.id == request.player_id), None)
+    if not player:
+        raise HTTPException(status_code=404, detail="Player not found")
+
+    player.chips += request.amount
+    if player.chips > 0:
+        player.is_all_in = False
+
+    logger.info(f"Buy-back applied: game={game_id}, player={request.player_id}, amount={request.amount}")
     return game.to_dict(for_player=request.player_id)
 
 
