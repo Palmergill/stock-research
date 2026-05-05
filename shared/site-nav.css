@@ -1,0 +1,268 @@
+:root {
+    --site-nav-width: 72px;
+    --site-nav-expanded-width: 248px;
+    --site-nav-z: 10000;
+}
+
+body.has-site-nav {
+    min-width: 320px;
+}
+
+.site-nav {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: var(--site-nav-z);
+    width: var(--site-nav-width);
+    background: rgba(7, 12, 24, 0.86);
+    border-right: 1px solid rgba(255, 255, 255, 0.12);
+    color: #f8fafc;
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    transition: width 180ms ease, background 180ms ease, box-shadow 180ms ease;
+}
+
+.site-nav,
+.site-nav * {
+    box-sizing: border-box;
+}
+
+.site-nav__toggle {
+    display: none;
+}
+
+.site-nav__panel {
+    display: flex;
+    height: 100%;
+    flex-direction: column;
+    gap: 18px;
+    padding: 14px 10px;
+}
+
+.site-nav__brand {
+    display: flex;
+    width: 52px;
+    height: 52px;
+    align-items: center;
+    gap: 12px;
+    overflow: hidden;
+    padding: 0 16px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: 0;
+    text-decoration: none;
+    transition: width 180ms ease, background 150ms ease, border-color 150ms ease;
+}
+
+.site-nav__items {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.site-nav__link {
+    display: flex;
+    width: 52px;
+    min-height: 52px;
+    align-items: center;
+    gap: 12px;
+    overflow: hidden;
+    padding: 0 14px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    color: rgba(226, 232, 240, 0.78);
+    text-decoration: none;
+    transition: width 180ms ease, background 150ms ease, border-color 150ms ease, color 150ms ease, transform 150ms ease;
+}
+
+.site-nav__link:hover,
+.site-nav__link:focus-visible {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.16);
+    color: #ffffff;
+    outline: none;
+}
+
+.site-nav__link[aria-current="page"] {
+    background: rgba(56, 189, 248, 0.16);
+    border-color: rgba(56, 189, 248, 0.38);
+    color: #ffffff;
+}
+
+.site-nav__icon {
+    flex: 0 0 24px;
+    display: grid;
+    width: 24px;
+    height: 28px;
+    place-items: center;
+    color: currentColor;
+}
+
+.site-nav__icon svg,
+.site-nav__toggle svg {
+    width: 22px;
+    height: 22px;
+    stroke: currentColor;
+}
+
+.site-nav__label,
+.site-nav__hint {
+    min-width: 140px;
+    overflow: hidden;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translateX(-6px);
+    transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.site-nav__label {
+    display: block;
+    color: #f8fafc;
+    font-size: 0.95rem;
+    font-weight: 650;
+}
+
+.site-nav__hint {
+    display: block;
+    color: #94a3b8;
+    font-size: 0.76rem;
+    line-height: 1.2;
+}
+
+.site-nav__backdrop {
+    display: none;
+}
+
+@media (min-width: 900px) {
+    body.has-site-nav {
+        padding-left: var(--site-nav-width);
+    }
+
+    .site-nav:hover,
+    .site-nav:focus-within {
+        width: var(--site-nav-expanded-width);
+        background: rgba(7, 12, 24, 0.94);
+        box-shadow: 20px 0 70px rgba(0, 0, 0, 0.28);
+    }
+
+    .site-nav:hover .site-nav__brand,
+    .site-nav:focus-within .site-nav__brand,
+    .site-nav:hover .site-nav__link,
+    .site-nav:focus-within .site-nav__link {
+        width: 100%;
+    }
+
+    .site-nav:hover .site-nav__label,
+    .site-nav:hover .site-nav__hint,
+    .site-nav:focus-within .site-nav__label,
+    .site-nav:focus-within .site-nav__hint {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    .site-nav__link:hover {
+        transform: translateX(2px);
+    }
+}
+
+@media (max-width: 899px) {
+    .site-nav {
+        inset: 0;
+        width: auto;
+        height: 0;
+        background: transparent;
+        border-right: 0;
+        pointer-events: none;
+    }
+
+    .site-nav__toggle {
+        position: fixed;
+        top: max(12px, env(safe-area-inset-top));
+        left: max(12px, env(safe-area-inset-left));
+        z-index: calc(var(--site-nav-z) + 2);
+        display: grid;
+        width: 44px;
+        height: 44px;
+        place-items: center;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 8px;
+        background: rgba(7, 12, 24, 0.84);
+        color: #ffffff;
+        cursor: pointer;
+        pointer-events: auto;
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+    }
+
+    .site-nav__panel {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        z-index: calc(var(--site-nav-z) + 1);
+        width: min(82vw, 320px);
+        padding: max(72px, calc(56px + env(safe-area-inset-top))) 16px 18px;
+        background: rgba(7, 12, 24, 0.96);
+        border-right: 1px solid rgba(255, 255, 255, 0.12);
+        box-shadow: 24px 0 80px rgba(0, 0, 0, 0.36);
+        transform: translateX(-104%);
+        transition: transform 180ms ease;
+        pointer-events: auto;
+    }
+
+    .site-nav.is-open .site-nav__panel {
+        transform: translateX(0);
+    }
+
+    .site-nav__brand,
+    .site-nav__link {
+        width: 100%;
+        justify-content: start;
+    }
+
+    .site-nav__brand {
+        display: flex;
+        gap: 12px;
+        padding: 0 14px;
+    }
+
+    .site-nav__items {
+        gap: 6px;
+    }
+
+    .site-nav__link {
+        display: flex;
+        gap: 12px;
+        padding: 0 14px;
+    }
+
+    .site-nav__label,
+    .site-nav__hint {
+        min-width: 0;
+        overflow: visible;
+        white-space: normal;
+        opacity: 1;
+        transform: none;
+    }
+
+    .site-nav__backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: var(--site-nav-z);
+        display: block;
+        background: rgba(0, 0, 0, 0.46);
+        opacity: 0;
+        transition: opacity 180ms ease;
+        pointer-events: none;
+    }
+
+    .site-nav.is-open .site-nav__backdrop {
+        opacity: 1;
+        pointer-events: auto;
+    }
+}

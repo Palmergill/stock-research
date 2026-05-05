@@ -119,6 +119,7 @@ local_site_root_enabled = os.getenv("LOCAL_SITE_ROOT", "").lower() in {"1", "tru
 
 if local_site_root_enabled:
     for route, folder in {
+        "/shared": "shared",
         "/stock-research": "stock-research",
         "/poker": "poker",
         "/craps": "craps",
