@@ -175,9 +175,18 @@ body.has-site-nav {
         inset: 0;
         width: auto;
         height: 0;
-        background: transparent;
+        background: #050914;
         border-right: 0;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
         pointer-events: none;
+    }
+
+    .site-nav.is-open {
+        height: 100vh;
+        height: 100dvh;
+        background: #050914;
+        pointer-events: auto;
     }
 
     .site-nav__toggle {
@@ -191,12 +200,10 @@ body.has-site-nav {
         place-items: center;
         border: 1px solid rgba(255, 255, 255, 0.18);
         border-radius: 8px;
-        background: rgba(7, 12, 24, 0.84);
+        background: #07101f;
         color: #ffffff;
         cursor: pointer;
         pointer-events: auto;
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
     }
 
     .site-nav__panel {
@@ -205,11 +212,13 @@ body.has-site-nav {
         bottom: 0;
         left: 0;
         z-index: calc(var(--site-nav-z) + 1);
-        width: min(82vw, 320px);
+        width: 100vw;
         padding: max(72px, calc(56px + env(safe-area-inset-top))) 16px 18px;
-        background: rgba(7, 12, 24, 0.96);
+        background: #07101f !important;
         border-right: 1px solid rgba(255, 255, 255, 0.12);
-        box-shadow: 24px 0 80px rgba(0, 0, 0, 0.36);
+        box-shadow: 24px 0 80px rgba(0, 0, 0, 0.72);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
         transform: translateX(-104%);
         transition: transform 180ms ease;
         pointer-events: auto;
@@ -255,7 +264,9 @@ body.has-site-nav {
         inset: 0;
         z-index: var(--site-nav-z);
         display: block;
-        background: rgba(0, 0, 0, 0.46);
+        background: #050914 !important;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
         opacity: 0;
         transition: opacity 180ms ease;
         pointer-events: none;
