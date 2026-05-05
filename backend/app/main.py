@@ -12,11 +12,14 @@ import os
 app = FastAPI(title="Palmer Gill API", version="0.2.0-p5")
 
 AUTH_REALM = "Palmer Gill Apps"
+PUBLIC_PATH_PREFIXES = (
+    "/api/poker",
+    "/poker",
+    "/craps",
+)
 PROTECTED_PATH_PREFIXES = (
     "/api",
     "/stock-research",
-    "/poker",
-    "/craps",
     "/bitcoin-chat",
 )
 
@@ -44,6 +47,9 @@ def basic_auth_credentials(authorization: str | None):
 
 
 def is_protected_path(path: str):
+    if any(path == prefix or path.startswith(f"{prefix}/") for prefix in PUBLIC_PATH_PREFIXES):
+        return False
+
     return any(path == prefix or path.startswith(f"{prefix}/") for prefix in PROTECTED_PATH_PREFIXES)
 
 

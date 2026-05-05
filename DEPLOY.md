@@ -17,10 +17,10 @@ Production static hosting should serve those files directly. `vercel.json` rewri
 Vercel middleware keeps `/` public and requires Basic Auth for:
 
 - `/stock-research/*`
-- `/poker/*`
-- `/craps/*`
 - `/bitcoin-chat/*`
-- `/api/*`
+- `/api/*`, except `/api/poker/*`
+
+`/poker/*`, `/craps/*`, and `/api/poker/*` are public.
 
 Configure these environment variables in Vercel:
 
@@ -45,7 +45,7 @@ Health check:
 /health
 ```
 
-The backend mirrors the same Basic Auth check for `/api/*` and locally served app folders when `APP_AUTH_PASSWORD` is configured. Set the same `APP_AUTH_USERNAME` and `APP_AUTH_PASSWORD` values in Railway to protect direct backend access.
+The backend mirrors the same Basic Auth check for protected `/api/*` routes and locally served app folders when `APP_AUTH_PASSWORD` is configured. Poker, craps, and `/api/poker/*` remain public. Set the same `APP_AUTH_USERNAME` and `APP_AUTH_PASSWORD` values in Railway to protect direct backend access.
 
 ## Local
 

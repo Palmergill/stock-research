@@ -49,7 +49,7 @@ logs/backend.log
 - Static site: hosted from the repo root and project folders.
 - API service: Railway/FastAPI from `backend/`.
 - Vercel rewrites `/api/*` to the Railway backend in production.
-- The root page `/` stays public. App routes and `/api/*` require Basic Auth when `APP_AUTH_PASSWORD` is configured. Set the same `APP_AUTH_USERNAME` and `APP_AUTH_PASSWORD` values in Vercel and Railway.
+- The root page `/`, `/poker/`, `/craps/`, and `/api/poker/*` stay public. Stock research, Bitcoin chat, and other `/api/*` routes require Basic Auth when `APP_AUTH_PASSWORD` is configured. Set the same `APP_AUTH_USERNAME` and `APP_AUTH_PASSWORD` values in Vercel and Railway.
 
 ## Repository Layout
 

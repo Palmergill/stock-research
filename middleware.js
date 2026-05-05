@@ -1,9 +1,13 @@
 import { next } from '@vercel/functions';
 
-const PROTECTED_PREFIXES = [
-  '/stock-research',
+const PUBLIC_PREFIXES = [
   '/poker',
   '/craps',
+  '/api/poker',
+];
+
+const PROTECTED_PREFIXES = [
+  '/stock-research',
   '/bitcoin-chat',
   '/api',
 ];
@@ -11,6 +15,12 @@ const PROTECTED_PREFIXES = [
 const REALM = 'Palmer Gill Apps';
 
 function isProtectedPath(pathname) {
+  if (PUBLIC_PREFIXES.some((prefix) => (
+    pathname === prefix || pathname.startsWith(`${prefix}/`)
+  ))) {
+    return false;
+  }
+
   return PROTECTED_PREFIXES.some((prefix) => (
     pathname === prefix || pathname.startsWith(`${prefix}/`)
   ));
@@ -81,8 +91,6 @@ export default function middleware(request) {
 export const config = {
   matcher: [
     '/stock-research/:path*',
-    '/poker/:path*',
-    '/craps/:path*',
     '/bitcoin-chat/:path*',
     '/api/:path*',
   ],

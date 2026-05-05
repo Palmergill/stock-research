@@ -28,11 +28,13 @@ From the repo root:
 
 That sets `LOCAL_SITE_ROOT=true`, which serves the root portfolio page and active project folders from the same FastAPI process.
 
-To require Basic Auth for local app routes and `/api/*`, run:
+To require Basic Auth for protected local app routes and API routes, run:
 
 ```bash
 APP_AUTH_USERNAME=palmer APP_AUTH_PASSWORD=your-password ./start.sh
 ```
+
+Poker, craps, and `/api/poker/*` remain public even when app auth is configured.
 
 ## Useful URLs
 

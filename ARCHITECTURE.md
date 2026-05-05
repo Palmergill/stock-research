@@ -67,3 +67,4 @@ logs/backend.log
 - Static site hosting serves the root static files and project directories.
 - Vercel rewrites `/api/*` to the Railway API.
 - Railway runs the Dockerized FastAPI backend from `backend/`.
+- `/`, `/poker/`, `/craps/`, and `/api/poker/*` are public. Stock research, Bitcoin chat, and other API routes require Basic Auth when app auth is configured.
