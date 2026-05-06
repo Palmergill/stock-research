@@ -78,9 +78,17 @@ BITCOIN_RPC_USER=railway_bitcoin_chat
 BITCOIN_RPC_PASSWORD=<exact rpcpassword from bitcoin.conf>
 BITCOIN_RPC_TIMEOUT_SECONDS=20
 BITCOIN_NETWORK=main
+BITCOIN_MAX_MINED_STATS_BLOCKS=1008
+BITCOIN_CHAT_MAX_TOOL_CALLS=6
+BITCOIN_CHAT_MODEL=gpt-5.5
+BITCOIN_CHAT_REASONING_EFFORT=low
+BITCOIN_CHAT_VERBOSITY=medium
+OPENAI_API_KEY=<OpenAI API key for natural-language chat>
 ```
 
 If the password ends with `=`, include the trailing `=` in Railway. Do not wrap the value in quotes.
+
+`OPENAI_API_KEY` is optional for node smoke tests. When it is missing, `/api/bitcoin/chat` falls back to deterministic read-only answers for blocks, transactions, fees, node status, and mined-BTC queries. Set it to enable the natural-language Bitcoin assistant and technical explanations.
 
 ## Verification
 

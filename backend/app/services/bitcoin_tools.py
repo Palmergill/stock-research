@@ -1,9 +1,14 @@
 import os
 import time
-from typing import Any, Dict
+from datetime import datetime, timezone
+from decimal import Decimal
+from typing import Any, Dict, List
 
-from app.services.bitcoin_formatting import block_subsidy_btc, fee_rate_sats_vb, iso_from_unix
+from app.services.bitcoin_formatting import block_subsidy_btc, btc_to_sats, fee_rate_sats_vb, iso_from_unix
 from app.services.bitcoin_rpc import BitcoinRPCError, bitcoin_rpc_client
+
+
+MAX_MINED_STATS_BLOCKS = int(os.getenv("BITCOIN_MAX_MINED_STATS_BLOCKS", "1008"))
 
 
 def _demo_status() -> Dict[str, Any]:
@@ -146,6 +151,85 @@ def estimate_fee(confirmation_target_blocks: int) -> Dict[str, Any]:
     }
 
 
+def get_mined_stats(start_time: str, end_time: str, max_blocks: int = MAX_MINED_STATS_BLOCKS) -> Dict[str, Any]:
+    start_dt = _parse_iso_time(start_time)
+    end_dt = _parse_iso_time(end_time)
+    if start_dt >= end_dt:
+        raise ValueError("The start time must be before the end time.")
+    if max_blocks < 1 or max_blocks > MAX_MINED_STATS_BLOCKS:
+        raise ValueError(f"max_blocks must be between 1 and {MAX_MINED_STATS_BLOCKS}.")
+
+    if not bitcoin_rpc_client.configured:
+        seconds = (end_dt - start_dt).total_seconds()
+        blocks_counted = max(0, round(seconds / 600))
+        latest_height = 840000
+        subsidy = block_subsidy_btc(latest_height)
+        return {
+            "source": "demo",
+            "start_time": start_dt.isoformat().replace("+00:00", "Z"),
+            "end_time": end_dt.isoformat().replace("+00:00", "Z"),
+            "blocks_counted": blocks_counted,
+            "first_height": latest_height - blocks_counted + 1 if blocks_counted else None,
+            "last_height": latest_height if blocks_counted else None,
+            "subsidy_btc": round(blocks_counted * subsidy, 8),
+            "fees_available": False,
+            "fees_btc": None,
+            "total_miner_reward_available": False,
+            "total_miner_reward_btc": None,
+            "average_block_interval_seconds": 600 if blocks_counted > 1 else None,
+            "warnings": ["Bitcoin RPC is not configured. Showing estimated demo mined stats."],
+        }
+
+    start_ts = int(start_dt.timestamp())
+    end_ts = int(end_dt.timestamp())
+    warnings: List[str] = []
+
+    try:
+        height = bitcoin_rpc_client.call("getblockcount")
+        matching_blocks = []
+        scanned = 0
+
+        while height >= 0 and scanned < max_blocks:
+            block_hash = bitcoin_rpc_client.call("getblockhash", [height])
+            block = bitcoin_rpc_client.call("getblock", [block_hash, 1])
+            block_time = block.get("time")
+            scanned += 1
+
+            if block_time is not None and start_ts <= block_time <= end_ts:
+                matching_blocks.append(block)
+
+            if block_time is not None and block_time < start_ts:
+                break
+            height -= 1
+    except BitcoinRPCError as exc:
+        return _rpc_error_response(exc)
+
+    if scanned >= max_blocks and (not matching_blocks or matching_blocks[-1].get("time", end_ts) >= start_ts):
+        warnings.append(
+            f"Stopped after scanning {max_blocks} blocks. Narrow the time window or raise BITCOIN_MAX_MINED_STATS_BLOCKS for larger ranges."
+        )
+
+    heights = [block.get("height") for block in matching_blocks if block.get("height") is not None]
+    timestamps = sorted(block.get("time") for block in matching_blocks if block.get("time") is not None)
+    subsidy_total = sum(Decimal(str(block_subsidy_btc(block.get("height") or 0))) for block in matching_blocks)
+
+    return {
+        "source": "node",
+        "start_time": start_dt.isoformat().replace("+00:00", "Z"),
+        "end_time": end_dt.isoformat().replace("+00:00", "Z"),
+        "blocks_counted": len(matching_blocks),
+        "first_height": min(heights) if heights else None,
+        "last_height": max(heights) if heights else None,
+        "subsidy_btc": float(subsidy_total),
+        "fees_available": False,
+        "fees_btc": None,
+        "total_miner_reward_available": False,
+        "total_miner_reward_btc": None,
+        "average_block_interval_seconds": _average_interval_seconds(timestamps),
+        "warnings": warnings or ["Fee totals are not included; this counts new bitcoin subsidy only."],
+    }
+
+
 def get_transaction(txid: str) -> Dict[str, Any]:
     if len(txid) != 64 or any(char not in "0123456789abcdefABCDEF" for char in txid):
         raise ValueError("That does not look like a valid transaction id.")
@@ -171,22 +255,39 @@ def get_transaction(txid: str) -> Dict[str, Any]:
         return _rpc_error_response(exc)
 
     outputs = tx.get("vout", [])
-    total_output = sum(output.get("value", 0) for output in outputs)
+    total_output = sum(Decimal(str(output.get("value", 0))) for output in outputs)
+    input_value_btc, input_warnings = _calculate_input_value(tx)
+    fee_btc = None
+    fee_rate = None
+    if input_value_btc is not None and tx.get("vsize"):
+        fee_btc = input_value_btc - total_output
+        fee_rate = round(btc_to_sats(float(fee_btc)) / tx["vsize"], 2)
+
+    block_height = None
+    if tx.get("blockhash"):
+        try:
+            block = bitcoin_rpc_client.call("getblock", [tx["blockhash"], 1])
+            block_height = block.get("height")
+        except BitcoinRPCError:
+            input_warnings.append("Block height lookup failed, but transaction data was available.")
+
     return {
         "source": "node",
         "txid": tx.get("txid"),
         "confirmed": bool(tx.get("confirmations", 0)),
         "confirmations": tx.get("confirmations", 0),
         "block_hash": tx.get("blockhash"),
+        "block_height": block_height,
         "block_time": iso_from_unix(tx.get("blocktime")),
         "input_count": len(tx.get("vin", [])),
         "output_count": len(outputs),
-        "total_output_btc": total_output,
+        "total_output_btc": float(total_output),
+        "outputs": _summarize_outputs(outputs),
         "vsize": tx.get("vsize"),
-        "fee_available": False,
-        "fee_btc": None,
-        "fee_rate_sats_vb": None,
-        "warnings": ["Fee calculation requires previous output lookup and is not enabled yet."],
+        "fee_available": fee_btc is not None,
+        "fee_btc": float(fee_btc) if fee_btc is not None else None,
+        "fee_rate_sats_vb": fee_rate,
+        "warnings": input_warnings,
     }
 
 
@@ -213,6 +314,12 @@ def safe_tool_call(name: str, *args: Any, **kwargs: Any) -> Dict[str, Any]:
         return globals()[name](*args, **kwargs)
     except BitcoinRPCError as exc:
         return _rpc_error_response(exc)
+    except ValueError as exc:
+        return {
+            "source": "error",
+            "error": str(exc),
+            "warnings": [str(exc)],
+        }
 
 
 def _rpc_error_response(exc: BitcoinRPCError) -> Dict[str, Any]:
@@ -221,3 +328,60 @@ def _rpc_error_response(exc: BitcoinRPCError) -> Dict[str, Any]:
         "error": str(exc),
         "warnings": ["I cannot reach the Bitcoin node right now."],
     }
+
+
+def _parse_iso_time(value: str) -> datetime:
+    normalized = value.strip().replace("Z", "+00:00")
+    try:
+        parsed = datetime.fromisoformat(normalized)
+    except ValueError as exc:
+        raise ValueError("Times must be ISO 8601 strings, for example 2026-05-06T00:00:00Z.") from exc
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def _average_interval_seconds(timestamps: List[int]) -> float | None:
+    if len(timestamps) < 2:
+        return None
+    intervals = [later - earlier for earlier, later in zip(timestamps, timestamps[1:])]
+    return round(sum(intervals) / len(intervals), 2)
+
+
+def _calculate_input_value(tx: Dict[str, Any]) -> tuple[Decimal | None, List[str]]:
+    warnings: List[str] = []
+    total = Decimal("0")
+    for vin in tx.get("vin", []):
+        if vin.get("coinbase"):
+            return None, ["Coinbase transactions create new bitcoin, so normal fee calculation does not apply."]
+
+        prev_txid = vin.get("txid")
+        prev_vout = vin.get("vout")
+        if prev_txid is None or prev_vout is None:
+            warnings.append("One input was missing previous-output references.")
+            return None, warnings
+
+        try:
+            prev_tx = bitcoin_rpc_client.call("getrawtransaction", [prev_txid, True])
+            prev_outputs = prev_tx.get("vout", [])
+            total += Decimal(str(prev_outputs[prev_vout].get("value", 0)))
+        except (BitcoinRPCError, IndexError, TypeError):
+            warnings.append("Fee calculation needs previous outputs; this node could not retrieve every spent output.")
+            return None, warnings
+
+    return total, warnings
+
+
+def _summarize_outputs(outputs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    summaries = []
+    for output in outputs[:10]:
+        script = output.get("scriptPubKey", {})
+        summaries.append(
+            {
+                "n": output.get("n"),
+                "value_btc": output.get("value"),
+                "script_type": script.get("type"),
+                "address": script.get("address"),
+            }
+        )
+    return summaries
