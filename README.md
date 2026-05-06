@@ -65,3 +65,5 @@ archive/          Legacy frontends, demos, and planning artifacts
 ## Notes
 
 The original site started as only the stock research app. Legacy versions of that UI have been moved into `archive/` so active entrypoints are easier to identify.
+
+Bitcoin Chat production node, Cloudflare Tunnel, and Railway setup are documented in [docs/BITCOIN_CHAT_SETUP.md](docs/BITCOIN_CHAT_SETUP.md).
