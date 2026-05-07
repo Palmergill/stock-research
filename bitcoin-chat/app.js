@@ -9,8 +9,10 @@ const nodeStatus = document.getElementById('nodeStatus');
 const heightPill = document.getElementById('heightPill');
 const syncPill = document.getElementById('syncPill');
 const chainPill = document.getElementById('chainPill');
+const chatLayout = document.querySelector('.chat-layout');
+const evidencePanel = document.getElementById('evidencePanel');
 const evidenceStack = document.getElementById('evidenceStack');
-const chatPanel = document.querySelector('.chat-panel');
+const dismissEvidence = document.getElementById('dismissEvidence');
 
 let sessionId = localStorage.getItem('bitcoinChatSessionId');
 
@@ -30,6 +32,8 @@ function addMessage({ role, text, warnings, toolsUsed, loading = false, error = 
         dots.setAttribute('aria-hidden', 'true');
         dots.innerHTML = '<span></span><span></span><span></span>';
         el.append(loadingText, dots);
+    } else if (role === 'assistant') {
+        renderRichText(el, text);
     } else {
         el.textContent = text;
     }
@@ -53,6 +57,125 @@ function addMessage({ role, text, warnings, toolsUsed, loading = false, error = 
     messagesEl.appendChild(el);
     messagesEl.scrollTop = messagesEl.scrollHeight;
     return el;
+}
+
+function appendInline(parent, text) {
+    const pattern = /(\[[^\]]+\]\(https?:\/\/[^)\s]+\)|`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*)/g;
+    let lastIndex = 0;
+    let match;
+
+    while ((match = pattern.exec(text)) !== null) {
+        if (match.index > lastIndex) {
+            parent.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
+        }
+
+        const token = match[0];
+        if (token.startsWith('**')) {
+            const strong = document.createElement('strong');
+            strong.textContent = token.slice(2, -2);
+            parent.appendChild(strong);
+        } else if (token.startsWith('*')) {
+            const em = document.createElement('em');
+            em.textContent = token.slice(1, -1);
+            parent.appendChild(em);
+        } else if (token.startsWith('`')) {
+            const code = document.createElement('code');
+            code.textContent = token.slice(1, -1);
+            parent.appendChild(code);
+        } else {
+            const linkMatch = token.match(/^\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)$/);
+            const link = document.createElement('a');
+            link.textContent = linkMatch[1];
+            link.href = linkMatch[2];
+            link.rel = 'noopener noreferrer';
+            link.target = '_blank';
+            parent.appendChild(link);
+        }
+
+        lastIndex = pattern.lastIndex;
+    }
+
+    if (lastIndex < text.length) {
+        parent.appendChild(document.createTextNode(text.slice(lastIndex)));
+    }
+}
+
+function appendParagraph(parent, lines) {
+    if (!lines.length) return;
+    const paragraph = document.createElement('p');
+    appendInline(paragraph, lines.join(' '));
+    parent.appendChild(paragraph);
+}
+
+function renderRichText(parent, text) {
+    const lines = text.split(/\r?\n/);
+    let paragraphLines = [];
+    let listEl = null;
+    let codeBlock = null;
+
+    lines.forEach((line) => {
+        const trimmed = line.trim();
+
+        if (trimmed.startsWith('```')) {
+            appendParagraph(parent, paragraphLines);
+            paragraphLines = [];
+            listEl = null;
+            if (codeBlock) {
+                parent.appendChild(codeBlock);
+                codeBlock = null;
+            } else {
+                codeBlock = document.createElement('pre');
+            }
+            return;
+        }
+
+        if (codeBlock) {
+            codeBlock.textContent += `${line}\n`;
+            return;
+        }
+
+        if (!trimmed) {
+            appendParagraph(parent, paragraphLines);
+            paragraphLines = [];
+            listEl = null;
+            return;
+        }
+
+        const headingMatch = trimmed.match(/^#{1,3}\s+(.+)$/);
+        if (headingMatch) {
+            appendParagraph(parent, paragraphLines);
+            paragraphLines = [];
+            listEl = null;
+            const heading = document.createElement('h3');
+            appendInline(heading, headingMatch[1]);
+            parent.appendChild(heading);
+            return;
+        }
+
+        const bulletMatch = trimmed.match(/^[-*]\s+(.+)$/);
+        const numberedMatch = trimmed.match(/^\d+\.\s+(.+)$/);
+        if (bulletMatch || numberedMatch) {
+            appendParagraph(parent, paragraphLines);
+            paragraphLines = [];
+            const listType = bulletMatch ? 'ul' : 'ol';
+            if (!listEl || listEl.tagName.toLowerCase() !== listType) {
+                listEl = document.createElement(listType);
+                parent.appendChild(listEl);
+            }
+            const item = document.createElement('li');
+            appendInline(item, bulletMatch?.[1] || numberedMatch[1]);
+            listEl.appendChild(item);
+            return;
+        }
+
+        listEl = null;
+        paragraphLines.push(trimmed);
+    });
+
+    if (codeBlock) {
+        parent.appendChild(codeBlock);
+    }
+    appendParagraph(parent, paragraphLines);
 }
 
 function setNodeStatus(text, available = true) {
@@ -106,30 +229,41 @@ function addEvidenceCard(label, value, code) {
 
 function updateEvidence({ data, toolsUsed, warnings } = {}) {
     evidenceStack.replaceChildren();
+    const hasData = data && typeof data === 'object' && Object.keys(data).length > 0;
+    const hasTools = Boolean(toolsUsed?.length);
 
-    if (!data && !toolsUsed?.length && !warnings?.length) {
-        const empty = document.createElement('div');
-        empty.className = 'evidence-empty';
-        empty.textContent = 'No node call for the last answer.';
-        evidenceStack.appendChild(empty);
+    if (!hasData && !hasTools) {
+        hideEvidence();
         return;
     }
 
-    if (toolsUsed?.length) {
+    if (hasTools) {
         addEvidenceCard('Tool call', toolsUsed.join(', '), 'read-only');
     }
 
-    flattenData(data).slice(0, 3).forEach(([label, value]) => {
+    flattenData(hasData ? data : null).slice(0, 3).forEach(([label, value]) => {
         addEvidenceCard(label, truncate(value, 34));
     });
 
-    if (data) {
+    if (hasData) {
         addEvidenceCard('Response data', 'available', truncate(compactJson(data)));
     }
 
     warnings?.slice(0, 2).forEach((warning) => {
         addEvidenceCard('Warning', warning);
     });
+
+    showEvidence();
+}
+
+function showEvidence() {
+    evidencePanel.classList.remove('is-hidden');
+    chatLayout.classList.add('has-evidence');
+}
+
+function hideEvidence() {
+    evidencePanel.classList.add('is-hidden');
+    chatLayout.classList.remove('has-evidence');
 }
 
 async function fetchJson(url, options) {
@@ -162,6 +296,7 @@ async function refreshStatus({ updateEvidencePanel = false } = {}) {
 
 async function sendMessage(text) {
     addMessage({ role: 'user', text });
+    hideEvidence();
     const loadingEl = addMessage({ role: 'assistant', text: 'Working on your question...', loading: true });
     setBusy(true);
 
@@ -194,6 +329,7 @@ async function sendMessage(text) {
         await refreshStatus();
     } catch (error) {
         loadingEl.remove();
+        hideEvidence();
         addMessage({ role: 'assistant', text: error.message, error: true });
     } finally {
         setBusy(false);
@@ -205,51 +341,6 @@ function setBusy(isBusy) {
     chatForm.querySelector('button').disabled = isBusy;
     messageInput.disabled = isBusy;
 }
-
-function canScrollMessages() {
-    return messagesEl.scrollHeight > messagesEl.clientHeight;
-}
-
-function shouldKeepNativeScroll(target) {
-    return target.closest('.messages, textarea, pre');
-}
-
-function normalizeWheelDelta(event) {
-    if (event.deltaMode === WheelEvent.DOM_DELTA_LINE) {
-        return event.deltaY * 32;
-    }
-    if (event.deltaMode === WheelEvent.DOM_DELTA_PAGE) {
-        return event.deltaY * messagesEl.clientHeight;
-    }
-    return event.deltaY;
-}
-
-chatPanel.addEventListener('wheel', (event) => {
-    if (!canScrollMessages() || shouldKeepNativeScroll(event.target)) return;
-    event.preventDefault();
-    messagesEl.scrollTop += normalizeWheelDelta(event) * 1.8;
-}, { passive: false });
-
-let touchStartY = null;
-
-chatPanel.addEventListener('touchstart', (event) => {
-    if (shouldKeepNativeScroll(event.target)) return;
-    touchStartY = event.touches[0]?.clientY ?? null;
-}, { passive: true });
-
-chatPanel.addEventListener('touchmove', (event) => {
-    if (touchStartY === null || !canScrollMessages() || shouldKeepNativeScroll(event.target)) return;
-    const currentY = event.touches[0]?.clientY ?? touchStartY;
-    const deltaY = touchStartY - currentY;
-    if (deltaY === 0) return;
-    event.preventDefault();
-    messagesEl.scrollTop += deltaY;
-    touchStartY = currentY;
-}, { passive: false });
-
-chatPanel.addEventListener('touchend', () => {
-    touchStartY = null;
-});
 
 messageInput.addEventListener('input', () => {
     messageInput.style.height = 'auto';
@@ -272,5 +363,9 @@ chatForm.addEventListener('submit', async (event) => {
     await sendMessage(text);
 });
 
+dismissEvidence.addEventListener('click', () => {
+    hideEvidence();
+});
+
 addMessage(starterMessage);
-refreshStatus({ updateEvidencePanel: true });
+refreshStatus();

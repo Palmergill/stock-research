@@ -23,7 +23,7 @@ _SESSION_MESSAGES: Dict[str, List[Dict[str, str]]] = {}
 SYSTEM_PROMPT = """You are Palmer's Bitcoin AI: a precise, practical Bitcoin expert grounded in Palmer's read-only Bitcoin Core node.
 
 Expected outcome:
-- Answer in natural language first, then include compact facts when useful.
+- Answer with concise Markdown: short paragraphs, bullets for grouped facts, and bold labels for key values.
 - Use node tools for live chain, mempool, block, transaction, fee, and mined-BTC questions.
 - Answer conceptual Bitcoin questions directly when live node data is not needed.
 - Clearly separate facts from interpretation and say what the node could not verify.
@@ -445,17 +445,25 @@ def _status_answer(data: Dict[str, Any]) -> str:
         return data["error"]
     sync = "syncing" if data.get("initial_block_download") else "synced"
     progress = data.get("verification_progress")
-    progress_text = f" Verification progress is {progress:.4%}." if isinstance(progress, float) else ""
-    return f"The Bitcoin node is on {data.get('chain')} at height {data.get('blocks')} and appears {sync}.{progress_text}"
+    progress_line = f"\n- **Verification:** {progress:.4%}" if isinstance(progress, float) else ""
+    return (
+        "The node is reachable.\n\n"
+        f"- **Chain:** {data.get('chain')}\n"
+        f"- **Height:** {data.get('blocks')}\n"
+        f"- **Status:** {sync}"
+        f"{progress_line}"
+    )
 
 
 def _block_answer(data: Dict[str, Any]) -> str:
     if data.get("error"):
         return data["error"]
     return (
-        f"Block {data.get('height')} has {data.get('tx_count')} transactions, "
-        f"weight {data.get('weight')}, and a {data.get('subsidy_btc')} BTC subsidy. "
-        f"It was timestamped {data.get('time')}."
+        f"Block **{data.get('height')}**:\n\n"
+        f"- **Transactions:** {data.get('tx_count')}\n"
+        f"- **Weight:** {data.get('weight')}\n"
+        f"- **Subsidy:** {data.get('subsidy_btc')} BTC\n"
+        f"- **Timestamp:** {data.get('time')}"
     )
 
 
@@ -466,8 +474,10 @@ def _mempool_answer(data: Dict[str, Any]) -> str:
     fast = estimates.get("2")
     medium = estimates.get("6")
     return (
-        f"The mempool currently has about {data.get('tx_count')} transactions. "
-        f"Estimated fees are {fast} sats/vB for roughly 2 blocks and {medium} sats/vB for roughly 6 blocks."
+        "Current mempool snapshot:\n\n"
+        f"- **Transactions:** {data.get('tx_count')}\n"
+        f"- **Fast estimate:** {fast} sats/vB, roughly 2 blocks\n"
+        f"- **Medium estimate:** {medium} sats/vB, roughly 6 blocks"
     )
 
 
@@ -476,9 +486,10 @@ def _mined_answer(data: Dict[str, Any], timezone_name: str | None) -> str:
         return data["error"]
     zone_text = timezone_name or "UTC"
     return (
-        f"So far today ({zone_text}), the node counted {data.get('blocks_counted')} blocks in the requested window. "
-        f"That represents {data.get('subsidy_btc')} BTC of new subsidy. "
-        "Transaction fees are separate from new BTC issuance and are not included in this total."
+        f"So far today (**{zone_text}**):\n\n"
+        f"- **Blocks counted:** {data.get('blocks_counted')}\n"
+        f"- **New subsidy:** {data.get('subsidy_btc')} BTC\n"
+        "- **Not included:** transaction fees, because fees are not new BTC issuance"
     )
 
 
@@ -493,9 +504,12 @@ def _transaction_answer(data: Dict[str, Any]) -> str:
     )
     block_text = f" in block {data.get('block_height')}" if data.get("block_height") else ""
     return (
-        f"That transaction is {status}{block_text} with {data.get('confirmations', 0)} confirmations. "
-        f"It has {data.get('input_count')} inputs and {data.get('output_count')} outputs totaling {data.get('total_output_btc')} BTC. "
-        f"{fee_text}"
+        f"That transaction is **{status}**{block_text}.\n\n"
+        f"- **Confirmations:** {data.get('confirmations', 0)}\n"
+        f"- **Inputs:** {data.get('input_count')}\n"
+        f"- **Outputs:** {data.get('output_count')}\n"
+        f"- **Total output:** {data.get('total_output_btc')} BTC\n"
+        f"- **Fee:** {fee_text}"
     )
 
 
@@ -503,25 +517,29 @@ def _conceptual_fallback_answer(message: str) -> str:
     normalized = message.strip().lower()
     if "utxo" in normalized:
         return (
-            "A UTXO is an unspent transaction output: a chunk of bitcoin that was created by a previous transaction and has not been spent yet. "
-            "Bitcoin wallets build new transactions by consuming one or more UTXOs as inputs and creating new UTXOs as outputs. "
-            "Set OPENAI_API_KEY to enable deeper, document-grounded explanations."
+            "A **UTXO** is an unspent transaction output: a chunk of bitcoin that exists on-chain and has not been spent yet.\n\n"
+            "- Wallets spend one or more UTXOs as transaction inputs.\n"
+            "- New payments create new UTXOs as outputs.\n"
+            "- Your balance is the sum of spendable UTXOs your wallet can control."
         )
     if "difficulty" in normalized:
         return (
-            "Bitcoin difficulty adjusts how hard it is to find a valid proof-of-work block. "
-            "Roughly every 2016 blocks, nodes retarget difficulty so blocks continue averaging about 10 minutes despite changes in total hash rate. "
-            "Set OPENAI_API_KEY to enable deeper, document-grounded explanations."
+            "**Difficulty** controls how hard it is to find a valid proof-of-work block.\n\n"
+            "- Every 2016 blocks, nodes retarget difficulty.\n"
+            "- The goal is to keep blocks averaging about 10 minutes.\n"
+            "- If total hash rate rises, difficulty tends to rise too."
         )
     if "mining" in normalized:
         return (
-            "Bitcoin mining is the proof-of-work process that orders transactions into blocks and issues new BTC through the block subsidy. "
-            "Miners compete to find a block hash below the current target, and full nodes verify the result independently. "
-            "Set OPENAI_API_KEY to enable deeper, document-grounded explanations."
+            "**Mining** is Bitcoin's proof-of-work process.\n\n"
+            "- Miners order transactions into blocks.\n"
+            "- They compete to find a block hash below the current target.\n"
+            "- Full nodes independently verify each block."
         )
     return (
-        "I can give strong technical Bitcoin explanations once OPENAI_API_KEY is configured. "
-        "Right now the no-key fallback is focused on live node facts: blocks, transactions, fees, sync status, and mined BTC."
+        "I can help with:\n\n"
+        "- **Live node facts:** blocks, transactions, fees, sync status, and mined BTC\n"
+        "- **Bitcoin concepts:** UTXOs, mining, difficulty, confirmations, and fees"
     )
 
 
