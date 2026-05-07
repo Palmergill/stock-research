@@ -45,7 +45,7 @@
         }
 
         const script = document.createElement("script");
-        script.src = "https://unpkg.com/lucide@latest/dist/umd/lucide.min.js";
+        script.src = "https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js";
         script.async = true;
         script.dataset.siteNavLucide = "true";
         script.addEventListener("load", () => window.lucide?.createIcons());

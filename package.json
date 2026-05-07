@@ -17,7 +17,7 @@
   },
   "jest": {
     "testEnvironment": "jsdom",
-    "roots": ["poker/tests"],
+    "roots": ["poker/tests", "craps/tests"],
     "testMatch": ["**/*.test.js"],
     "collectCoverageFrom": [
       "poker/**/*.js",

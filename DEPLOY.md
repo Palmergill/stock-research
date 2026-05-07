@@ -45,7 +45,7 @@ Health check:
 /health
 ```
 
-The backend mirrors the same Basic Auth check for protected `/api/*` routes and locally served app folders when `APP_AUTH_PASSWORD` is configured. Poker, craps, and `/api/poker/*` remain public. Set the same `APP_AUTH_USERNAME` and `APP_AUTH_PASSWORD` values in Railway to protect direct backend access.
+The backend mirrors the same Basic Auth check for protected `/api/*` routes and locally served app folders. Poker, craps, and `/api/poker/*` remain public. Protected routes return `503` if `APP_AUTH_PASSWORD` is missing, so set the same `APP_AUTH_USERNAME` and `APP_AUTH_PASSWORD` values in Railway to keep direct backend access usable and protected.
 
 ## Local
 

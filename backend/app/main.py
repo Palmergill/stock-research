@@ -61,6 +61,10 @@ def auth_challenge():
     )
 
 
+def missing_auth_config():
+    return PlainTextResponse("App authentication is not configured", status_code=503)
+
+
 @app.middleware("http")
 async def require_app_auth(request: Request, call_next):
     if not is_protected_path(request.url.path):
@@ -68,7 +72,7 @@ async def require_app_auth(request: Request, call_next):
 
     config = app_auth_config()
     if not config:
-        return await call_next(request)
+        return missing_auth_config()
 
     credentials = basic_auth_credentials(request.headers.get("authorization"))
     if not credentials:

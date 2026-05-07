@@ -32,7 +32,7 @@ http://127.0.0.1:8000
 
 The local server runs FastAPI and, with `LOCAL_SITE_ROOT=true`, also serves the static project folders so the local URL shape matches `palmergill.com`.
 
-To require Basic Auth locally, set:
+Protected local app routes and API routes require Basic Auth. Set:
 
 ```bash
 APP_AUTH_USERNAME=palmer APP_AUTH_PASSWORD=your-password ./start.sh
@@ -49,7 +49,7 @@ logs/backend.log
 - Static site: hosted from the repo root and project folders.
 - API service: Railway/FastAPI from `backend/`.
 - Vercel rewrites `/api/*` to the Railway backend in production.
-- The root page `/`, `/poker/`, `/craps/`, and `/api/poker/*` stay public. Stock research, Bitcoin chat, and other `/api/*` routes require Basic Auth when `APP_AUTH_PASSWORD` is configured. Set the same `APP_AUTH_USERNAME` and `APP_AUTH_PASSWORD` values in Vercel and Railway.
+- The root page `/`, `/poker/`, `/craps/`, and `/api/poker/*` stay public. Stock research, Bitcoin chat, and other `/api/*` routes require Basic Auth; protected routes return `503` if `APP_AUTH_PASSWORD` is missing. Set the same `APP_AUTH_USERNAME` and `APP_AUTH_PASSWORD` values in Vercel and Railway.
 
 ## Repository Layout
 

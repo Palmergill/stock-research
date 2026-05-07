@@ -49,6 +49,7 @@
             margin-bottom: 10px;
         }
         .bet-btn {
+            width: 100%;
             padding: 20px 16px;
             border-radius: 12px;
             border: 2px solid #c9a227;
@@ -58,6 +59,8 @@
             background: linear-gradient(180deg, #2d5a3d, #1a472a);
             box-shadow: 0 4px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1);
             transition: transform 0.1s;
+            color: inherit;
+            font: inherit;
         }
         .bet-btn:active { background: linear-gradient(180deg, #1a472a, #0d3320); transform: translateY(1px); }
         .bet-btn .label { font-size: 0.85rem; font-weight: 700; display: block; color: #fff; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
@@ -122,6 +125,14 @@
             color: #ff6b6b;
             font-weight: 700;
             margin-left: 2px;
+            background: transparent;
+            border: 0;
+            font: inherit;
+            padding: 0 2px;
+        }
+        .bet-chip .chip-x:disabled {
+            cursor: not-allowed;
+            color: rgba(248,250,252,0.35);
         }
 
         .dice-area {
@@ -225,6 +236,7 @@
             padding: 16px;
         }
         .number-btn {
+            width: 100%;
             aspect-ratio: 1;
             background: linear-gradient(180deg, #2d5a3d, #1a472a);
             border: 2px solid #ffd700;
@@ -235,6 +247,7 @@
             justify-content: center;
             cursor: pointer;
             color: #ffd700;
+            font: inherit;
             box-shadow: 0 4px 8px rgba(0,0,0,0.3);
         }
         .number-btn:active { background: linear-gradient(180deg, #1a472a, #0d3320); }
@@ -251,6 +264,7 @@
             overflow-y: auto;
         }
         .center-btn-tile {
+            width: 100%;
             aspect-ratio: 1;
             background: linear-gradient(180deg, #8b0000, #5c0000);
             border: 2px solid #ff6b6b;
@@ -261,6 +275,7 @@
             justify-content: center;
             cursor: pointer;
             padding: 8px;
+            font: inherit;
             box-shadow: 0 4px 8px rgba(0,0,0,0.3);
         }
         .center-btn-tile:active { background: linear-gradient(180deg, #6b0000, #3c0000); }
@@ -309,6 +324,17 @@
             margin-bottom: 16px;
         }
         .bet-modal input::placeholder { color: rgba(201,162,39,0.4); }
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
         .quick-amounts {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -447,40 +473,40 @@
         <div class="status-bar" id="gameStatus">Place bets & roll</div>
 
         <div class="main-bets">
-            <div class="bet-btn pass" id="passLineBtn" onclick="openBetModal('passLine')">
+            <button type="button" class="bet-btn pass" id="passLineBtn" onclick="openBetModal('passLine')">
                 <span class="label">PASS LINE</span>
                 <span class="amt" id="passLineInfo">Tap to bet</span>
                 <span class="odds-chip" id="passLineOddsChip"></span>
-            </div>
-            <div class="bet-btn dont" id="dontPassBtn" onclick="openBetModal('dontPass')">
+            </button>
+            <button type="button" class="bet-btn dont" id="dontPassBtn" onclick="openBetModal('dontPass')">
                 <span class="label">DON'T PASS</span>
                 <span class="amt" id="dontPassInfo">Tap to bet</span>
                 <span class="odds-chip" id="dontPassOddsChip"></span>
-            </div>
-            <div class="bet-btn come disabled" id="comeBtn" onclick="openBetModal('come')">
+            </button>
+            <button type="button" class="bet-btn come disabled" id="comeBtn" onclick="openBetModal('come')" disabled>
                 <span class="label">COME</span>
                 <span class="amt" id="comeInfo">Tap to bet</span>
                 <span class="odds-chip" id="comeOddsChip"></span>
-            </div>
-            <div class="bet-btn dont-come disabled" id="dontComeBtn" onclick="openBetModal('dontCome')">
+            </button>
+            <button type="button" class="bet-btn dont-come disabled" id="dontComeBtn" onclick="openBetModal('dontCome')" disabled>
                 <span class="label">DON'T COME</span>
                 <span class="amt" id="dontComeInfo">Tap to bet</span>
                 <span class="odds-chip" id="dontComeOddsChip"></span>
-            </div>
-            <div class="bet-btn place" onclick="openPlaceMenu()">
+            </button>
+            <button type="button" class="bet-btn place" onclick="openPlaceMenu()">
                 <span class="label">PLACE</span>
                 <span class="amt" id="placeInfo">4, 5, 6, 8, 9, 10</span>
-            </div>
-            <div class="bet-btn center" onclick="openCenterMenu()">
+            </button>
+            <button type="button" class="bet-btn center" onclick="openCenterMenu()">
                 <span class="label">CENTER</span>
                 <span class="amt" id="centerInfo">Props & Hardways</span>
-            </div>
+            </button>
         </div>
 
         <div class="quick-actions">
             <button class="quick-btn" id="repeatBtn" onclick="repeatLastBets()" disabled>Repeat</button>
             <button class="quick-btn" id="maxOddsBtn" onclick="takeMaxOddsAll()" disabled>Max Odds</button>
-            <button class="quick-btn" onclick="clearAllBets()">Clear All</button>
+            <button class="quick-btn" id="clearAllBtn" onclick="clearAllBets()">Clear All</button>
         </div>
 
         <div class="active-bets-strip" id="activeBetsStrip"></div>
@@ -502,12 +528,12 @@
             <button class="close-btn" onclick="closePlaceMenu()">Done</button>
         </div>
         <div class="numbers-grid">
-            <div class="number-btn" id="place4Btn" onclick="openBetModal('place4')"><span class="num">4</span><span class="payout">9:5</span><span class="bet-info" id="place4Info"></span></div>
-            <div class="number-btn" id="place5Btn" onclick="openBetModal('place5')"><span class="num">5</span><span class="payout">7:5</span><span class="bet-info" id="place5Info"></span></div>
-            <div class="number-btn" id="place6Btn" onclick="openBetModal('place6')"><span class="num">6</span><span class="payout">7:6</span><span class="bet-info" id="place6Info"></span></div>
-            <div class="number-btn" id="place8Btn" onclick="openBetModal('place8')"><span class="num">8</span><span class="payout">7:6</span><span class="bet-info" id="place8Info"></span></div>
-            <div class="number-btn" id="place9Btn" onclick="openBetModal('place9')"><span class="num">9</span><span class="payout">7:5</span><span class="bet-info" id="place9Info"></span></div>
-            <div class="number-btn" id="place10Btn" onclick="openBetModal('place10')"><span class="num">10</span><span class="payout">9:5</span><span class="bet-info" id="place10Info"></span></div>
+            <button type="button" class="number-btn" id="place4Btn" onclick="openBetModal('place4')"><span class="num">4</span><span class="payout">9:5</span><span class="bet-info" id="place4Info"></span></button>
+            <button type="button" class="number-btn" id="place5Btn" onclick="openBetModal('place5')"><span class="num">5</span><span class="payout">7:5</span><span class="bet-info" id="place5Info"></span></button>
+            <button type="button" class="number-btn" id="place6Btn" onclick="openBetModal('place6')"><span class="num">6</span><span class="payout">7:6</span><span class="bet-info" id="place6Info"></span></button>
+            <button type="button" class="number-btn" id="place8Btn" onclick="openBetModal('place8')"><span class="num">8</span><span class="payout">7:6</span><span class="bet-info" id="place8Info"></span></button>
+            <button type="button" class="number-btn" id="place9Btn" onclick="openBetModal('place9')"><span class="num">9</span><span class="payout">7:5</span><span class="bet-info" id="place9Info"></span></button>
+            <button type="button" class="number-btn" id="place10Btn" onclick="openBetModal('place10')"><span class="num">10</span><span class="payout">9:5</span><span class="bet-info" id="place10Info"></span></button>
         </div>
     </div>
 
@@ -518,26 +544,27 @@
             <button class="close-btn" onclick="closeCenterMenu()">Done</button>
         </div>
         <div class="center-grid">
-            <div class="center-btn-tile" id="any7TileBtn" onclick="openBetModal('any7')"><span class="label">Any 7</span><span class="payout">4:1</span><span class="bet-info" id="any7Info"></span></div>
-            <div class="center-btn-tile" id="anyCrapsTileBtn" onclick="openBetModal('anyCraps')"><span class="label">Any Craps</span><span class="payout">7:1</span><span class="bet-info" id="anyCrapsInfo"></span></div>
-            <div class="center-btn-tile" id="fieldTileBtn" onclick="openBetModal('field')"><span class="label">Field</span><span class="payout">1:1 / 2:1</span><span class="bet-info" id="fieldInfo"></span></div>
-            <div class="center-btn-tile" id="craps2TileBtn" onclick="openBetModal('craps2')"><span class="label">Craps 2</span><span class="payout">30:1</span><span class="bet-info" id="craps2Info"></span></div>
-            <div class="center-btn-tile" id="craps3TileBtn" onclick="openBetModal('craps3')"><span class="label">Craps 3</span><span class="payout">15:1</span><span class="bet-info" id="craps3Info"></span></div>
-            <div class="center-btn-tile" id="craps12TileBtn" onclick="openBetModal('craps12')"><span class="label">Craps 12</span><span class="payout">30:1</span><span class="bet-info" id="craps12Info"></span></div>
-            <div class="center-btn-tile" id="yo11TileBtn" onclick="openBetModal('yo11')"><span class="label">Yo 11</span><span class="payout">15:1</span><span class="bet-info" id="yo11Info"></span></div>
-            <div class="center-btn-tile" id="hard4TileBtn" onclick="openBetModal('hard4')"><span class="label">Hard 4</span><span class="payout">7:1</span><span class="bet-info" id="hard4Info"></span></div>
-            <div class="center-btn-tile" id="hard6TileBtn" onclick="openBetModal('hard6')"><span class="label">Hard 6</span><span class="payout">9:1</span><span class="bet-info" id="hard6Info"></span></div>
-            <div class="center-btn-tile" id="hard8TileBtn" onclick="openBetModal('hard8')"><span class="label">Hard 8</span><span class="payout">9:1</span><span class="bet-info" id="hard8Info"></span></div>
-            <div class="center-btn-tile" id="hard10TileBtn" onclick="openBetModal('hard10')"><span class="label">Hard 10</span><span class="payout">7:1</span><span class="bet-info" id="hard10Info"></span></div>
+            <button type="button" class="center-btn-tile" id="any7TileBtn" onclick="openBetModal('any7')"><span class="label">Any 7</span><span class="payout">4:1</span><span class="bet-info" id="any7Info"></span></button>
+            <button type="button" class="center-btn-tile" id="anyCrapsTileBtn" onclick="openBetModal('anyCraps')"><span class="label">Any Craps</span><span class="payout">7:1</span><span class="bet-info" id="anyCrapsInfo"></span></button>
+            <button type="button" class="center-btn-tile" id="fieldTileBtn" onclick="openBetModal('field')"><span class="label">Field</span><span class="payout">1:1 / 2:1</span><span class="bet-info" id="fieldInfo"></span></button>
+            <button type="button" class="center-btn-tile" id="craps2TileBtn" onclick="openBetModal('craps2')"><span class="label">Craps 2</span><span class="payout">30:1</span><span class="bet-info" id="craps2Info"></span></button>
+            <button type="button" class="center-btn-tile" id="craps3TileBtn" onclick="openBetModal('craps3')"><span class="label">Craps 3</span><span class="payout">15:1</span><span class="bet-info" id="craps3Info"></span></button>
+            <button type="button" class="center-btn-tile" id="craps12TileBtn" onclick="openBetModal('craps12')"><span class="label">Craps 12</span><span class="payout">30:1</span><span class="bet-info" id="craps12Info"></span></button>
+            <button type="button" class="center-btn-tile" id="yo11TileBtn" onclick="openBetModal('yo11')"><span class="label">Yo 11</span><span class="payout">15:1</span><span class="bet-info" id="yo11Info"></span></button>
+            <button type="button" class="center-btn-tile" id="hard4TileBtn" onclick="openBetModal('hard4')"><span class="label">Hard 4</span><span class="payout">7:1</span><span class="bet-info" id="hard4Info"></span></button>
+            <button type="button" class="center-btn-tile" id="hard6TileBtn" onclick="openBetModal('hard6')"><span class="label">Hard 6</span><span class="payout">9:1</span><span class="bet-info" id="hard6Info"></span></button>
+            <button type="button" class="center-btn-tile" id="hard8TileBtn" onclick="openBetModal('hard8')"><span class="label">Hard 8</span><span class="payout">9:1</span><span class="bet-info" id="hard8Info"></span></button>
+            <button type="button" class="center-btn-tile" id="hard10TileBtn" onclick="openBetModal('hard10')"><span class="label">Hard 10</span><span class="payout">7:1</span><span class="bet-info" id="hard10Info"></span></button>
         </div>
     </div>
 
     <!-- Bet Modal -->
-    <div class="bet-modal" id="betModal">
+    <div class="bet-modal" id="betModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
         <div class="bet-modal-content">
             <h3 id="modalTitle">Bet</h3>
             <div class="current-bet-info" id="modalCurrentBet"></div>
-            <input type="number" id="betInput" placeholder="0" min="5" step="5">
+            <label class="sr-only" for="betInput">Bet amount</label>
+            <input type="number" id="betInput" placeholder="0" min="5" step="5" aria-describedby="modalCurrentBet">
             <div class="quick-amounts">
                 <button class="quick-amt" onclick="setModalAmt(5)">$5</button>
                 <button class="quick-amt" onclick="setModalAmt(25)">$25</button>
@@ -552,9 +579,9 @@
     </div>
 
     <!-- Point Established Popup -->
-    <div class="point-popup" id="pointPopup">
+    <div class="point-popup" id="pointPopup" role="dialog" aria-modal="true" aria-labelledby="popupHeading">
         <div class="point-popup-content">
-            <h2>🎯 POINT ESTABLISHED</h2>
+            <h2 id="popupHeading">POINT ESTABLISHED</h2>
             <div class="point-number" id="popupPointNumber">6</div>
             <div class="point-text" id="popupText">Take odds on your Pass Line bet?</div>
             <div class="odds-buttons" id="popupOddsButtons">
@@ -579,8 +606,10 @@
         let isComeOutRoll = true;
         let lastBets = null;
         let currentModalBet = null;
+        let nextComeBetId = 1;
+        let isRolling = false;
 
-        // Multiple Come/Don't Come bets: array of { point: null|number, amount: number, odds: number }
+        // Multiple Come/Don't Come bets: array of { id, point: null|number, amount: number, odds: number }
         let comeBets = [];
         let dontComeBets = [];
 
@@ -618,6 +647,10 @@
             document.getElementById('balance').textContent = '$' + balance.toLocaleString();
         }
 
+        function setStatus(message) {
+            document.getElementById('gameStatus').textContent = message;
+        }
+
         // ── UI: Dice ──
         function renderDie(dieId, value) {
             const die = document.getElementById(dieId);
@@ -650,7 +683,10 @@
             const isComeBet = (betType === 'come' || betType === 'dontCome');
             const name = isComeBet ? (betType === 'come' ? 'Come' : "Don't Come") : (betNames[betType] || betType);
             document.getElementById('modalTitle').textContent = name + ' Bet';
-            document.getElementById('betInput').value = '';
+            const betInput = document.getElementById('betInput');
+            betInput.value = '';
+            betInput.min = getBetUnit(betType);
+            betInput.step = getBetUnit(betType);
 
             // Show current bet info
             let info = '';
@@ -667,16 +703,24 @@
                     if (oddsAmt > 0) info += ' + $' + oddsAmt + ' odds';
                 }
             }
+            const unit = getBetUnit(betType);
+            if (unit > 5) {
+                info = (info ? info + ' · ' : '') + 'Use $' + unit + ' increments';
+            }
             document.getElementById('modalCurrentBet').textContent = info;
 
             // Show remove button if there's a current bet (not for come/dontCome - those are managed via strip)
             const actionsDiv = document.getElementById('modalActions');
             const current = isComeBet ? 0 : (bets[betType] || 0);
-            if (current > 0) {
+            const canRemove = current > 0 && canClearBet(betType);
+            if (current > 0 && canRemove) {
                 actionsDiv.className = 'modal-actions three-col';
                 actionsDiv.innerHTML = '<button class="modal-btn cancel" onclick="closeBetModal()">Cancel</button>' +
                     '<button class="modal-btn remove" onclick="removeBetFromModal()">Remove</button>' +
                     '<button class="modal-btn confirm" onclick="confirmBet()">Add</button>';
+            } else if (current > 0 && !canAddBet(betType)) {
+                actionsDiv.className = 'modal-actions';
+                actionsDiv.innerHTML = '<button class="modal-btn cancel" onclick="closeBetModal()">Done</button>';
             } else {
                 actionsDiv.className = 'modal-actions';
                 actionsDiv.innerHTML = '<button class="modal-btn cancel" onclick="closeBetModal()">Cancel</button>' +
@@ -694,16 +738,37 @@
             currentModalBet = null;
         }
 
+        function getBetUnit(betType) {
+            if (betType === 'place6' || betType === 'place8') return 6;
+            return 5;
+        }
+
+        function getBetValidationError(betType, amount) {
+            const unit = getBetUnit(betType);
+            if (!Number.isInteger(amount) || amount < unit) return 'Minimum bet is $' + unit;
+            if (amount % unit !== 0) return 'Bet must be in $' + unit + ' increments';
+            if (amount > balance) return 'Not enough balance';
+            return '';
+        }
+
         function confirmBet() {
             if (!currentModalBet) return;
-            const amt = parseInt(document.getElementById('betInput').value);
-            if (!amt || amt < 5) return;
-            if (amt > balance) return;
+            if (!canAddBet(currentModalBet)) {
+                setStatus('Contract bets stay until resolved');
+                return;
+            }
+            const amt = Number(document.getElementById('betInput').value);
+            const validationError = getBetValidationError(currentModalBet, amt);
+            if (validationError) {
+                document.getElementById('modalCurrentBet').textContent = validationError;
+                setStatus(validationError);
+                return;
+            }
 
             if (currentModalBet === 'come') {
-                comeBets.push({ point: null, amount: amt, odds: 0 });
+                comeBets.push({ id: nextComeBetId++, point: null, amount: amt, odds: 0 });
             } else if (currentModalBet === 'dontCome') {
-                dontComeBets.push({ point: null, amount: amt, odds: 0 });
+                dontComeBets.push({ id: nextComeBetId++, point: null, amount: amt, odds: 0 });
             } else {
                 bets[currentModalBet] += amt;
             }
@@ -716,6 +781,11 @@
         function removeBetFromModal() {
             if (!currentModalBet) return;
             const bt = currentModalBet;
+            if (!canClearBet(bt)) {
+                setStatus('Contract bets stay until resolved');
+                closeBetModal();
+                return;
+            }
             balance += bets[bt] + (oddsBets[bt] || 0);
             bets[bt] = 0;
             if (oddsBets[bt] !== undefined) oddsBets[bt] = 0;
@@ -737,33 +807,37 @@
             }
         }
 
+        function addOddsToBet(bet, multiplier) {
+            if (!bet || !bet.point || bet.amount === 0) return false;
+            const maxAmt = bet.amount * oddsMultipliers[bet.point];
+            const requestedAmt = multiplier === 'max' ? maxAmt : bet.amount * multiplier;
+            const canAfford = Math.min(requestedAmt, maxAmt - bet.odds, balance);
+            if (canAfford < 5) return false;
+            bet.odds += canAfford;
+            balance -= canAfford;
+            return true;
+        }
+
         function takeMaxOdds(bt) {
             let pt;
             if (bt === 'passLine' || bt === 'dontPass') { pt = point; }
             if (!pt || bets[bt] === 0) return;
-            const mult = oddsMultipliers[pt];
-            const maxAmt = bets[bt] * mult;
-            const canAfford = Math.min(maxAmt - oddsBets[bt], balance);
-            if (canAfford < 5) return;
-            oddsBets[bt] += canAfford;
-            balance -= canAfford;
-            updateBalance();
-            updateAllDisplays();
+            const lineBet = { point: pt, amount: bets[bt], odds: oddsBets[bt] };
+            if (addOddsToBet(lineBet, 'max')) {
+                oddsBets[bt] = lineBet.odds;
+                updateBalance();
+                updateAllDisplays();
+            }
         }
 
         function takeMaxOddsComeBet(index, isDontCome) {
             const arr = isDontCome ? dontComeBets : comeBets;
             if (index < 0 || index >= arr.length) return;
             const bet = arr[index];
-            if (!bet.point || bet.amount === 0) return;
-            const mult = oddsMultipliers[bet.point];
-            const maxAmt = bet.amount * mult;
-            const canAfford = Math.min(maxAmt - bet.odds, balance);
-            if (canAfford < 5) return;
-            bet.odds += canAfford;
-            balance -= canAfford;
-            updateBalance();
-            updateAllDisplays();
+            if (addOddsToBet(bet, 'max')) {
+                updateBalance();
+                updateAllDisplays();
+            }
         }
 
         function takeMaxOddsAll() {
@@ -773,7 +847,30 @@
         }
 
         // ── Clear Bets ──
+        function canClearBet(bt) {
+            return !(bt === 'passLine' && !isComeOutRoll && bets.passLine > 0);
+        }
+
+        function canAddBet(bt) {
+            return canClearBet(bt);
+        }
+
+        function canClearComeBet(index, isDontCome) {
+            const arr = isDontCome ? dontComeBets : comeBets;
+            if (index < 0 || index >= arr.length) return false;
+            const bet = arr[index];
+            return isDontCome || !bet.point;
+        }
+
+        function hasLockedContractBets() {
+            return (!isComeOutRoll && bets.passLine > 0) || comeBets.some(bet => bet.point);
+        }
+
         function clearBet(bt) {
+            if (!canClearBet(bt)) {
+                setStatus('Contract bets stay until resolved');
+                return;
+            }
             balance += bets[bt] + (oddsBets[bt] || 0);
             bets[bt] = 0;
             if (oddsBets[bt] !== undefined) oddsBets[bt] = 0;
@@ -784,6 +881,10 @@
         function clearComeBet(index, isDontCome) {
             const arr = isDontCome ? dontComeBets : comeBets;
             if (index < 0 || index >= arr.length) return;
+            if (!canClearComeBet(index, isDontCome)) {
+                setStatus('Contract bets stay until resolved');
+                return;
+            }
             const bet = arr[index];
             balance += bet.amount + bet.odds;
             arr.splice(index, 1);
@@ -793,13 +894,19 @@
 
         function clearAllBets() {
             Object.keys(bets).forEach(bt => {
-                balance += bets[bt] + (oddsBets[bt] || 0);
-                bets[bt] = 0;
-                if (oddsBets[bt] !== undefined) oddsBets[bt] = 0;
+                if (canClearBet(bt)) {
+                    balance += bets[bt] + (oddsBets[bt] || 0);
+                    bets[bt] = 0;
+                    if (oddsBets[bt] !== undefined) oddsBets[bt] = 0;
+                }
             });
-            comeBets.forEach(b => { balance += b.amount + b.odds; });
+            const lockedComeBets = [];
+            comeBets.forEach(b => {
+                if (b.point) lockedComeBets.push(b);
+                else balance += b.amount + b.odds;
+            });
             dontComeBets.forEach(b => { balance += b.amount + b.odds; });
-            comeBets = [];
+            comeBets = lockedComeBets;
             dontComeBets = [];
             updateBalance();
             updateAllDisplays();
@@ -807,6 +914,10 @@
 
         function repeatLastBets() {
             if (!lastBets) return;
+            if (hasLockedContractBets()) {
+                setStatus('Repeat is available after contract bets resolve');
+                return;
+            }
             clearAllBets();
             Object.keys(lastBets.bets).forEach(bt => {
                 const amt = lastBets.bets[bt];
@@ -819,7 +930,7 @@
             if (!isComeOutRoll && lastBets.comeBets) {
                 lastBets.comeBets.forEach(b => {
                     if (b.amount <= balance) {
-                        comeBets.push({ point: null, amount: b.amount, odds: 0 });
+                        comeBets.push({ id: nextComeBetId++, point: null, amount: b.amount, odds: 0 });
                         balance -= b.amount;
                     }
                 });
@@ -827,7 +938,7 @@
             if (!isComeOutRoll && lastBets.dontComeBets) {
                 lastBets.dontComeBets.forEach(b => {
                     if (b.amount <= balance) {
-                        dontComeBets.push({ point: null, amount: b.amount, odds: 0 });
+                        dontComeBets.push({ id: nextComeBetId++, point: null, amount: b.amount, odds: 0 });
                         balance -= b.amount;
                     }
                 });
@@ -848,9 +959,13 @@
             if (isComeOutRoll) {
                 comeBtn.classList.add('disabled');
                 dcBtn.classList.add('disabled');
+                comeBtn.disabled = true;
+                dcBtn.disabled = true;
             } else {
                 comeBtn.classList.remove('disabled');
                 dcBtn.classList.remove('disabled');
+                comeBtn.disabled = false;
+                dcBtn.disabled = false;
             }
 
             // Come bet button display
@@ -948,6 +1063,7 @@
 
             // Max odds button
             updateMaxOddsButton();
+            updateRollButton();
         }
 
         function updateMainBetBtn(bt, btnId, infoId, oddsChipId) {
@@ -978,7 +1094,15 @@
                     chip.className = 'bet-chip';
                     let text = betNames[bt] + ': $' + bets[bt];
                     if (oddsBets[bt] > 0) text += ' +$' + oddsBets[bt];
-                    chip.innerHTML = text + ' <span class="chip-x" onclick="clearBet(\'' + bt + '\')">\u2715</span>';
+                    chip.append(document.createTextNode(text + ' '));
+                    const clearButton = document.createElement('button');
+                    clearButton.type = 'button';
+                    clearButton.className = 'chip-x';
+                    clearButton.textContent = '\u2715';
+                    clearButton.setAttribute('aria-label', 'Clear ' + betNames[bt]);
+                    clearButton.disabled = !canClearBet(bt);
+                    clearButton.onclick = () => clearBet(bt);
+                    chip.appendChild(clearButton);
                     strip.appendChild(chip);
                 }
             });
@@ -991,7 +1115,15 @@
                 else text += ' (new)';
                 text += ': $' + bet.amount;
                 if (bet.odds > 0) text += ' +$' + bet.odds;
-                chip.innerHTML = text + ' <span class="chip-x" onclick="clearComeBet(' + i + ', false)">\u2715</span>';
+                chip.append(document.createTextNode(text + ' '));
+                const clearButton = document.createElement('button');
+                clearButton.type = 'button';
+                clearButton.className = 'chip-x';
+                clearButton.textContent = '\u2715';
+                clearButton.setAttribute('aria-label', 'Clear ' + text);
+                clearButton.disabled = !canClearComeBet(i, false);
+                clearButton.onclick = () => clearComeBet(i, false);
+                chip.appendChild(clearButton);
                 strip.appendChild(chip);
             });
             // Don't Come bets
@@ -1003,7 +1135,15 @@
                 else text += ' (new)';
                 text += ': $' + bet.amount;
                 if (bet.odds > 0) text += ' +$' + bet.odds;
-                chip.innerHTML = text + ' <span class="chip-x" onclick="clearComeBet(' + i + ', true)">\u2715</span>';
+                chip.append(document.createTextNode(text + ' '));
+                const clearButton = document.createElement('button');
+                clearButton.type = 'button';
+                clearButton.className = 'chip-x';
+                clearButton.textContent = '\u2715';
+                clearButton.setAttribute('aria-label', 'Clear ' + text);
+                clearButton.disabled = !canClearComeBet(i, true);
+                clearButton.onclick = () => clearComeBet(i, true);
+                chip.appendChild(clearButton);
                 strip.appendChild(chip);
             });
         }
@@ -1016,14 +1156,25 @@
             document.getElementById('maxOddsBtn').disabled = !hasOddsTarget || balance < 5;
         }
 
+        function hasPendingPointPopup() {
+            return pendingPointPopupSchedules > 0 ||
+                pointPopupQueue.length > 0 ||
+                document.getElementById('pointPopup').classList.contains('active');
+        }
+
+        function updateRollButton() {
+            document.getElementById('rollButton').disabled = isRolling || hasPendingPointPopup();
+        }
+
         // ── Roll Dice ──
         function rollDice() {
+            if (isRolling || hasPendingPointPopup()) return;
             const totalBets = Object.values(bets).reduce((a, b) => a + b, 0) +
                 Object.values(oddsBets).reduce((a, b) => a + b, 0) +
                 comeBets.reduce((s, b) => s + b.amount + b.odds, 0) +
                 dontComeBets.reduce((s, b) => s + b.amount + b.odds, 0);
             if (totalBets === 0) {
-                document.getElementById('gameStatus').textContent = 'Place a bet first!';
+                setStatus('Place a bet first!');
                 return;
             }
 
@@ -1035,8 +1186,9 @@
             };
             document.getElementById('repeatBtn').disabled = false;
 
-            document.getElementById('rollButton').disabled = true;
-            document.getElementById('gameStatus').textContent = 'Rolling...';
+            isRolling = true;
+            updateRollButton();
+            setStatus('Rolling...');
 
             let rolls = 0;
             const interval = setInterval(() => {
@@ -1053,13 +1205,15 @@
             renderDie('die1', d1);
             renderDie('die2', d2);
             resolveRoll(d1, d2);
-            document.getElementById('rollButton').disabled = false;
+            isRolling = false;
+            updateRollButton();
         }
 
         // ── Resolve All Bets ──
         function resolveRoll(d1, d2) {
             const total = d1 + d2;
             const isHard = d1 === d2;
+            const wasComeOutRoll = isComeOutRoll;
             let winnings = 0;
             let messages = [];
 
@@ -1122,7 +1276,7 @@
                     if (bets.passLine > 0) { winnings += bets.passLine * 2; messages.push('Pass Line wins!'); }
                     bets.dontPass = 0; oddsBets.dontPass = 0;
                     messages.push('Natural!');
-                    resetRound();
+                    resetPassLineRound();
                 } else if ([2,3,12].includes(total)) {
                     if (bets.dontPass > 0) {
                         if (total !== 12) { winnings += bets.dontPass * 2; messages.push("Don't Pass wins!"); }
@@ -1130,7 +1284,7 @@
                     }
                     bets.passLine = 0; oddsBets.passLine = 0;
                     messages.push('Craps!');
-                    resetRound();
+                    resetPassLineRound();
                 } else {
                     point = total;
                     isComeOutRoll = false;
@@ -1139,10 +1293,10 @@
                     messages.push('Point is ' + point);
                     // Show point popup if there's a pass line or don't pass bet without odds
                     if (bets.passLine > 0 && oddsBets.passLine === 0) {
-                        setTimeout(() => showPointPopup(point, 'passLine'), 500);
+                        schedulePointPopup(point, 'passLine', null, 500);
                     }
                     if (bets.dontPass > 0 && oddsBets.dontPass === 0) {
-                        setTimeout(() => showPointPopup(point, 'dontPass'), 600);
+                        schedulePointPopup(point, 'dontPass', null, 600);
                     }
                 }
             }
@@ -1151,6 +1305,7 @@
             let comePopupDelay = 500;
             const comeBetsToRemove = [];
             comeBets.forEach((bet, i) => {
+                if (wasComeOutRoll && bet.point) return;
                 if (!bet.point) {
                     // Come bet "come out" roll
                     if (total === 7 || total === 11) {
@@ -1164,9 +1319,9 @@
                         messages.push('Come point: ' + total);
                         // Show point popup for this come bet
                         if (bet.odds === 0) {
-                            const idx = i;
+                            const id = bet.id;
                             const pt = total;
-                            setTimeout(() => showPointPopup(pt, 'come', idx), comePopupDelay);
+                            schedulePointPopup(pt, 'come', id, comePopupDelay);
                             comePopupDelay += 100;
                         }
                     }
@@ -1196,6 +1351,7 @@
             let dcPopupDelay = 600;
             const dontComeBetsToRemove = [];
             dontComeBets.forEach((bet, i) => {
+                if (wasComeOutRoll && bet.point) return;
                 if (!bet.point) {
                     // Don't Come bet "come out" roll
                     if (total === 2 || total === 3) {
@@ -1211,9 +1367,9 @@
                         messages.push("DC point: " + total);
                         // Show point popup for this don't come bet
                         if (bet.odds === 0) {
-                            const idx = i;
+                            const id = bet.id;
                             const pt = total;
-                            setTimeout(() => showPointPopup(pt, 'dontCome', idx), dcPopupDelay);
+                            schedulePointPopup(pt, 'dontCome', id, dcPopupDelay);
                             dcPopupDelay += 100;
                         }
                     }
@@ -1291,7 +1447,7 @@
             const statusMsg = messages.length > 0
                 ? messages.join(' \u2022 ')
                 : (isComeOutRoll ? 'Place bets & roll' : 'Rolled ' + total);
-            document.getElementById('gameStatus').textContent = statusMsg;
+            setStatus(statusMsg);
         }
 
         function resetPassLineRound() {
@@ -1324,13 +1480,26 @@
 
         // ── Point Popup ──
         let pointPopupTimer = null;
-        let pointPopupQueue = []; // Queue of popups to show: { point, betType, index }
+        let pointPopupQueue = []; // Queue of popups to show: { point, betType, betId }
         let currentPopupBetType = 'passLine';
-        let currentPopupIndex = -1; // Index into comeBets/dontComeBets array
+        let currentPopupBetId = null; // Stable id into comeBets/dontComeBets arrays
+        let currentPopupPoint = null;
+        let pendingPointPopupSchedules = 0;
 
-        function showPointPopup(pt, betType = 'passLine', index = -1) {
+        function schedulePointPopup(pt, betType = 'passLine', betId = null, delay = 0) {
+            pendingPointPopupSchedules++;
+            updateRollButton();
+            setTimeout(() => {
+                pendingPointPopupSchedules--;
+                showPointPopup(pt, betType, betId);
+                updateRollButton();
+            }, delay);
+        }
+
+        function showPointPopup(pt, betType = 'passLine', betId = null) {
             // Queue the popup
-            pointPopupQueue.push({ point: pt, betType: betType, index: index });
+            pointPopupQueue.push({ point: pt, betType: betType, betId: betId });
+            updateRollButton();
             // If no popup is currently showing, show the next one
             const popup = document.getElementById('pointPopup');
             if (!popup.classList.contains('active')) {
@@ -1348,7 +1517,8 @@
             const timerBar = document.getElementById('popupTimer');
 
             currentPopupBetType = next.betType;
-            currentPopupIndex = next.index;
+            currentPopupBetId = next.betId;
+            currentPopupPoint = next.point;
             pointNum.textContent = next.point;
 
             if (next.betType === 'come') {
@@ -1366,6 +1536,7 @@
             timerBar.style.animation = 'timerCountdown 10s linear forwards';
 
             popup.classList.add('active');
+            updateRollButton();
 
             if (pointPopupTimer) clearTimeout(pointPopupTimer);
             pointPopupTimer = setTimeout(() => {
@@ -1384,42 +1555,31 @@
             if (pointPopupQueue.length > 0) {
                 setTimeout(showNextPointPopup, 300);
             }
+            updateRollButton();
         }
 
         function takeOddsFromPopup(multiplier) {
             const betType = currentPopupBetType;
-            const index = currentPopupIndex;
+            const betId = currentPopupBetId;
 
-            let pt, flatBet;
-            if (betType === 'come' && index >= 0 && index < comeBets.length) {
-                pt = comeBets[index].point;
-                flatBet = comeBets[index].amount;
-            } else if (betType === 'dontCome' && index >= 0 && index < dontComeBets.length) {
-                pt = dontComeBets[index].point;
-                flatBet = dontComeBets[index].amount;
+            let targetBet;
+            if (betType === 'come') {
+                targetBet = comeBets.find(bet => bet.id === betId);
+            } else if (betType === 'dontCome') {
+                targetBet = dontComeBets.find(bet => bet.id === betId);
             } else {
-                pt = point;
-                flatBet = bets[betType];
+                targetBet = { point: currentPopupPoint || point, amount: bets[betType], odds: oddsBets[betType] };
             }
 
-            if (!pt || flatBet === 0) {
+            if (!targetBet || !targetBet.point || targetBet.amount === 0) {
                 closePointPopup();
                 return;
             }
 
-            const maxMult = oddsMultipliers[pt];
-            let oddsAmt = multiplier === 'max' ? flatBet * maxMult : flatBet * multiplier;
-            oddsAmt = Math.min(oddsAmt, balance);
-
-            if (oddsAmt >= 5) {
-                if (betType === 'come' && index >= 0 && index < comeBets.length) {
-                    comeBets[index].odds += oddsAmt;
-                } else if (betType === 'dontCome' && index >= 0 && index < dontComeBets.length) {
-                    dontComeBets[index].odds += oddsAmt;
-                } else {
-                    oddsBets[betType] += oddsAmt;
+            if (addOddsToBet(targetBet, multiplier)) {
+                if (betType !== 'come' && betType !== 'dontCome') {
+                    oddsBets[betType] = targetBet.odds;
                 }
-                balance -= oddsAmt;
                 updateBalance();
                 updateAllDisplays();
             }
