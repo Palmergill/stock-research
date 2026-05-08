@@ -1595,6 +1595,7 @@ function getClockwiseOpponents(players, heroId) {
 
 function renderOpponent(player, seatClass = 'seat-1') {
     const isCurrent = gameState.phase !== 'showdown' && gameState.current_player === player.id;
+    const isShowdown = gameState.phase === 'showdown';
     const showCards = gameState.phase === 'showdown' && !player.folded;
     const isWinner = gameState.winners?.some(w => w.id === player.id);
     const recentAIAction = gameState.last_ai_action?.player_name === player.name ? gameState.last_ai_action : null;
@@ -1613,6 +1614,8 @@ function renderOpponent(player, seatClass = 'seat-1') {
             <div class="opponent-cards">
                 ${showCards
                     ? player.hand.map(c => renderCard(c)).join('')
+                    : isShowdown
+                        ? ''
                     : `<div class="card-back ${player.folded ? 'folded' : ''}">🂠</div><div class="card-back ${player.folded ? 'folded' : ''}">🂠</div>`
                 }
             </div>
