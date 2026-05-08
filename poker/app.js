@@ -634,6 +634,13 @@ let pollInFlight = false;
 let isRequestPending = false; // Lock to prevent race conditions
 let actionToken = null; // Anti-replay token for security
 const AI_POLL_INTERVAL_MS = 1800;
+const CLOCKWISE_OPPONENT_SEATS = {
+    1: ['seat-1'],
+    2: ['seat-2', 'seat-3'],
+    3: ['seat-2', 'seat-1', 'seat-3'],
+    4: ['seat-4', 'seat-2', 'seat-3', 'seat-5'],
+    5: ['seat-4', 'seat-2', 'seat-1', 'seat-3', 'seat-5']
+};
 
 // Helper function to update game state and extract action token
 function updateGameState(newState) {
@@ -666,8 +673,6 @@ const elements = {
     handNumber: document.getElementById('hand-number'),
     phase: document.getElementById('phase'),
     potAmount: document.getElementById('pot-amount'),
-    potOdds: document.getElementById('pot-odds'),
-    potOddsText: document.getElementById('pot-odds-text'),
     opponentsRow: document.getElementById('opponents-row'),
     communityCards: document.getElementById('community-cards'),
     yourCards: document.getElementById('your-cards'),
@@ -1471,9 +1476,6 @@ function updateGameDisplay() {
     elements.phase.textContent = gameState.phase.replace('_', ' ').toUpperCase();
     elements.potAmount.innerHTML = ChipStackVisualizer.render(gameState.pot, true, true);
     
-    // Update pot odds
-    updatePotOdds();
-    
     // Check if it's your turn
     const isYourTurn = gameState.current_player === playerId && gameState.phase !== 'showdown';
     
@@ -1524,9 +1526,9 @@ function updateGameDisplay() {
         }
     }
     
-    // Update opponents
-    const opponents = gameState.players.filter(p => !p.is_human);
-    elements.opponentsRow.innerHTML = opponents.map((p, index) => renderOpponent(p, index)).join('');
+    // Update opponents in the same clockwise order the game engine uses.
+    const opponents = getClockwiseOpponents(gameState.players, playerId);
+    elements.opponentsRow.innerHTML = opponents.map(({ player, seatClass }) => renderOpponent(player, seatClass)).join('');
     
     // Update community cards with staggered animation (offset by 2 for player cards)
     const community = gameState.community_cards;
@@ -1557,10 +1559,27 @@ function updateGameDisplay() {
     }
 }
 
-function renderOpponent(player, seatIndex = 0) {
+function getClockwiseOpponents(players, heroId) {
+    if (!Array.isArray(players) || players.length <= 1) return [];
+
+    const heroIndex = players.findIndex(p => p.id === heroId);
+    const startIndex = heroIndex >= 0 ? heroIndex : 0;
+    const orderedPlayers = [];
+
+    for (let offset = 1; offset < players.length; offset++) {
+        orderedPlayers.push(players[(startIndex + offset) % players.length]);
+    }
+
+    const seatClasses = CLOCKWISE_OPPONENT_SEATS[orderedPlayers.length] || CLOCKWISE_OPPONENT_SEATS[5];
+    return orderedPlayers.map((player, index) => ({
+        player,
+        seatClass: seatClasses[index] || `seat-${index + 1}`
+    }));
+}
+
+function renderOpponent(player, seatClass = 'seat-1') {
     const isCurrent = gameState.current_player === player.id;
     const showCards = gameState.phase === 'showdown' && !player.folded;
-    const seatClass = `seat-${seatIndex + 1}`;
     const recentAIAction = gameState.last_ai_action?.player_name === player.name ? gameState.last_ai_action : null;
     const recentActionClass = recentAIAction ? 'recent-ai-action' : '';
     const actionLabel = recentAIAction ? formatActionLabel(recentAIAction) : '';
@@ -1865,35 +1884,6 @@ function updateActionButtons() {
     } else {
         elements.btnRaise.classList.add('hidden');
     }
-}
-
-function updatePotOdds() {
-    if (!gameState || !elements.potOdds || !elements.potOddsText) return;
-    
-    const myPlayer = gameState.players.find(p => p.id === playerId);
-    if (!myPlayer || gameState.phase === 'showdown') {
-        elements.potOdds.classList.add('hidden');
-        return;
-    }
-    
-    const toCall = gameState.current_bet - myPlayer.bet;
-    const pot = gameState.pot;
-    
-    // Only show pot odds when there's a bet to call
-    if (toCall <= 0) {
-        elements.potOdds.classList.add('hidden');
-        return;
-    }
-    
-    // Calculate pot odds: (pot + toCall) : toCall
-    // This gives the ratio of potential win to amount to call
-    const totalPot = pot + toCall;  // Including your call
-    const ratio = totalPot / toCall;
-    const percentage = (toCall / totalPot) * 100;
-    
-    // Format: "Pot odds: 3.5:1 (22%)"
-    elements.potOddsText.textContent = `Pot odds: ${ratio.toFixed(1)}:1 (${percentage.toFixed(0)}% equity needed)`;
-    elements.potOdds.classList.remove('hidden');
 }
 
 function showHandResult() {

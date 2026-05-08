@@ -979,20 +979,6 @@
             pointer-events: none;
         }
         
-        .pot-odds {
-            font-size: 11px;
-            color: #dbeafe;
-            background: rgba(4, 12, 18, 0.62);
-            border: 1px solid rgba(255,255,255,0.12);
-            padding: 3px 8px;
-            border-radius: 999px;
-            font-weight: 500;
-        }
-        
-        .pot-odds.hidden {
-            display: none;
-        }
-        
         /* Oval Table */
         .felt-area {
             position: relative;
@@ -1039,7 +1025,7 @@
         .opponents-row {
             position: absolute;
             inset: 0;
-            z-index: 4;
+            z-index: 3;
             pointer-events: none;
         }
         
@@ -1359,7 +1345,7 @@
         /* Community Cards */
         .community-area {
             position: relative;
-            z-index: 2;
+            z-index: 5;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -1566,7 +1552,7 @@
             opacity: 0.4;
             cursor: not-allowed;
         }
-        
+
         /* Decision Timer */
         .decision-timer {
             text-align: center;
@@ -1864,6 +1850,198 @@
             color: #ffd700;
         }
 
+        @media (max-width: 700px) and (orientation: portrait) {
+            .opponent {
+                width: clamp(50px, 14vw, 60px);
+            }
+
+            .opponent.seat-2 {
+                top: 34%;
+                left: 6%;
+            }
+
+            .opponent.seat-3 {
+                top: 34%;
+                left: 94%;
+            }
+
+            .opponent.seat-4 {
+                top: 82%;
+                left: 14%;
+            }
+
+            .opponent.seat-5 {
+                top: 82%;
+                left: 86%;
+            }
+
+            .community-cards {
+                transform: translateY(clamp(10px, 3vh, 18px));
+            }
+
+            .community-label {
+                top: calc(50% + clamp(42px, 9vh, 58px));
+            }
+
+            .your-section {
+                display: grid;
+                grid-template-columns: auto minmax(0, 1fr);
+                grid-template-areas:
+                    "label info"
+                    "cards actions"
+                    "strength strength"
+                    "timer timer"
+                    "raise raise";
+                align-items: center;
+                column-gap: 12px;
+                row-gap: 5px;
+                min-height: 0;
+                padding: 6px 10px calc(8px + env(safe-area-inset-bottom, 0px));
+            }
+
+            .your-label {
+                grid-area: label;
+                margin: 0;
+                text-align: left;
+                font-size: 10px;
+            }
+
+            .your-cards {
+                grid-area: cards;
+                justify-content: flex-start;
+                align-self: center;
+                gap: 5px;
+                margin: 0;
+            }
+
+            .your-cards .card {
+                width: clamp(44px, 13vw, 54px);
+                height: clamp(62px, 18vw, 76px);
+                border-radius: 7px;
+                font-size: clamp(20px, 5.7vw, 25px);
+            }
+
+            .your-info {
+                grid-area: info;
+                display: flex;
+                justify-content: end;
+                align-items: center;
+                gap: 7px;
+                margin: 0;
+                text-align: left;
+            }
+
+            .your-avatar-container {
+                margin: 0;
+            }
+
+            .your-avatar-container .avatar,
+            .avatar-medium {
+                width: 28px;
+                height: 28px;
+                font-size: 13px;
+                border-width: 2px;
+            }
+
+            .your-name {
+                font-size: 12px;
+                line-height: 1.15;
+            }
+
+            .your-chips {
+                font-size: 12px;
+                line-height: 1.15;
+            }
+
+            .your-chips .chip-stack-large {
+                display: none !important;
+            }
+
+            .hand-strength {
+                grid-area: strength;
+                min-height: 0;
+                margin: 0;
+            }
+
+            .hand-strength:empty {
+                display: none;
+            }
+
+            .hand-strength-text {
+                padding: 3px 9px;
+                font-size: 10px;
+                letter-spacing: 0.3px;
+            }
+
+            .decision-timer {
+                grid-area: timer;
+                min-height: 0;
+                margin: 0;
+            }
+
+            .timer-text {
+                font-size: 11px;
+            }
+
+            .actions {
+                grid-area: actions;
+                align-self: center;
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 6px;
+            }
+
+            .btn-action {
+                min-height: 38px;
+                padding: 8px 6px;
+                font-size: 12px;
+                border-radius: 7px;
+            }
+
+            .raise-container {
+                grid-area: raise;
+                padding: 8px;
+                margin: 0;
+                border-radius: 8px;
+            }
+
+            .raise-controls {
+                margin-bottom: 8px;
+            }
+
+            .raise-amount-display {
+                font-size: 18px;
+            }
+
+            .raise-actions {
+                gap: 8px;
+            }
+
+            .your-section .btn-secondary {
+                padding: 10px;
+            }
+        }
+
+        @media (max-width: 380px) and (orientation: portrait),
+               (max-height: 680px) and (orientation: portrait) {
+            .your-section {
+                row-gap: 5px;
+                padding-top: 6px;
+            }
+
+            .your-cards .card {
+                width: 46px;
+                height: 64px;
+                font-size: 20px;
+            }
+
+            .btn-action {
+                min-height: 40px;
+                padding: 9px 6px;
+                font-size: 13px;
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -1943,9 +2121,6 @@
                 <div class="pot-container">
                     <div class="pot">
                         <span id="pot-amount">0</span>
-                    </div>
-                    <div class="pot-odds hidden" id="pot-odds">
-                        <span id="pot-odds-text">Pot odds: --</span>
                     </div>
                 </div>
                 
@@ -2049,6 +2224,6 @@
     </div>
 
     <script src="/shared/site-nav.js"></script>
-    <script src="app.js?v=4"></script>
+    <script src="app.js?v=5"></script>
 </body>
 </html>

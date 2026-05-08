@@ -213,15 +213,22 @@ class PokerGame:
             'dealer_index': self.dealer_index
         }
 
-        # Post blinds
-        sb_index = (self.dealer_index + 1) % len(self.players)
-        bb_index = (self.dealer_index + 2) % len(self.players)
+        # Post blinds. In heads-up Hold'em the dealer is the small blind and
+        # acts first preflop; with 3+ players the blinds are left of the dealer.
+        if len(self.players) == 2:
+            sb_index = self.dealer_index
+            bb_index = (self.dealer_index + 1) % len(self.players)
+            first_to_act = sb_index
+        else:
+            sb_index = (self.dealer_index + 1) % len(self.players)
+            bb_index = (self.dealer_index + 2) % len(self.players)
+            first_to_act = (bb_index + 1) % len(self.players)
 
         self._post_blind(self.players[sb_index], self.small_blind)
         self._post_blind(self.players[bb_index], self.big_blind)
 
         self.current_bet = self.big_blind
-        self.current_player_index = (bb_index + 1) % len(self.players)
+        self._set_current_player_from(first_to_act)
         self.min_raise = self.big_blind
 
         return True
@@ -242,9 +249,16 @@ class PokerGame:
             return None
         return self.players[self.current_player_index]
 
+    def _can_player_act(self, player: Player) -> bool:
+        return not player.folded and not player.is_all_in
+
+    def _is_current_player(self, player_id: str) -> bool:
+        current = self.get_current_player()
+        return current is not None and current.id == player_id
+
     def action_fold(self, player_id: str) -> bool:
         player = self._get_player(player_id)
-        if not player or player.folded:
+        if not player or player.folded or not self._is_current_player(player_id):
             return False
 
         player.folded = True
@@ -261,7 +275,7 @@ class PokerGame:
 
     def action_check(self, player_id: str) -> bool:
         player = self._get_player(player_id)
-        if not player or player.folded or player.is_all_in:
+        if not player or player.folded or player.is_all_in or not self._is_current_player(player_id):
             return False
 
         if player.bet < self.current_bet:
@@ -280,7 +294,7 @@ class PokerGame:
 
     def action_call(self, player_id: str) -> bool:
         player = self._get_player(player_id)
-        if not player or player.folded or player.is_all_in:
+        if not player or player.folded or player.is_all_in or not self._is_current_player(player_id):
             return False
 
         call_amount = self.current_bet - player.bet
@@ -311,7 +325,7 @@ class PokerGame:
 
     def action_raise(self, player_id: str, amount: int) -> bool:
         player = self._get_player(player_id)
-        if not player or player.folded or player.is_all_in:
+        if not player or player.folded or player.is_all_in or not self._is_current_player(player_id):
             return False
 
         call_amount = self.current_bet - player.bet
@@ -383,12 +397,26 @@ class PokerGame:
         if player_id:
             metrics_manager.record_player_action(self.game_id, player_id, player_name, action)
 
+    def _find_next_actor_index(self, start_index: int, include_start: bool = False) -> Optional[int]:
+        if not self.players:
+            return None
+
+        first_offset = 0 if include_start else 1
+        for offset in range(first_offset, first_offset + len(self.players)):
+            index = (start_index + offset) % len(self.players)
+            if self._can_player_act(self.players[index]):
+                return index
+        return None
+
+    def _set_current_player_from(self, start_index: int):
+        next_index = self._find_next_actor_index(start_index, include_start=True)
+        if next_index is not None:
+            self.current_player_index = next_index
+
     def _next_player(self):
-        for _ in range(len(self.players)):
-            self.current_player_index = (self.current_player_index + 1) % len(self.players)
-            player = self.players[self.current_player_index]
-            if not player.folded and not player.is_all_in:
-                break
+        next_index = self._find_next_actor_index(self.current_player_index)
+        if next_index is not None:
+            self.current_player_index = next_index
 
     def _is_round_complete(self) -> bool:
         non_folded = [p for p in self.players if not p.folded]
@@ -454,9 +482,7 @@ class PokerGame:
 
         # Find first active player after dealer
         self.acted_this_round = set()
-        self.current_player_index = (self.dealer_index + 1) % len(self.players)
-        while self.players[self.current_player_index].folded or self.players[self.current_player_index].is_all_in:
-            self.current_player_index = (self.current_player_index + 1) % len(self.players)
+        self._set_current_player_from((self.dealer_index + 1) % len(self.players))
 
     def _run_out_board(self):
         """Deal all remaining community cards and go to showdown (for all-in situations)"""

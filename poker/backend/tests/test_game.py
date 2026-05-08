@@ -127,6 +127,36 @@ class TestPokerGame:
         assert bb_player.bet == 20
         assert bb_player.chips == 980
 
+    def test_preflop_action_moves_clockwise_from_big_blind(self, populated_game):
+        populated_game.start_hand()
+
+        assert populated_game.get_current_player().id == populated_game.players[3].id
+
+        assert populated_game.action_call(populated_game.players[3].id) is True
+        assert populated_game.get_current_player().id == populated_game.players[0].id
+
+        assert populated_game.action_call(populated_game.players[0].id) is True
+        assert populated_game.get_current_player().id == populated_game.players[1].id
+
+    def test_heads_up_blinds_and_action_order(self, game):
+        dealer = game.add_player("Dealer", is_human=True)
+        big_blind = game.add_player("Big Blind", is_human=False)
+
+        game.start_hand()
+
+        assert game.players[game.dealer_index].id == dealer.id
+        assert dealer.bet == 10
+        assert big_blind.bet == 20
+        assert game.get_current_player().id == dealer.id
+
+        assert game.action_call(dealer.id) is True
+        assert game.phase == "preflop"
+        assert game.get_current_player().id == big_blind.id
+
+        assert game.action_check(big_blind.id) is True
+        assert game.phase == "flop"
+        assert game.get_current_player().id == big_blind.id
+
     def test_action_fold(self, populated_game):
         populated_game.start_hand()
 
@@ -239,10 +269,9 @@ class TestPokerGame:
         wrong_player_id = populated_game.players[0].id
         current = populated_game.get_current_player()
         if current.id != wrong_player_id:
-            # The action might still work based on implementation
-            # This tests the internal _get_player logic
             result = populated_game.action_fold(wrong_player_id)
-            # Either succeeds or the player becomes folded
+            assert result is False
+            assert populated_game.players[0].folded is False
 
 
 class TestHandEvaluation:
