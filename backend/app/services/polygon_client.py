@@ -16,6 +16,43 @@ class PolygonClient:
     
     def is_configured(self) -> bool:
         return self.api_key is not None and self.api_key != ""
+
+    def search_stocks(self, query: str, limit: int = 10) -> List[Dict]:
+        """Search active stock tickers through Polygon."""
+        if not self.is_configured():
+            raise ValueError("Polygon API key not configured")
+
+        query = query.upper().strip()
+        if not query:
+            return []
+
+        url = f"{self.BASE_URL}/v3/reference/tickers"
+        params = {
+            "search": query,
+            "market": "stocks",
+            "active": "true",
+            "sort": "ticker",
+            "order": "asc",
+            "limit": limit,
+            "apiKey": self.api_key,
+        }
+
+        response = requests.get(url, params=params, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+
+        results = []
+        for item in data.get("results", []):
+            ticker = item.get("ticker")
+            if not ticker:
+                continue
+            results.append({
+                "ticker": ticker,
+                "name": item.get("name", ticker),
+                "sector": item.get("primary_exchange") or "Stocks",
+            })
+
+        return results
     
     def get_stock_data(self, ticker: str) -> Optional[Dict]:
         """Fetch complete stock data from Polygon.io"""

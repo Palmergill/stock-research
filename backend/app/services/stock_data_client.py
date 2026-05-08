@@ -1,12 +1,12 @@
 """
-Stock Data Client - Mock Data for Development
+Stock Data Client
 
 This module provides unified access to stock data.
-- Mock Data: Default for development (no API calls, no rate limits)
-- Polygon.io: Optional real data source (set USE_REAL_DATA=true)
+- Polygon.io: Production data source (default)
+- Mock Data: Explicit local/dev fallback (set USE_REAL_DATA=false)
 """
 
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import Optional, List
 import logging
 import os
@@ -20,12 +20,28 @@ CACHE_TTL = {
     "company_info": timedelta(hours=24),
 }
 
-# Use real data by default - set USE_REAL_DATA=false to use mock data
-USE_REAL_DATA = os.getenv("USE_REAL_DATA", "true").lower() == "true"
+def _env_flag(name: str, default: bool) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _real_data_enabled() -> bool:
+    if os.getenv("USE_REAL_DATA") is not None:
+        return _env_flag("USE_REAL_DATA", True)
+    if os.getenv("USE_MOCK_DATA") is not None:
+        return not _env_flag("USE_MOCK_DATA", False)
+    return True
+
+
+# Use real data by default. Set USE_REAL_DATA=false for local mock mode.
+USE_REAL_DATA = _real_data_enabled()
+ALLOW_MOCK_FALLBACK = _env_flag("ALLOW_MOCK_FALLBACK", False)
 
 
 class StockDataClient:
-    """Primary stock data client - Mock by default, Polygon optional."""
+    """Primary stock data client with explicit real vs mock modes."""
     
     def __init__(self):
         self._polygon_client = None
@@ -58,7 +74,14 @@ class StockDataClient:
     
     def _use_mock(self) -> bool:
         """Check if we should use mock data."""
-        return not USE_REAL_DATA or not self.polygon.is_configured()
+        return not USE_REAL_DATA
+
+    def _require_real_data_configured(self):
+        """Fail loudly when production real-data mode is missing its provider."""
+        if not self.polygon.is_configured():
+            raise RuntimeError(
+                "Real stock data is enabled, but POLYGON_API_KEY is not configured"
+            )
     
     def _is_cache_fresh(self, fetched_at: datetime, data_type: str = "price") -> bool:
         """Check if cached data is still fresh based on data type."""
@@ -71,12 +94,14 @@ class StockDataClient:
         
         ticker = ticker.upper().strip()
         
-        # Use mock data by default (no API calls, no rate limits)
+        # Use mock data only when explicitly configured.
         if self._use_mock():
             logger.info(f"[{ticker}] Using mock data")
             data = self.mock.get_stock_data(ticker)
             data["_mock"] = True
             return data
+
+        self._require_real_data_configured()
         
         # Real data path (requires API keys)
         # Check cache unless force_refresh
@@ -120,12 +145,27 @@ class StockDataClient:
                 stale_data["_warning"] = f"Using {hours_old}h old data - API error"
                 return stale_data
             
-            # Fall back to mock data on error
-            logger.warning(f"[{ticker}] Falling back to mock data due to error")
-            data = self.mock.get_stock_data(ticker)
-            data["_mock"] = True
-            data["_warning"] = f"Using mock data - API error: {error_msg}"
-            return data
+            if ALLOW_MOCK_FALLBACK:
+                logger.warning(f"[{ticker}] Falling back to mock data due to error")
+                data = self.mock.get_stock_data(ticker)
+                data["_mock"] = True
+                data["_warning"] = f"Using mock data - API error: {error_msg}"
+                return data
+
+            raise RuntimeError(f"Real stock data unavailable: {error_msg}") from e
+
+    def get_price_history(self, ticker: str, days: int = 365) -> List[dict]:
+        """Get daily price history from the active stock data source."""
+        ticker = ticker.upper().strip()
+
+        if self._use_mock():
+            return self.mock.get_price_history(ticker, days=days)
+
+        self._require_real_data_configured()
+        price_history = self.polygon._get_price_history(ticker, days=days)
+        if not price_history:
+            raise RuntimeError(f"Real price history unavailable for {ticker}")
+        return price_history
     
     def _get_cached_data(self, ticker: str, db, accept_stale: bool = False):
         """Retrieve cached data from database."""
@@ -165,7 +205,6 @@ class StockDataClient:
     def _save_polygon_data(self, ticker: str, data: dict, db) -> dict:
         """Save Polygon.io data to database."""
         from app.database import EarningsRecord, StockSummary
-        from sqlalchemy.dialects.postgresql import insert as pg_insert
         
         logger.info(f"[{ticker}] Saving data to database")
         
@@ -179,7 +218,7 @@ class StockDataClient:
         for e in data.get("earnings", []):
             record = EarningsRecord(
                 ticker=ticker,
-                fiscal_date=e.get("fiscal_date") or datetime.utcnow().date(),
+                fiscal_date=self._parse_date(e.get("fiscal_date")) or datetime.utcnow().date(),
                 period=e.get("period", "Q"),
                 reported_eps=e.get("reported_eps"),
                 estimated_eps=e.get("estimated_eps"),
@@ -208,7 +247,7 @@ class StockDataClient:
             "beta": data.get("beta"),
             "price_52w_high": data.get("price_52w_high"),
             "price_52w_low": data.get("price_52w_low"),
-            "next_earnings_date": data.get("next_earnings_date"),
+            "next_earnings_date": self._parse_date(data.get("next_earnings_date")),
             # New valuation metrics
             "ps_ratio": data.get("ps_ratio"),
             "pb_ratio": data.get("pb_ratio"),
@@ -231,12 +270,14 @@ class StockDataClient:
             "fetched_at": datetime.utcnow()
         }
         
-        stmt = pg_insert(StockSummary).values(**summary_values)
-        stmt = stmt.on_conflict_do_update(
-            index_elements=["ticker"],
-            set_=summary_values
-        )
-        db.execute(stmt)
+        summary = db.query(StockSummary).filter(StockSummary.ticker == ticker).first()
+        if not summary:
+            summary = StockSummary(ticker=ticker)
+            db.add(summary)
+
+        for key, value in summary_values.items():
+            setattr(summary, key, value)
+
         db.commit()
         
         summary = db.query(StockSummary).filter(StockSummary.ticker == ticker).first()
@@ -245,6 +286,21 @@ class StockDataClient:
         ).order_by(EarningsRecord.fiscal_date.desc()).all()
         
         return self._format_response(ticker, summary, earnings)
+
+    def _parse_date(self, value) -> Optional[date]:
+        """Parse API date values into database-safe date objects."""
+        if not value:
+            return None
+        if isinstance(value, datetime):
+            return value.date()
+        if isinstance(value, date):
+            return value
+        if isinstance(value, str):
+            try:
+                return date.fromisoformat(value[:10])
+            except ValueError:
+                return None
+        return None
     
     def _format_response(self, ticker: str, summary, earnings: List) -> dict:
         """Format database records into API response."""

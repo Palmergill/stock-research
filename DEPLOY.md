@@ -47,6 +47,15 @@ Health check:
 
 The backend mirrors the same Basic Auth check for protected `/api/*` routes and locally served app folders. Poker, craps, and `/api/poker/*` remain public. Protected routes return `503` if `APP_AUTH_PASSWORD` is missing, so set the same `APP_AUTH_USERNAME` and `APP_AUTH_PASSWORD` values in Railway to keep direct backend access usable and protected.
 
+Stock Research uses Polygon in production. Configure:
+
+```text
+USE_REAL_DATA=true
+POLYGON_API_KEY=<secret Polygon key>
+```
+
+`USE_REAL_DATA` defaults to `true` in the app and Docker image; set it to `false` only for local development with synthetic stock data.
+
 ## Local
 
 Use:
