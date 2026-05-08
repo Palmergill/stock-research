@@ -65,21 +65,33 @@ class PolygonClient:
             # 1. Get ticker details
             details = self._get_ticker_details(ticker)
             
-            # 2. Get current price / previous close
+            # 2. Get latest daily prices. This powers both the displayed price and 52-week range.
+            price_history = self._get_price_history(ticker, days=365)
+
+            # 3. Previous close is kept as a fallback if aggregates are unavailable.
             price_data = self._get_previous_close(ticker)
-            
-            # 3. Get financials (quarterly)
+            if price_history:
+                latest_bar = price_history[-1]
+                price_data = {
+                    "open": latest_bar.get("open"),
+                    "high": latest_bar.get("high"),
+                    "low": latest_bar.get("low"),
+                    "close": latest_bar.get("close"),
+                    "volume": latest_bar.get("volume"),
+                }
+
+            # 4. Get financials (quarterly)
             financials = self._get_financials(ticker)
             
-            # 4. Get historical price for 52-week range
-            year_high_low = self._get_52_week_range(ticker)
+            # 5. Get 52-week range from the same price series shown in the chart.
+            year_high_low = self._get_range_from_price_history(price_history)
             
-            # 5. Build earnings history from financials (without historical P/E initially)
+            # 6. Build earnings history from financials (without historical P/E initially)
             earnings = self._build_earnings_from_financials(financials, [])
             
             # 7. Calculate additional metrics
             revenue_growth = self._calculate_revenue_growth(financials)
-            latest_fcf = self._get_latest_fcf(financials)
+            ttm_fcf = self._get_ttm_free_cash_flow(financials)
             
             # Calculate margins from financial data
             profit_margin = self._calculate_profit_margin(financials)
@@ -89,7 +101,8 @@ class PolygonClient:
             
             # Calculate additional valuation and health metrics
             shares_outstanding = self._get_shares_outstanding(details, financials)
-            enterprise_value = self._calculate_ev(details, financials, price_data)
+            market_cap = self._get_market_cap(details, shares_outstanding, price_data)
+            enterprise_value = self._calculate_ev(market_cap, financials)
             
             # Financial health metrics
             current_ratio = self._calculate_current_ratio(financials)
@@ -99,24 +112,25 @@ class PolygonClient:
             working_capital = self._calculate_working_capital(financials)
             
             # Profitability metrics
+            roe = self._calculate_roe(financials)
             roa = self._calculate_roa(financials)
             roic = self._calculate_roic(financials)
             
             # Calculate ratios
-            ps_ratio = self._calculate_ps_ratio(details, price_data)
-            pb_ratio = self._calculate_pb_ratio(details, financials, price_data)
+            ps_ratio = self._calculate_ps_ratio(market_cap, financials)
+            pb_ratio = self._calculate_pb_ratio(market_cap, financials)
             ev_ebitda = self._calculate_ev_ebitda(enterprise_value, financials)
             
             return {
                 "name": details.get("name", ticker),
                 "ticker": ticker,
-                "market_cap": details.get("market_cap"),
+                "market_cap": market_cap,
                 "current_price": price_data.get("close"),
                 "pe_ratio": self._calculate_pe(details, price_data, earnings),
                 "revenue_growth": revenue_growth,
-                "free_cash_flow": latest_fcf,
+                "free_cash_flow": ttm_fcf,
                 "debt_to_equity": self._extract_metric(financials, "debt_to_equity"),
-                "roe": self._extract_metric(financials, "return_on_equity"),
+                "roe": roe,
                 "price_52w_high": year_high_low.get("high"),
                 "price_52w_low": year_high_low.get("low"),
                 "profit_margin": profit_margin,
@@ -254,6 +268,109 @@ class PolygonClient:
         except Exception as e:
             logger.warning(f"Could not fetch price history for {ticker}: {e}")
             return []
+
+    def _get_range_from_price_history(self, price_history: List[Dict]) -> Dict:
+        """Calculate high/low from the returned aggregate price series."""
+        highs = [p.get("high") for p in price_history if p.get("high") is not None]
+        lows = [p.get("low") for p in price_history if p.get("low") is not None]
+        return {
+            "high": max(highs) if highs else None,
+            "low": min(lows) if lows else None,
+        }
+
+    def _statement_value(self, statement: Dict, keys: List[str]) -> Optional[float]:
+        """Extract a numeric value from a Polygon financial statement section."""
+        for key in keys:
+            item = statement.get(key)
+            value = item.get("value") if isinstance(item, dict) else item
+            if value is not None:
+                try:
+                    return float(value)
+                except (TypeError, ValueError):
+                    continue
+        return None
+
+    def _ttm_statement_sum(self, financials: List[Dict], section: str, keys: List[str]) -> Optional[float]:
+        """Sum a financial statement field across the latest four quarters."""
+        values = []
+        for fin in financials[:4]:
+            statement = fin.get("financials", {}).get(section, {}) or {}
+            value = self._statement_value(statement, keys)
+            if value is not None:
+                values.append(value)
+
+        if not values:
+            return None
+        return sum(values)
+
+    def _calculate_free_cash_flow(self, financials_data: Dict) -> Optional[float]:
+        """Calculate FCF as operating cash flow less capex when FCF is absent."""
+        cash_flow = financials_data.get("cash_flow_statement", {}) or {}
+
+        direct_fcf = self._statement_value(cash_flow, ["free_cash_flow"])
+        if direct_fcf is not None:
+            return direct_fcf
+
+        operating_cash_flow = self._statement_value(cash_flow, [
+            "net_cash_flow_from_operating_activities",
+            "net_cash_flow_from_operating_activities_continuing",
+            "operating_cash_flow",
+        ])
+        capex = self._statement_value(cash_flow, [
+            "capital_expenditures",
+            "payments_to_acquire_property_plant_and_equipment",
+            "payments_to_acquire_productive_assets",
+        ])
+
+        if operating_cash_flow is None:
+            return None
+        if capex is None:
+            return operating_cash_flow
+
+        return operating_cash_flow + capex if capex < 0 else operating_cash_flow - capex
+
+    def _get_ttm_free_cash_flow(self, financials: List[Dict]) -> Optional[float]:
+        values = []
+        for fin in financials[:4]:
+            value = self._calculate_free_cash_flow(fin.get("financials", {}) or {})
+            if value is not None:
+                values.append(value)
+
+        if not values:
+            return None
+        return sum(values)
+
+    def _get_total_debt(self, balance: Dict) -> Optional[float]:
+        direct_debt = self._statement_value(balance, ["total_debt"])
+        if direct_debt is not None:
+            return direct_debt
+
+        debt_parts = []
+        for key in ["long_term_debt", "short_term_debt", "current_debt"]:
+            value = self._statement_value(balance, [key])
+            if value is not None:
+                debt_parts.append(value)
+
+        if debt_parts:
+            return sum(debt_parts)
+
+        return self._statement_value(balance, ["liabilities", "total_liabilities"])
+
+    def _get_market_cap(
+        self,
+        details: Dict,
+        shares_outstanding: Optional[float],
+        price_data: Dict,
+    ) -> Optional[float]:
+        market_cap = details.get("market_cap")
+        if market_cap:
+            return float(market_cap)
+
+        price = price_data.get("close")
+        if shares_outstanding and price:
+            return float(shares_outstanding) * float(price)
+
+        return None
     
     def _build_earnings_from_financials(self, financials: List[Dict], price_history: List[Dict] = None) -> List[Dict]:
         """Build earnings records from financial statements"""
@@ -293,16 +410,7 @@ class PolygonClient:
                     if eps:
                         break
                 
-                # Get FCF
-                fcf = None
-                for fcf_key in ["net_cash_flow_from_operating_activities", "operating_cash_flow", "free_cash_flow"]:
-                    fcf_data = cash_flow.get(fcf_key)
-                    if isinstance(fcf_data, dict):
-                        fcf = fcf_data.get("value")
-                    elif fcf_data is not None:
-                        fcf = fcf_data
-                    if fcf:
-                        break
+                fcf = self._calculate_free_cash_flow(financials_data)
                 
                 earnings.append({
                     "fiscal_date": fiscal_date,
@@ -512,7 +620,7 @@ class PolygonClient:
             
             # Calculate ROE and Debt-to-Equity from balance sheet if not found
             if metric_name == "return_on_equity":
-                return self._calculate_roe(financials_data)
+                return self._calculate_roe([fin])
             elif metric_name == "debt_to_equity":
                 return self._calculate_debt_to_equity(financials_data)
                 
@@ -521,39 +629,26 @@ class PolygonClient:
         
         return None
     
-    def _calculate_roe(self, financials_data: Dict) -> Optional[float]:
-        """Calculate ROE = Net Income / Shareholder Equity"""
+    def _calculate_roe(self, financials: List[Dict]) -> Optional[float]:
+        """Calculate ROE = TTM Net Income / Shareholder Equity."""
         try:
-            income = financials_data.get("income_statement", {})
-            balance = financials_data.get("balance_sheet", {})
-            
-            # Get net income
-            net_income = None
-            for key in ["net_income_loss", "net_income", "net_income_loss_attributable_to_parent"]:
-                ni_data = income.get(key)
-                if isinstance(ni_data, dict):
-                    net_income = ni_data.get("value")
-                elif ni_data is not None:
-                    net_income = ni_data
-                if net_income is not None:
-                    break
-            
-            # Get equity
-            equity = None
-            for key in ["equity", "equity_attributable_to_parent", "stockholders_equity"]:
-                eq_data = balance.get(key)
-                if isinstance(eq_data, dict):
-                    equity = eq_data.get("value")
-                elif eq_data is not None:
-                    equity = eq_data
-                if equity is not None:
-                    break
-            
-            logger.info(f"ROE calc: net_income={net_income}, equity={equity}")
-            
+            if not financials:
+                return None
+
+            net_income = self._ttm_statement_sum(financials, "income_statement", [
+                "net_income_loss",
+                "net_income",
+                "net_income_loss_attributable_to_parent",
+            ])
+            balance = financials[0].get("financials", {}).get("balance_sheet", {}) or {}
+            equity = self._statement_value(balance, [
+                "equity",
+                "equity_attributable_to_parent",
+                "stockholders_equity",
+            ])
+
             if net_income is not None and equity and equity > 0:
-                roe = (net_income / equity) * 100  # Return as percentage
-                logger.info(f"Calculated ROE: {roe}")
+                roe = (net_income / equity) * 100
                 return round(roe, 2)
         except Exception as e:
             logger.warning(f"Could not calculate ROE: {e}")
@@ -564,68 +659,36 @@ class PolygonClient:
         try:
             balance = financials_data.get("balance_sheet", {})
             
-            # Get total liabilities
-            liabilities = None
-            for key in ["liabilities", "total_liabilities"]:
-                liab_data = balance.get(key)
-                if isinstance(liab_data, dict):
-                    liabilities = liab_data.get("value")
-                elif liab_data is not None:
-                    liabilities = liab_data
-                if liabilities is not None:
-                    break
+            debt = self._get_total_debt(balance)
+            equity = self._statement_value(balance, [
+                "equity",
+                "equity_attributable_to_parent",
+                "stockholders_equity",
+            ])
             
-            # Get equity
-            equity = None
-            for key in ["equity", "equity_attributable_to_parent", "stockholders_equity"]:
-                eq_data = balance.get(key)
-                if isinstance(eq_data, dict):
-                    equity = eq_data.get("value")
-                elif eq_data is not None:
-                    equity = eq_data
-                if equity is not None:
-                    break
-            
-            logger.info(f"D/E calc: liabilities={liabilities}, equity={equity}")
-            
-            if liabilities is not None and equity and equity > 0:
-                dte = liabilities / equity
-                logger.info(f"Calculated D/E: {dte}")
+            if debt is not None and equity and equity > 0:
+                dte = debt / equity
                 return round(dte, 2)
         except Exception as e:
             logger.warning(f"Could not calculate D/E: {e}")
         return None
     
     def _calculate_profit_margin(self, financials: List[Dict]) -> Optional[float]:
-        """Calculate profit margin from latest financial: Net Income / Revenue * 100"""
+        """Calculate TTM profit margin: Net Income / Revenue * 100"""
         try:
             if not financials:
                 return None
-            
-            fin = financials[0].get("financials", {})
-            income = fin.get("income_statement", {})
-            
-            # Get net income
-            net_income = None
-            for key in ["net_income_loss", "net_income", "net_income_loss_attributable_to_parent"]:
-                ni_data = income.get(key)
-                if isinstance(ni_data, dict):
-                    net_income = ni_data.get("value")
-                elif ni_data is not None:
-                    net_income = ni_data
-                if net_income is not None:
-                    break
-            
-            # Get revenue
-            revenue = None
-            for key in ["revenues", "total_revenue", "revenue"]:
-                rev_data = income.get(key)
-                if isinstance(rev_data, dict):
-                    revenue = rev_data.get("value")
-                elif rev_data is not None:
-                    revenue = rev_data
-                if revenue:
-                    break
+
+            net_income = self._ttm_statement_sum(financials, "income_statement", [
+                "net_income_loss",
+                "net_income",
+                "net_income_loss_attributable_to_parent",
+            ])
+            revenue = self._ttm_statement_sum(financials, "income_statement", [
+                "revenues",
+                "total_revenue",
+                "revenue",
+            ])
             
             if net_income is not None and revenue and revenue > 0:
                 margin = (net_income / revenue) * 100
@@ -635,35 +698,20 @@ class PolygonClient:
         return None
     
     def _calculate_operating_margin(self, financials: List[Dict]) -> Optional[float]:
-        """Calculate operating margin: Operating Income / Revenue * 100"""
+        """Calculate TTM operating margin: Operating Income / Revenue * 100"""
         try:
             if not financials:
                 return None
-            
-            fin = financials[0].get("financials", {})
-            income = fin.get("income_statement", {})
-            
-            # Get operating income
-            op_income = None
-            for key in ["operating_income_loss", "operating_income"]:
-                op_data = income.get(key)
-                if isinstance(op_data, dict):
-                    op_income = op_data.get("value")
-                elif op_data is not None:
-                    op_income = op_data
-                if op_income is not None:
-                    break
-            
-            # Get revenue
-            revenue = None
-            for key in ["revenues", "total_revenue", "revenue"]:
-                rev_data = income.get(key)
-                if isinstance(rev_data, dict):
-                    revenue = rev_data.get("value")
-                elif rev_data is not None:
-                    revenue = rev_data
-                if revenue:
-                    break
+
+            op_income = self._ttm_statement_sum(financials, "income_statement", [
+                "operating_income_loss",
+                "operating_income",
+            ])
+            revenue = self._ttm_statement_sum(financials, "income_statement", [
+                "revenues",
+                "total_revenue",
+                "revenue",
+            ])
             
             if op_income is not None and revenue and revenue > 0:
                 margin = (op_income / revenue) * 100
@@ -695,35 +743,20 @@ class PolygonClient:
     # ==================== NEW CALCULATION METHODS ====================
     
     def _calculate_gross_margin(self, financials: List[Dict]) -> Optional[float]:
-        """Calculate gross margin: Gross Profit / Revenue * 100"""
+        """Calculate TTM gross margin: Gross Profit / Revenue * 100"""
         try:
             if not financials:
                 return None
-            
-            fin = financials[0].get("financials", {})
-            income = fin.get("income_statement", {})
-            
-            # Get gross profit
-            gross_profit = None
-            for key in ["gross_profit", "gross_profit_loss"]:
-                gp_data = income.get(key)
-                if isinstance(gp_data, dict):
-                    gross_profit = gp_data.get("value")
-                elif gp_data is not None:
-                    gross_profit = gp_data
-                if gross_profit is not None:
-                    break
-            
-            # Get revenue
-            revenue = None
-            for key in ["revenues", "total_revenue", "revenue"]:
-                rev_data = income.get(key)
-                if isinstance(rev_data, dict):
-                    revenue = rev_data.get("value")
-                elif rev_data is not None:
-                    revenue = rev_data
-                if revenue:
-                    break
+
+            gross_profit = self._ttm_statement_sum(financials, "income_statement", [
+                "gross_profit",
+                "gross_profit_loss",
+            ])
+            revenue = self._ttm_statement_sum(financials, "income_statement", [
+                "revenues",
+                "total_revenue",
+                "revenue",
+            ])
             
             if gross_profit is not None and revenue and revenue > 0:
                 margin = (gross_profit / revenue) * 100
@@ -733,35 +766,17 @@ class PolygonClient:
         return None
     
     def _calculate_ebitda_margin(self, financials: List[Dict]) -> Optional[float]:
-        """Calculate EBITDA margin: EBITDA / Revenue * 100"""
+        """Calculate TTM EBITDA margin: EBITDA / Revenue * 100"""
         try:
             if not financials:
                 return None
-            
-            fin = financials[0].get("financials", {})
-            income = fin.get("income_statement", {})
-            
-            # Get EBITDA
-            ebitda = None
-            for key in ["ebitda", "EBITDA"]:
-                ebitda_data = income.get(key)
-                if isinstance(ebitda_data, dict):
-                    ebitda = ebitda_data.get("value")
-                elif ebitda_data is not None:
-                    ebitda = ebitda_data
-                if ebitda is not None:
-                    break
-            
-            # Get revenue
-            revenue = None
-            for key in ["revenues", "total_revenue", "revenue"]:
-                rev_data = income.get(key)
-                if isinstance(rev_data, dict):
-                    revenue = rev_data.get("value")
-                elif rev_data is not None:
-                    revenue = rev_data
-                if revenue:
-                    break
+
+            ebitda = self._ttm_statement_sum(financials, "income_statement", ["ebitda", "EBITDA"])
+            revenue = self._ttm_statement_sum(financials, "income_statement", [
+                "revenues",
+                "total_revenue",
+                "revenue",
+            ])
             
             if ebitda is not None and revenue and revenue > 0:
                 margin = (ebitda / revenue) * 100
@@ -771,36 +786,18 @@ class PolygonClient:
         return None
     
     def _calculate_roa(self, financials: List[Dict]) -> Optional[float]:
-        """Calculate ROA = Net Income / Total Assets * 100"""
+        """Calculate ROA = TTM Net Income / Total Assets * 100"""
         try:
             if not financials:
                 return None
-            
-            fin = financials[0].get("financials", {})
-            income = fin.get("income_statement", {})
-            balance = fin.get("balance_sheet", {})
-            
-            # Get net income
-            net_income = None
-            for key in ["net_income_loss", "net_income", "net_income_loss_attributable_to_parent"]:
-                ni_data = income.get(key)
-                if isinstance(ni_data, dict):
-                    net_income = ni_data.get("value")
-                elif ni_data is not None:
-                    net_income = ni_data
-                if net_income is not None:
-                    break
-            
-            # Get total assets
-            assets = None
-            for key in ["assets", "total_assets"]:
-                assets_data = balance.get(key)
-                if isinstance(assets_data, dict):
-                    assets = assets_data.get("value")
-                elif assets_data is not None:
-                    assets = assets_data
-                if assets is not None:
-                    break
+
+            net_income = self._ttm_statement_sum(financials, "income_statement", [
+                "net_income_loss",
+                "net_income",
+                "net_income_loss_attributable_to_parent",
+            ])
+            balance = financials[0].get("financials", {}).get("balance_sheet", {}) or {}
+            assets = self._statement_value(balance, ["assets", "total_assets"])
             
             if net_income is not None and assets and assets > 0:
                 roa = (net_income / assets) * 100
@@ -810,63 +807,26 @@ class PolygonClient:
         return None
     
     def _calculate_roic(self, financials: List[Dict]) -> Optional[float]:
-        """Calculate ROIC = NOPAT / Invested Capital * 100"""
+        """Calculate ROIC = TTM operating income / invested capital * 100"""
         try:
             if not financials:
                 return None
-            
-            fin = financials[0].get("financials", {})
-            income = fin.get("income_statement", {})
-            balance = fin.get("balance_sheet", {})
-            
-            # Get operating income
-            operating_income = None
-            for key in ["operating_income_loss", "operating_income"]:
-                op_data = income.get(key)
-                if isinstance(op_data, dict):
-                    operating_income = op_data.get("value")
-                elif op_data is not None:
-                    operating_income = op_data
-                if operating_income is not None:
-                    break
-            
-            # Get invested capital (equity + debt - cash)
-            equity = None
-            for key in ["equity", "equity_attributable_to_parent", "stockholders_equity"]:
-                eq_data = balance.get(key)
-                if isinstance(eq_data, dict):
-                    equity = eq_data.get("value")
-                elif eq_data is not None:
-                    equity = eq_data
-                if equity is not None:
-                    break
-            
-            debt = None
-            for key in ["long_term_debt", "total_debt"]:
-                debt_data = balance.get(key)
-                if isinstance(debt_data, dict):
-                    debt = debt_data.get("value")
-                elif debt_data is not None:
-                    debt = debt_data
-                if debt is not None:
-                    break
-            
-            cash = None
-            for key in ["cash_and_cash_equivalents", "cash"]:
-                cash_data = balance.get(key)
-                if isinstance(cash_data, dict):
-                    cash = cash_data.get("value")
-                elif cash_data is not None:
-                    cash = cash_data
-                if cash is not None:
-                    break
+
+            operating_income = self._ttm_statement_sum(financials, "income_statement", [
+                "operating_income_loss",
+                "operating_income",
+            ])
+            balance = financials[0].get("financials", {}).get("balance_sheet", {}) or {}
+            equity = self._statement_value(balance, [
+                "equity",
+                "equity_attributable_to_parent",
+                "stockholders_equity",
+            ])
+            debt = self._get_total_debt(balance) or 0
+            cash = self._statement_value(balance, ["cash_and_cash_equivalents", "cash"]) or 0
             
             if operating_income is not None and equity is not None:
-                invested_capital = equity
-                if debt:
-                    invested_capital += debt
-                if cash:
-                    invested_capital -= cash
+                invested_capital = equity + debt - cash
                 
                 if invested_capital > 0:
                     roic = (operating_income / invested_capital) * 100
@@ -1076,100 +1036,54 @@ class PolygonClient:
                     return float(data)
         return None
     
-    def _calculate_ev(self, details: Dict, financials: List[Dict], price_data: Dict) -> Optional[float]:
+    def _calculate_ev(self, market_cap: Optional[float], financials: List[Dict]) -> Optional[float]:
         """Calculate Enterprise Value: Market Cap + Debt - Cash"""
         try:
-            market_cap = details.get("market_cap")
-            if not market_cap and price_data.get("close"):
-                shares = self._get_shares_outstanding(details, financials)
-                if shares:
-                    market_cap = shares * price_data["close"]
-            
             if not market_cap:
                 return None
             
             if financials:
-                fin = financials[0].get("financials", {})
-                balance = fin.get("balance_sheet", {})
-                
-                # Get debt
-                debt = 0
-                for key in ["long_term_debt", "total_debt", "liabilities"]:
-                    debt_data = balance.get(key)
-                    if isinstance(debt_data, dict):
-                        debt = debt_data.get("value", 0)
-                        break
-                    elif debt_data is not None:
-                        debt = float(debt_data)
-                        break
-                
-                # Get cash
-                cash = 0
-                for key in ["cash_and_cash_equivalents", "cash"]:
-                    cash_data = balance.get(key)
-                    if isinstance(cash_data, dict):
-                        cash = cash_data.get("value", 0)
-                        break
-                    elif cash_data is not None:
-                        cash = float(cash_data)
-                        break
+                balance = financials[0].get("financials", {}).get("balance_sheet", {}) or {}
+                debt = self._get_total_debt(balance) or 0
+                cash = self._statement_value(balance, ["cash_and_cash_equivalents", "cash"]) or 0
                 
                 return market_cap + debt - cash
         except Exception as e:
             logger.warning(f"Could not calculate EV: {e}")
         return None
     
-    def _calculate_ps_ratio(self, details: Dict, price_data: Dict) -> Optional[float]:
-        """Calculate P/S ratio: Market Cap / Revenue"""
+    def _calculate_ps_ratio(self, market_cap: Optional[float], financials: List[Dict]) -> Optional[float]:
+        """Calculate P/S ratio: Market Cap / TTM Revenue"""
         try:
-            market_cap = details.get("market_cap")
-            price = price_data.get("close")
-            
-            if not market_cap and price:
-                shares = details.get("weighted_shares_outstanding") or details.get("shares_outstanding")
-                if shares:
-                    market_cap = float(shares) * price
-            
             if not market_cap:
                 return None
             
-            # Get revenue from ticker details if available
-            revenue = details.get("revenue") or details.get("total_revenue")
+            revenue = self._ttm_statement_sum(financials, "income_statement", [
+                "revenues",
+                "total_revenue",
+                "revenue",
+            ])
             if revenue and revenue > 0:
                 return round(market_cap / revenue, 2)
         except Exception as e:
             logger.warning(f"Could not calculate P/S ratio: {e}")
         return None
     
-    def _calculate_pb_ratio(self, details: Dict, financials: List[Dict], price_data: Dict) -> Optional[float]:
+    def _calculate_pb_ratio(self, market_cap: Optional[float], financials: List[Dict]) -> Optional[float]:
         """Calculate P/B ratio: Market Cap / Book Value"""
         try:
-            market_cap = details.get("market_cap")
-            price = price_data.get("close")
-            
-            if not market_cap and price:
-                shares = self._get_shares_outstanding(details, financials)
-                if shares:
-                    market_cap = shares * price
-            
             if not market_cap:
                 return None
             
-            # Get book value (equity)
             if financials:
-                fin = financials[0].get("financials", {})
-                balance = fin.get("balance_sheet", {})
-                
-                for key in ["equity", "equity_attributable_to_parent", "stockholders_equity"]:
-                    eq_data = balance.get(key)
-                    book_value = None
-                    if isinstance(eq_data, dict):
-                        book_value = eq_data.get("value")
-                    elif eq_data is not None:
-                        book_value = float(eq_data)
-                    
-                    if book_value and book_value > 0:
-                        return round(market_cap / book_value, 2)
+                balance = financials[0].get("financials", {}).get("balance_sheet", {}) or {}
+                book_value = self._statement_value(balance, [
+                    "equity",
+                    "equity_attributable_to_parent",
+                    "stockholders_equity",
+                ])
+                if book_value and book_value > 0:
+                    return round(market_cap / book_value, 2)
         except Exception as e:
             logger.warning(f"Could not calculate P/B ratio: {e}")
         return None
@@ -1180,19 +1094,9 @@ class PolygonClient:
             if not ev or not financials:
                 return None
             
-            fin = financials[0].get("financials", {})
-            income = fin.get("income_statement", {})
-            
-            # Get EBITDA
-            ebitda = None
-            for key in ["ebitda", "EBITDA"]:
-                ebitda_data = income.get(key)
-                if isinstance(ebitda_data, dict):
-                    ebitda = ebitda_data.get("value")
-                elif ebitda_data is not None:
-                    ebitda = float(ebitda_data)
-                if ebitda is not None and ebitda > 0:
-                    return round(ev / ebitda, 2)
+            ebitda = self._ttm_statement_sum(financials, "income_statement", ["ebitda", "EBITDA"])
+            if ebitda is not None and ebitda > 0:
+                return round(ev / ebitda, 2)
         except Exception as e:
             logger.warning(f"Could not calculate EV/EBITDA: {e}")
         return None

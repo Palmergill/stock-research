@@ -157,19 +157,20 @@ header {
 }
 
 .search-icon-btn-inline {
-    width: 32px;
+    min-width: 68px;
     height: 32px;
     border-radius: 6px;
     border: 1px solid rgba(255,255,255,0.15);
     background: transparent;
     color: #94a3b8;
-    font-size: 14px;
+    font-size: 13px;
+    font-weight: 600;
     cursor: pointer;
     margin-left: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0;
+    padding: 0 12px;
 }
 
 .header-row-2 {
@@ -2694,7 +2695,7 @@ button,
     background: transparent;
     border: 1px solid rgba(255, 255, 255, 0.2);
     color: #94a3b8;
-    width: 44px;
+    min-width: 84px;
     height: 44px;
     border-radius: 10px;
     display: flex;
@@ -2703,9 +2704,10 @@ button,
     cursor: pointer;
     transition: all 0.2s ease;
     margin-left: auto;
-    font-size: 20px;
+    font-size: 14px;
+    font-weight: 600;
     line-height: 1;
-    padding: 0;
+    padding: 0 18px;
 }
 
 .search-icon-btn:hover {
