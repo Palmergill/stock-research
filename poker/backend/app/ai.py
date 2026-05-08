@@ -559,19 +559,31 @@ class AIManager:
         delay = bot.get_decision_delay(hand_strength, decision['action'])
         await asyncio.sleep(delay)
         
+        success = False
+        action_amount = decision.get('amount')
+
         # Execute the decision
         if decision['action'] == 'fold':
-            self.game.action_fold(current.id)
+            success = self.game.action_fold(current.id)
         elif decision['action'] == 'check':
-            self.game.action_check(current.id)
+            success = self.game.action_check(current.id)
         elif decision['action'] == 'call':
-            self.game.action_call(current.id)
+            success = self.game.action_call(current.id)
         elif decision['action'] == 'raise':
-            self.game.action_raise(current.id, decision['amount'])
+            success = self.game.action_raise(current.id, decision['amount'])
         elif decision['action'] == 'all-in':
             to_call = self.game.current_bet - current.bet
             all_in_amount = current.chips - to_call
-            self.game.action_raise(current.id, all_in_amount)
+            action_amount = all_in_amount
+            success = self.game.action_raise(current.id, all_in_amount)
+
+        if success:
+            self.game.last_ai_action = {
+                'player_name': current.name,
+                'action': decision['action'],
+                'amount': action_amount,
+                'timestamp': asyncio.get_event_loop().time()
+            }
         
         return decision
     
@@ -588,19 +600,31 @@ class AIManager:
         bot = self.bots[current.id]
         decision = bot.make_decision(self.game, current)
         
+        success = False
+        action_amount = decision.get('amount')
+
         # Execute the decision
         if decision['action'] == 'fold':
-            self.game.action_fold(current.id)
+            success = self.game.action_fold(current.id)
         elif decision['action'] == 'check':
-            self.game.action_check(current.id)
+            success = self.game.action_check(current.id)
         elif decision['action'] == 'call':
-            self.game.action_call(current.id)
+            success = self.game.action_call(current.id)
         elif decision['action'] == 'raise':
-            self.game.action_raise(current.id, decision['amount'])
+            success = self.game.action_raise(current.id, decision['amount'])
         elif decision['action'] == 'all-in':
             to_call = self.game.current_bet - current.bet
             all_in_amount = current.chips - to_call
-            self.game.action_raise(current.id, all_in_amount)
+            action_amount = all_in_amount
+            success = self.game.action_raise(current.id, all_in_amount)
+
+        if success:
+            self.game.last_ai_action = {
+                'player_name': current.name,
+                'action': decision['action'],
+                'amount': action_amount,
+                'timestamp': 0
+            }
         
         return decision
     

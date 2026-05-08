@@ -81,19 +81,6 @@ async def create_game(request: CreateGameRequest):
         update_game_access(game_id)
         cleanup_old_games()
 
-        # Process AI turns
-        max_turns = 20
-        turns = 0
-        while turns < max_turns:
-            active = [p for p in game.players if not p.folded and not p.is_all_in]
-            if len(active) <= 1 or game.phase == 'showdown':
-                break
-            current = game.get_current_player()
-            if not current or current.is_human:
-                break
-            ai_manager.process_bot_turn()
-            turns += 1
-
         return {
             "game_id": game_id,
             "player_id": human.id,
@@ -221,20 +208,6 @@ async def player_action(game_id: str, request: ActionRequest):
     if not success:
         raise HTTPException(status_code=400, detail="Action failed")
 
-    # Process AI turns for single player
-    if getattr(game, 'game_type', 'single') == "single":
-        ai_manager = ai_managers.get(game_id)
-        if ai_manager:
-            max_turns = 20
-            turns = 0
-            while turns < max_turns:
-                current = game.get_current_player()
-                if not current or current.is_human or game.phase == 'showdown':
-                    break
-                await asyncio.sleep(0.5)
-                ai_manager.process_bot_turn()
-                turns += 1
-
     return game.to_dict(for_player=request.player_id)
 
 @router.post("/games/{game_id}/buy-back")
@@ -274,18 +247,6 @@ async def next_hand(game_id: str, player_id: str):
 
     game.dealer_index = (game.dealer_index + 1) % len(game.players)
     game.start_hand()
-
-    # Process AI turns for single player
-    if getattr(game, 'game_type', 'single') == "single":
-        ai_manager = ai_managers.get(game_id)
-        if ai_manager:
-            current = game.get_current_player()
-            turns = 0
-            while current and not current.is_human and turns < 10:
-                await asyncio.sleep(0.3)
-                ai_manager.process_bot_turn()
-                current = game.get_current_player()
-                turns += 1
 
     return game.to_dict(for_player=player_id)
 

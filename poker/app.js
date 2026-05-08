@@ -1,4 +1,4 @@
-// Poker Game Frontend - Option A: Bottom Focus Design
+// Poker Game Frontend - Oval Table Design
 const API_BASE = '';
 
 // CSRF Protection Utilities
@@ -630,8 +630,10 @@ let gameId = null;
 let isMyTurn = false;
 let raiseAmount = 0;
 let pollIntervalId = null;
+let pollInFlight = false;
 let isRequestPending = false; // Lock to prevent race conditions
 let actionToken = null; // Anti-replay token for security
+const AI_POLL_INTERVAL_MS = 1800;
 
 // Helper function to update game state and extract action token
 function updateGameState(newState) {
@@ -1260,10 +1262,14 @@ function startPolling() {
     const processAI = gameState?.game_type !== 'multiplayer';
     
     pollIntervalId = setInterval(async () => {
+        if (pollInFlight) return;
+
         if (!gameId || !playerId) {
             stopPolling();
             return;
         }
+
+        pollInFlight = true;
         
         try {
             const response = await fetch(`${API_BASE}/api/poker/games/${gameId}?player_id=${playerId}&process_ai=${processAI}`);
@@ -1285,8 +1291,10 @@ function startPolling() {
             
         } catch (error) {
             console.error('Polling error:', error);
+        } finally {
+            pollInFlight = false;
         }
-    }, 1000);
+    }, AI_POLL_INTERVAL_MS);
 }
 
 function stopPolling() {
@@ -1294,6 +1302,7 @@ function stopPolling() {
         clearInterval(pollIntervalId);
         pollIntervalId = null;
     }
+    pollInFlight = false;
 }
 
 async function playerAction(action) {
@@ -1342,6 +1351,7 @@ async function playerAction(action) {
         }
         
         updateGameDisplay();
+        startPolling();
         
         if (gameState.phase === 'showdown') {
             showHandResult();
@@ -1500,10 +1510,7 @@ function updateGameDisplay() {
         // Show AI action indicator
         if (gameState.last_ai_action) {
             const action = gameState.last_ai_action;
-            let actionText = `${action.player_name}: ${action.action.toUpperCase()}`;
-            if (action.amount) {
-                actionText += ` ${action.amount}`;
-            }
+            const actionText = `${action.player_name}: ${formatActionLabel(action)}`;
             elements.aiActionIndicator.innerHTML = `<span class="ai-action-text">${actionText}</span>`;
         } else {
             elements.aiActionIndicator.innerHTML = '';
@@ -1519,7 +1526,7 @@ function updateGameDisplay() {
     
     // Update opponents
     const opponents = gameState.players.filter(p => !p.is_human);
-    elements.opponentsRow.innerHTML = opponents.map(p => renderOpponent(p)).join('');
+    elements.opponentsRow.innerHTML = opponents.map((p, index) => renderOpponent(p, index)).join('');
     
     // Update community cards with staggered animation (offset by 2 for player cards)
     const community = gameState.community_cards;
@@ -1550,16 +1557,20 @@ function updateGameDisplay() {
     }
 }
 
-function renderOpponent(player) {
+function renderOpponent(player, seatIndex = 0) {
     const isCurrent = gameState.current_player === player.id;
     const showCards = gameState.phase === 'showdown' && !player.folded;
+    const seatClass = `seat-${seatIndex + 1}`;
+    const recentAIAction = gameState.last_ai_action?.player_name === player.name ? gameState.last_ai_action : null;
+    const recentActionClass = recentAIAction ? 'recent-ai-action' : '';
+    const actionLabel = recentAIAction ? formatActionLabel(recentAIAction) : '';
     // Use bot avatar for AI, generate from name for humans
     const avatar = player.is_human 
         ? AvatarManager.getPlayerAvatar(player.name)
         : AvatarManager.getBotAvatar(player.name);
 
     return `
-        <div class="opponent ${player.folded ? 'folded' : ''} ${isCurrent ? 'active-turn' : ''}">
+        <div class="opponent ${seatClass} ${recentActionClass} ${player.folded ? 'folded' : ''} ${isCurrent ? 'active-turn' : ''}">
             <div class="opponent-avatar">
                 ${AvatarManager.render(avatar, 'small')}
             </div>
@@ -1572,8 +1583,15 @@ function renderOpponent(player) {
             <span class="opponent-name">${player.name}</span>
             <span class="opponent-chips">${ChipStackVisualizer.renderCompact(player.chips)}</span>
             ${player.bet > 0 ? `<span class="opponent-bet">${ChipStackVisualizer.renderCompact(player.bet)}</span>` : ''}
+            ${actionLabel ? `<span class="opponent-action-badge">${actionLabel}</span>` : ''}
         </div>
     `;
+}
+
+function formatActionLabel(action) {
+    if (!action) return '';
+    const label = String(action.action || '').replace('-', ' ').toUpperCase();
+    return action.amount ? `${label} ${action.amount}` : label;
 }
 
 // Track card deal sequences for staggered animations

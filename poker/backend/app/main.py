@@ -626,7 +626,7 @@ async def create_game(request: CreateGameRequest):
         404: {"description": "Game not found", "model": ErrorResponse}
     }
 )
-async def get_game_state(game_id: str, player_id: str):
+async def get_game_state(game_id: str, player_id: str, process_ai: bool = True):
     """Get current game state"""
     # Validate inputs
     validate_game_id(game_id)
@@ -637,6 +637,19 @@ async def get_game_state(game_id: str, player_id: str):
         raise HTTPException(status_code=404, detail="Game not found")
 
     game = games[game_id]
+
+    is_single_player = getattr(game, 'game_type', 'single') == 'single'
+    if process_ai and is_single_player and game.phase not in ('showdown', 'waiting'):
+        active = [p for p in game.players if not p.folded and not p.is_all_in]
+        if len(active) <= 1:
+            game._advance_phase()
+        else:
+            current = game.get_current_player()
+            if current and not current.is_human:
+                ai_manager = ai_managers.get(game_id)
+                if ai_manager:
+                    await ai_manager.process_bot_turn_async()
+
     state = game.to_dict(for_player=player_id)
     
     # Generate action token if it's this player's turn
@@ -731,22 +744,6 @@ async def player_action(game_id: str, request: ActionRequest):
         # Track usage analytics
         usage_analytics.record_action()
     
-    # Process AI turns with turn limit protection and human-like timing
-    ai_manager = ai_managers[game_id]
-    ai_turns = 0
-
-    while ai_turns < Config.MAX_AI_TURNS:
-        current = game.get_current_player()
-        if not current or current.is_human:
-            break
-
-        # Use async bot turn with human-like timing tells
-        await ai_manager.process_bot_turn_async()
-        ai_turns += 1
-
-    if ai_turns >= Config.MAX_AI_TURNS:
-        logger.error(f"AI turn limit reached in game {game_id} - possible infinite loop")
-
     return game.to_dict(for_player=request.player_id)
 
 
@@ -847,20 +844,6 @@ async def next_hand(game_id: str, player_id: str):
 
     # Start new hand
     game.start_hand()
-
-    # Process AI blinds and early action with human-like timing
-    ai_manager = ai_managers[game_id]
-    current = game.get_current_player()
-    ai_turns = 0
-
-    while current and not current.is_human and ai_turns < Config.MAX_AI_TURNS:
-        # Use async bot turn with human-like timing tells
-        await ai_manager.process_bot_turn_async()
-        current = game.get_current_player()
-        ai_turns += 1
-
-    if ai_turns >= Config.MAX_AI_TURNS:
-        logger.error(f"AI turn limit reached during blinds in game {game_id}")
 
     # Prepare response state with integrity token
     state = game.to_dict(for_player=player_id)

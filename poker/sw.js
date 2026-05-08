@@ -1,10 +1,10 @@
 // Poker App Service Worker - Basic caching strategy
-const CACHE_NAME = 'poker-app-v1';
+const CACHE_NAME = 'poker-app-v3';
 const STATIC_ASSETS = [
-    '/',
-    '/index.html',
-    '/app.js',
-    '/manifest.json'
+    '/poker/',
+    '/poker/index.html',
+    '/poker/app.js?v=4',
+    '/poker/manifest.json'
 ];
 
 // Install event - cache static assets
