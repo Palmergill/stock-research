@@ -8,13 +8,16 @@ Personal project site plus shared API backend.
 - `/stock-research/` - polished stock research app
 - `/poker/` - Texas Hold'em poker app
 - `/craps/` - craps app
+- `/blackjack/` - blackjack app
 - `/bitcoin-chat/` - Bitcoin chat app
+- `/admin/` - protected backend log dashboard
 
 ## Active Backend Paths
 
 - `/api/stocks/*` - stock research API
 - `/api/poker/*` - poker API
 - `/api/bitcoin/*` - Bitcoin chat API
+- `/api/admin/*` - protected admin/log APIs
 - `/health` - backend health check
 - `/docs` - FastAPI docs
 
@@ -30,7 +33,7 @@ Open:
 http://127.0.0.1:8000
 ```
 
-The local server runs FastAPI and, with `LOCAL_SITE_ROOT=true`, also serves the static project folders so the local URL shape matches `palmergill.com`.
+The local server runs FastAPI and, with `LOCAL_SITE_ROOT=true`, also serves the static root page plus `shared/`, `stock-research/`, `poker/`, `craps/`, `bitcoin-chat/`, and `admin/`.
 
 Protected local app routes and API routes require Basic Auth. Set:
 
@@ -49,15 +52,18 @@ logs/backend.log
 - Static site: hosted from the repo root and project folders.
 - API service: Railway/FastAPI from `backend/`.
 - Vercel rewrites `/api/*` to the Railway backend in production.
-- The root page `/`, `/poker/`, `/craps/`, and `/api/poker/*` stay public. Stock research, Bitcoin chat, and other `/api/*` routes require Basic Auth; protected routes return `503` if `APP_AUTH_PASSWORD` is missing. Set the same `APP_AUTH_USERNAME` and `APP_AUTH_PASSWORD` values in Vercel and Railway.
+- The root page `/`, `/poker/`, `/craps/`, `/blackjack/`, and `/api/poker/*` stay public. Stock research, Bitcoin chat, admin, and other `/api/*` routes require Basic Auth; protected routes return `503` if `APP_AUTH_PASSWORD` is missing. Set the same `APP_AUTH_USERNAME` and `APP_AUTH_PASSWORD` values in Vercel and Railway.
 
 ## Repository Layout
 
 ```text
 backend/          FastAPI API service
+admin/            Protected admin/log dashboard
+shared/           Shared static navigation assets
 stock-research/   Active stock research frontend
 poker/            Active poker frontend and supporting docs/tests
 craps/            Active craps frontend
+blackjack/        Active blackjack frontend and tests
 bitcoin-chat/     Active Bitcoin chat frontend
 archive/          Legacy frontends, demos, and planning artifacts
 ```
@@ -67,3 +73,5 @@ archive/          Legacy frontends, demos, and planning artifacts
 The original site started as only the stock research app. Legacy versions of that UI have been moved into `archive/` so active entrypoints are easier to identify.
 
 Bitcoin Chat production node, Cloudflare Tunnel, and Railway setup are documented in [docs/BITCOIN_CHAT_SETUP.md](docs/BITCOIN_CHAT_SETUP.md).
+
+The production Railway Dockerfile copies and runs `backend/`. The richer standalone poker backend under `poker/backend/` is retained for reference/development and is not part of the root Railway deployment unless the deployment configuration is changed.

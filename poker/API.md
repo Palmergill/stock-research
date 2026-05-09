@@ -1,560 +1,201 @@
 # Poker API Documentation
 
-Complete documentation for the Texas Hold'em Poker REST API.
+This documents the active poker API served by the shared backend at `backend/app/routers/poker.py`.
 
 **Base URL:** `https://palmergill.com/api/poker`
 
-**Current Version:** 1.0.7
+**Local URL:** `http://127.0.0.1:8000/api/poker` when running `./start.sh` from the repo root.
 
----
+## Important Note
 
-## Table of Contents
-
-- [Authentication](#authentication)
-- [Rate Limiting](#rate-limiting)
-- [Game Flow](#game-flow)
-- [Endpoints](#endpoints)
-- [Error Handling](#error-handling)
-- [WebSocket (Future)](#websocket-future)
-
----
+The repository also contains `poker/backend/`, a standalone FastAPI poker service with many additional endpoints such as tournaments, persistence, CSRF, analytics, detailed health, backups, and spectators. The root Railway deployment does not run that service. Production uses the shared backend in `backend/`.
 
 ## Authentication
 
-Currently, the API uses simple player IDs for identification. No authentication tokens are required.
+`/api/poker/*` is public in both Vercel middleware and the shared FastAPI auth middleware. The API identifies players by the `player_id` returned when creating or joining a game.
 
-- Player IDs are returned when creating a game
-- Player IDs must be included in requests that access game state
+## Game Storage
 
----
-
-## Rate Limiting
-
-API requests are rate-limited to prevent abuse:
-
-- **Burst Limit:** 20 requests per minute per IP
-- **Block Duration:** 60 seconds if limit exceeded
-- **Health Check Exemption:** `/api/poker/health` is exempt from rate limiting
-
-**Headers:**
-- `X-RateLimit-Remaining` - Remaining requests in current window
-- `X-RateLimit-Limit` - Maximum burst size (20)
-- `X-Response-Time-Ms` - Response time in milliseconds
-
----
-
-## Game Flow
-
-### 1. Create a Game
-```
-POST /api/poker/games
-```
-Returns a `game_id` and your `player_id`.
-
-### 2. Poll for State
-```
-GET /api/poker/games/{game_id}?player_id={player_id}
-```
-Poll every 1-2 seconds to get current game state.
-
-### 3. Take Actions
-```
-POST /api/poker/games/{game_id}/action
-```
-When it's your turn, send fold/check/call/raise actions.
-
-### 4. Next Hand
-```
-POST /api/poker/games/{game_id}/next-hand?player_id={player_id}
-```
-After showdown, start the next hand.
-
----
+Games are stored in memory in the shared backend process and expire after one hour without access. A backend restart clears active games.
 
 ## Endpoints
 
-### Game Management
+### Create Game
 
-#### Create Game
-```
+```http
 POST /api/poker/games
 ```
 
-Create a new poker game with AI opponents.
+Creates either a single-player game with five AI bots or a multiplayer lobby.
 
-**Request Body:**
+Request:
+
 ```json
 {
-  "player_name": "Alice"
+  "player_name": "Alice",
+  "game_type": "single",
+  "max_players": 6
 }
 ```
 
-**Parameters:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| player_name | string | No | Display name (1-20 chars, defaults to "Player") |
+Fields:
 
-**Response (201):**
+| Field | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `player_name` | string | No | Defaults to `Player`. |
+| `game_type` | string | No | `single` starts immediately with AI bots. Any other value creates a multiplayer lobby. |
+| `max_players` | integer | No | Defaults to 6 for multiplayer games. |
+
+Response includes `game_id`, `player_id`, `state`, and `game_type`. Multiplayer lobby responses also include `players` and `waiting`.
+
+### Join Multiplayer Game
+
+```http
+POST /api/poker/games/join
+```
+
+Request:
+
 ```json
 {
-  "game_id": "abc123",
-  "player_id": "p1a2b3c4d",
-  "state": { /* GameState object */ }
+  "game_id": "abc12345",
+  "player_name": "Bob"
 }
 ```
 
----
+Only multiplayer games in the `waiting` phase can be joined.
 
-### Game State
+### Start Multiplayer Game
 
-#### Get Game State
-```
-GET /api/poker/games/{game_id}?player_id={player_id}
-```
-
-Retrieve the current state of a game.
-
-**Path Parameters:**
-| Field | Type | Description |
-|-------|------|-------------|
-| game_id | string | 8-character game identifier |
-
-**Query Parameters:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| player_id | string | Yes | Your player identifier |
-
-**Response (200):**
-```json
-{
-  "game_id": "abc123",
-  "phase": "preflop",
-  "hand_number": 1,
-  "community_cards": [],
-  "pot": 150,
-  "current_bet": 100,
-  "min_raise": 100,
-  "players": [...],
-  "current_player": "p1a2b3c4d",
-  "dealer_index": 0,
-  "last_action": "Bob raised to 100",
-  "winners": null
-}
+```http
+POST /api/poker/games/{game_id}/start?player_id={player_id}
 ```
 
-#### Get Game History
-```
-GET /api/poker/games/{game_id}/history
-```
+Starts a multiplayer game. Only the first player in the lobby can start it, and at least two players are required.
 
-Retrieve hand history for completed hands.
+### Get Game State
 
-**Response (200):**
-```json
-{
-  "game_id": "abc123",
-  "hands": [
-    {
-      "hand_number": 1,
-      "timestamp": "2026-02-25T17:55:00Z",
-      "players": ["Alice", "Bob", "Charlie"],
-      "community_cards": ["Ah", "Kh", "Qh", "Jh", "Th"],
-      "pot": 500,
-      "winners": [{"name": "Alice", "amount": 500, "hand": "Royal Flush"}]
-    }
-  ]
-}
+```http
+GET /api/poker/games/{game_id}?player_id={player_id}&process_ai=true
 ```
 
-#### Get Game Metrics
-```
-GET /api/poker/games/{game_id}/metrics
-```
+Returns the current game state for the requesting player. Cards are only visible to the requesting player until showdown.
 
-Retrieve detailed analytics for a game.
+Query parameters:
 
-**Response (200):**
-```json
-{
-  "game_id": "abc123",
-  "session_start": "2026-02-25T17:00:00Z",
-  "session_duration_minutes": 55.5,
-  "hands_played": 12,
-  "average_pot_size": 325.5,
-  "hands_per_hour": 13.1,
-  "total_pot_accumulated": 3906,
-  "phase_distribution": {
-    "showdown": 8,
-    "preflop": 4
-  },
-  "player_behaviors": [
-    {
-      "player_id": "p1a2b3c4d",
-      "player_name": "Alice",
-      "total_actions": 45,
-      "fold_percentage": 25.0,
-      "call_percentage": 45.0,
-      "raise_percentage": 30.0,
-      "all_ins": 2,
-      "checks": 8
-    }
-  ]
-}
-```
+| Field | Type | Required | Notes |
+| --- | --- | --- | --- |
+| `player_id` | string | Yes | Player identifier returned by create/join. |
+| `process_ai` | boolean | No | Defaults to `true`; the frontend passes `false` in multiplayer/lobby polling. |
 
-#### Get AI Stats
-```
-GET /api/poker/games/{game_id}/ai-stats
-```
+### Player Action
 
-Get behavioral statistics for AI bots.
-
-**Response (200):**
-```json
-{
-  "game_id": "abc123",
-  "bots": {
-    "Bob": {
-      "aggression": 0.7,
-      "hands_played": 45,
-      "hands_won": 12,
-      "biggest_pot": 850,
-      "fold_percentage": 35,
-      "timing_tell": "deliberate"
-    }
-  }
-}
-```
-
----
-
-### Gameplay
-
-#### Player Action
-```
+```http
 POST /api/poker/games/{game_id}/action
 ```
 
-Execute a player action. Automatically processes AI turns until it's the human player's turn again.
+Request:
 
-**Request Body:**
 ```json
 {
-  "player_id": "p1a2b3c4d",
+  "player_id": "p0",
   "action": "raise",
-  "amount": 200
+  "amount": 100
 }
 ```
 
-**Parameters:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| player_id | string | Yes | Your player identifier |
-| action | string | Yes | One of: fold, check, call, raise |
-| amount | integer | Conditional | Required for raise action (0-1,000,000) |
+Actions:
 
-**Actions:**
-- **fold** - Give up your hand
-- **check** - Pass when no bet to call (only when current_bet equals your bet)
-- **call** - Match the current bet
-- **raise** - Increase the bet (requires amount parameter)
+| Action | Notes |
+| --- | --- |
+| `fold` | Gives up the hand. |
+| `check` | Allowed only when the player has no amount to call. |
+| `call` | Matches the current bet or goes all-in if the stack is smaller. |
+| `raise` | Requires `amount`; the shared backend treats it as the raise amount on top of the call amount. |
 
-**Response (200):** Updated GameState object
+### Buy Back
 
----
-
-#### Next Hand
+```http
+POST /api/poker/games/{game_id}/buy-back
 ```
+
+Request:
+
+```json
+{
+  "player_id": "p0",
+  "amount": 1000
+}
+```
+
+Adds chips to a busted player between hands. Available only during `showdown` or `waiting`.
+
+### Next Hand
+
+```http
 POST /api/poker/games/{game_id}/next-hand?player_id={player_id}
 ```
 
-Start a new hand after the current hand completes.
+Starts the next hand after showdown or while waiting. The dealer button advances before the hand starts.
 
-**Query Parameters:**
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| player_id | string | Yes | Your player identifier |
+### Health
 
-**Response (200):** Updated GameState object
-
----
-
-### System
-
-#### Health Check
-```
+```http
 GET /api/poker/health
 ```
 
-Basic health check for monitoring.
+Response:
 
-**Response (200):**
 ```json
 {
   "status": "ok",
-  "active_games": 42,
-  "config": {
-    "starting_chips": 1000,
-    "small_blind": 10,
-    "big_blind": 20,
-    "ai_difficulty": "mixed"
-  }
+  "active_games": 1,
+  "cleaned_games": 0
 }
 ```
 
-#### Detailed Health Check
-```
-GET /api/poker/health/detailed
-```
+## Game State Shape
 
-Detailed system metrics.
+The shared backend returns a `state` object shaped like:
 
-**Response (200):**
-```json
-{
-  "status": "ok",
-  "uptime_seconds": 3600,
-  "active_games": 42,
-  "total_players": 252,
-  "memory_usage_mb": 2.1,
-  "games_by_phase": {
-    "preflop": 15,
-    "flop": 12,
-    "turn": 8,
-    "river": 5,
-    "showdown": 2
-  },
-  "avg_game_age_minutes": 23.5,
-  "config": { ... },
-  "version": "1.0.7"
-}
-```
+| Field | Notes |
+| --- | --- |
+| `game_id` | 8-character game identifier. |
+| `phase` | `waiting`, `preflop`, `flop`, `turn`, `river`, or `showdown`. |
+| `pot` | Total pot in chips. |
+| `current_bet` | Current bet to call. |
+| `community_cards` | Visible board cards. |
+| `players` | Player summaries. Hole cards are in each player's `hand` only when visible to the requester. |
+| `current_player` | Player ID whose turn it is. |
+| `dealer_index` | Current dealer-button index. |
+| `winners` | Winners after showdown. |
+| `last_action` | Last human/player action. |
+| `last_ai_action` | Last AI action for display. |
+| `hand_number` | Current hand number. |
+| `min_raise` | Minimum raise amount. |
+| `game_type` | `single` or `multiplayer`. |
+| `max_players` | Multiplayer seat limit. |
+| `waiting_for_players` | Lobby/waiting flag. |
 
-#### Performance Metrics
-```
-GET /api/poker/health/performance
-```
+## Errors
 
-API performance statistics.
+Errors use FastAPI's default format:
 
-**Response (200):**
-```json
-{
-  "endpoints": {
-    "GET /api/poker/games/{game_id}": {
-      "count": 1500,
-      "avg_ms": 12.5,
-      "min_ms": 5,
-      "max_ms": 150,
-      "p95_ms": 25
-    }
-  },
-  "overall": {
-    "total_requests": 5000,
-    "p95_ms": 45,
-    "p99_ms": 120,
-    "avg_ms": 20
-  },
-  "slow_requests": 3
-}
-```
-
----
-
-## Data Models
-
-### GameState
-
-| Field | Type | Description |
-|-------|------|-------------|
-| game_id | string | Unique game identifier |
-| phase | string | Current phase: preflop, flop, turn, river, showdown, waiting |
-| hand_number | integer | Current hand number |
-| community_cards | array | Community cards on the table |
-| pot | integer | Main pot amount |
-| current_bet | integer | Current bet to call |
-| min_raise | integer | Minimum raise amount |
-| players | array | All players (cards hidden for opponents) |
-| current_player | string | ID of player whose turn it is |
-| dealer_index | integer | Index of dealer button |
-| last_action | string | Description of last action |
-| winners | array | Winners from showdown (null if not showdown) |
-
-### Player
-
-| Field | Type | Description |
-|-------|------|-------------|
-| id | string | Unique player identifier |
-| name | string | Display name |
-| chips | integer | Current chip stack |
-| bet | integer | Current bet in the pot |
-| folded | boolean | Whether player has folded |
-| is_human | boolean | True if human player |
-| is_dealer | boolean | True if dealer button |
-| is_small_blind | boolean | True if posted small blind |
-| is_big_blind | boolean | True if posted big blind |
-| is_all_in | boolean | True if all-in |
-| cards | array | Hole cards (only visible to requesting player) |
-| avatar | string | Avatar emoji |
-
-### Card
-
-| Field | Type | Description |
-|-------|------|-------------|
-| rank | string | Card rank: 2-10, J, Q, K, A |
-| suit | string | Suit: hearts, diamonds, clubs, spades |
-
----
-
-## Error Handling
-
-### Error Response Format
-
-```json
-{
-  "detail": "Error message description"
-}
-```
-
-### HTTP Status Codes
-
-| Code | Description | Common Causes |
-|------|-------------|---------------|
-| 200 | OK | Request successful |
-| 201 | Created | Game created successfully |
-| 400 | Bad Request | Invalid parameters, not your turn, action failed |
-| 404 | Not Found | Game not found, player not found |
-| 422 | Validation Error | Invalid request body format |
-| 429 | Rate Limited | Too many requests |
-| 500 | Server Error | Unexpected server error |
-
-### Common Errors
-
-**Not Your Turn (400):**
-```json
-{
-  "detail": "Not your turn"
-}
-```
-
-**Invalid Action (400):**
-```json
-{
-  "detail": "Action failed"
-}
-```
-
-**Game Not Found (404):**
 ```json
 {
   "detail": "Game not found"
 }
 ```
 
-**Rate Limit Exceeded (429):**
-```json
-{
-  "detail": "Rate limit exceeded. Please try again later."
-}
-```
+Common status codes:
 
----
+| Code | Meaning |
+| --- | --- |
+| `400` | Invalid action, not your turn, game already started, game full, or buy-back unavailable. |
+| `403` | Non-host attempted to start a multiplayer game. |
+| `404` | Game or player not found. |
+| `422` | Request body/query validation error. |
 
-## WebSocket (Future)
+## Frontend Notes
 
-WebSocket support is planned for real-time updates instead of polling.
-
-**Proposed Endpoint:**
-```
-ws://palmergill.com/api/poker/ws/{game_id}?player_id={player_id}
-```
-
-**Message Types:**
-- `state_update` - Game state changed
-- `your_turn` - It's your turn to act
-- `player_action` - Another player acted
-- `hand_complete` - Hand ended, show winners
-- `error` - Error occurred
-
----
-
-## SDK Examples
-
-### JavaScript/Fetch
-
-```javascript
-// Create game
-const createGame = async (playerName) => {
-  const res = await fetch('/api/poker/games', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ player_name: playerName })
-  });
-  return res.json();
-};
-
-// Get game state
-const getState = async (gameId, playerId) => {
-  const res = await fetch(`/api/poker/games/${gameId}?player_id=${playerId}`);
-  return res.json();
-};
-
-// Take action
-const takeAction = async (gameId, playerId, action, amount) => {
-  const body = { player_id: playerId, action };
-  if (amount) body.amount = amount;
-  
-  const res = await fetch(`/api/poker/games/${gameId}/action`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
-  return res.json();
-};
-
-// Poll for updates
-const pollGame = (gameId, playerId, onUpdate) => {
-  const interval = setInterval(async () => {
-    const state = await getState(gameId, playerId);
-    onUpdate(state);
-  }, 1000);
-  return () => clearInterval(interval);
-};
-```
-
-### Python/requests
-
-```python
-import requests
-
-BASE_URL = "https://palmergill.com/api/poker"
-
-# Create game
-response = requests.post(f"{BASE_URL}/games", json={"player_name": "Alice"})
-data = response.json()
-game_id = data["game_id"]
-player_id = data["player_id"]
-
-# Get state
-state = requests.get(f"{BASE_URL}/games/{game_id}?player_id={player_id}").json()
-
-# Take action
-action_response = requests.post(
-    f"{BASE_URL}/games/{game_id}/action",
-    json={"player_id": player_id, "action": "call"}
-).json()
-```
-
----
-
-## Changelog
-
-See [CHANGELOG.md](CHANGELOG.md) for version history.
-
----
-
-## Support
-
-For issues or questions:
-- GitHub Issues: https://github.com/Palmergill/stock-research/issues
-- Website: https://palmergill.com/poker
+The current frontend includes compatibility code for CSRF/action-token flows from the standalone backend. The shared backend ignores the extra `action_token` field and does not expose `/api/poker/csrf-token`.

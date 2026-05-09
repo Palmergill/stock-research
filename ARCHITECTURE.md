@@ -16,6 +16,7 @@ FastAPI backend
   +-- stock data clients and SQLite/Postgres cache
   +-- poker game APIs
   +-- Bitcoin chat APIs
+  +-- admin/log APIs
 ```
 
 ## Frontend Entry Points
@@ -26,7 +27,9 @@ The active public site is static:
 - `/stock-research/` - stock research app
 - `/poker/` - poker app
 - `/craps/` - craps app
+- `/blackjack/` - blackjack app
 - `/bitcoin-chat/` - Bitcoin chat app
+- `/admin/` - protected backend log dashboard
 
 Earlier stock-app frontends are retained under `archive/` and are not served by default.
 
@@ -39,10 +42,13 @@ Important routes:
 - `/api/stocks/*`
 - `/api/poker/*`
 - `/api/bitcoin/*`
+- `/api/admin/*`
 - `/health`
 - `/docs`
 
-In production, `/` returns API metadata. In local development, `./start.sh` sets `LOCAL_SITE_ROOT=true`, which makes FastAPI serve the static project folders as well.
+In production, `/` returns API metadata from the Railway API service. In local development, `./start.sh` sets `LOCAL_SITE_ROOT=true`, which makes FastAPI serve the root portfolio page and most active static project folders from the same process.
+
+The active deployed API is `backend/app/main.py`. `poker/backend/` contains a standalone poker service with additional endpoints, tests, and deployment files, but the root `Dockerfile` does not copy or run it.
 
 ## Local Development
 
@@ -67,4 +73,4 @@ logs/backend.log
 - Static site hosting serves the root static files and project directories.
 - Vercel rewrites `/api/*` to the Railway API.
 - Railway runs the Dockerized FastAPI backend from `backend/`.
-- `/`, `/poker/`, `/craps/`, and `/api/poker/*` are public. Stock research, Bitcoin chat, and other API routes require Basic Auth when app auth is configured.
+- `/`, `/poker/`, `/craps/`, `/blackjack/`, and `/api/poker/*` are public. Stock research, Bitcoin chat, admin, and other API routes require Basic Auth when app auth is configured.

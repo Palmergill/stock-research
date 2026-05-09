@@ -2,6 +2,8 @@
 
 This documents the production wiring for the Bitcoin Chat app at `/bitcoin-chat/`.
 
+Last reviewed against the repo on May 9, 2026.
+
 ## Architecture
 
 ```text
@@ -89,6 +91,18 @@ OPENAI_API_KEY=<OpenAI API key for natural-language chat>
 If the password ends with `=`, include the trailing `=` in Railway. Do not wrap the value in quotes.
 
 `OPENAI_API_KEY` is optional for node smoke tests. When it is missing, `/api/bitcoin/chat` falls back to deterministic read-only answers for blocks, transactions, fees, node status, and mined-BTC queries. Set it to enable the natural-language Bitcoin assistant and technical explanations.
+
+## Backend Endpoints
+
+The shared FastAPI backend exposes:
+
+- `GET /api/bitcoin/health`
+- `GET /api/bitcoin/status`
+- `GET /api/bitcoin/block/latest`
+- `GET /api/bitcoin/block/{height_or_hash}`
+- `GET /api/bitcoin/tx/{txid}`
+- `GET /api/bitcoin/mempool/summary`
+- `POST /api/bitcoin/chat`
 
 ## Verification
 

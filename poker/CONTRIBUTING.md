@@ -15,21 +15,22 @@ Thank you for your interest in contributing! This document provides guidelines f
 1. Fork the repository
 2. Clone your fork:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/stock-research.git
-   cd stock-research/poker
+   git clone https://github.com/YOUR_USERNAME/palmergill.com.git
+   cd palmergill.com
    ```
 
-3. Set up the backend:
+3. Set up the shared backend:
    ```bash
    cd backend
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
-   pip install -r requirements-dev.txt
+   pip install -r requirements.txt
    ```
 
-4. Run tests to ensure everything works:
+4. Install root JavaScript dependencies:
    ```bash
-   pytest
+   cd ..
+   npm install
    ```
 
 ## Development Workflow
@@ -37,30 +38,26 @@ Thank you for your interest in contributing! This document provides guidelines f
 ### Running the Backend Locally
 
 ```bash
-cd backend
-python main.py
+./start.sh
 ```
 
-The API will be available at `http://localhost:8000` with docs at `/docs`.
+The local site and API will be available at `http://127.0.0.1:8000` with docs at `/docs`.
 
 ### Frontend Development
 
-The frontend is vanilla HTML/CSS/JS. Simply open `index.html` in a browser or use a local server:
+The active frontend is vanilla HTML/CSS/JS in `poker/`. With `./start.sh`, open:
 
-```bash
-cd poker
-python -m http.server 8080
+```text
+http://127.0.0.1:8000/poker/
 ```
 
 ### Running Tests
 
 ```bash
-cd backend
-pytest                    # Run all tests
-pytest -v               # Verbose output
-pytest -k test_name     # Run specific test
-pytest --cov=app        # With coverage report
+npm test
 ```
+
+The root Jest config runs frontend tests for poker, craps, and blackjack. The separate `poker/backend/` pytest suite targets the standalone poker backend, not the shared production router.
 
 ## Code Style
 
@@ -107,21 +104,21 @@ def calculate_pot(players: list[Player]) -> int:
 Use clear, descriptive commit messages:
 
 ```
-[v1.0.5] Add hand history export feature
+[docs] Clarify active poker API
 
-- Add JSON export button to UI
-- Implement /api/poker/games/{id}/export endpoint
-- Add tests for export functionality
+- Document shared backend endpoints
+- Note standalone backend is not part of root Railway deploy
+- Update related setup notes
 ```
 
-Include the version number in brackets for releases.
+Use a short prefix when it helps, but keep the subject focused on the behavior or docs changed.
 
 ## Submitting Changes
 
 1. Create a new branch for your changes
 2. Make your changes with clear commits
 3. Add/update tests as needed
-4. Ensure all tests pass: `pytest`
+4. Ensure relevant tests pass
 5. Update relevant documentation
 6. Push to your fork
 7. Create a Pull Request
@@ -137,8 +134,8 @@ Include the version number in brackets for releases.
 
 Check `TASKS.md` for incomplete tasks. Priority areas:
 
-- **AI Improvements**: Better decision-making algorithms
-- **Testing**: Frontend unit tests with Jest/Vitest
+- **Backend alignment**: Decide whether production should keep using the shared backend or move to `poker/backend/`
+- **Testing**: Add tests for the active shared poker router
 - **Documentation**: User guides, API docs
 - **Performance**: WebSocket migration from polling
 

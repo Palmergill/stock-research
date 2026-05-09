@@ -19,9 +19,8 @@ Welcome to the Poker App! This guide will help you get started playing Texas Hol
 
 1. Visit https://palmergill.com/poker/
 2. Enter your name
-3. Select number of AI opponents (1-5)
-4. Click "Start Game"
-5. Play begins automatically with you as the dealer!
+3. Click "Play vs AI" for a single-player game, or create/join a multiplayer game
+4. Single-player play starts automatically against five AI opponents
 
 ---
 
@@ -62,8 +61,8 @@ This app plays **No-Limit Texas Hold'em**, the most popular poker variant.
 
 #### Blinds
 
-- **Small Blind**: Forced bet before cards are dealt (5 chips)
-- **Big Blind**: Forced bet, usually double the small blind (10 chips)
+- **Small Blind**: Forced bet before cards are dealt (10 chips)
+- **Big Blind**: Forced bet, usually double the small blind (20 chips)
 - Blinds rotate each hand
 
 ---
@@ -150,14 +149,6 @@ This updates as community cards are dealt.
 
 On mobile devices, you'll feel a vibration when it's your turn.
 
-### Hand History
-
-Click the "History" button to see:
-- All hands played in the session
-- Hole cards, community cards
-- Winners and pot sizes
-- Action sequences
-
 ### Player Statistics
 
 Click "Stats" on the start screen to view:
@@ -168,6 +159,10 @@ Click "Stats" on the start screen to view:
 - Best hand achieved
 
 Stats persist across sessions using browser storage.
+
+### Multiplayer
+
+Use "Create Multiplayer Game" to create a lobby and share the Game ID. The host can start once at least two players have joined. Use "Join Multiplayer Game" to enter an existing lobby.
 
 ---
 
@@ -280,21 +275,9 @@ AI opponents have different personalities:
 
 ### Lost Connection
 
-The game will attempt to reconnect automatically. If not:
+The game polls the backend for updates. If polling does not recover:
 1. Refresh the page
 2. Use the same game ID if you have it
-
----
-
-## Keyboard Shortcuts
-
-| Key | Action |
-|-----|--------|
-| `F` | Fold |
-| `C` | Check/Call |
-| `R` | Raise (opens slider) |
-| `Space` | All-in (when raising) |
-| `Esc` | Cancel raise |
 
 ---
 
@@ -303,9 +286,9 @@ The game will attempt to reconnect automatically. If not:
 Found a bug or have a suggestion?
 
 - Open an issue on GitHub
-- Check the task list at `/poker/TASKS.md`
-- Review the changelog at `/poker/CHANGELOG.md`
+- Check the task list at `poker/TASKS.md`
+- Review the changelog at `poker/CHANGELOG.md`
 
 ---
 
-**Good luck at the tables! 🍀🃏**
+**Good luck at the tables!**

@@ -26,7 +26,7 @@ From the repo root:
 ./start.sh
 ```
 
-That sets `LOCAL_SITE_ROOT=true`, which serves the root portfolio page and active project folders from the same FastAPI process.
+That sets `LOCAL_SITE_ROOT=true`, which serves the root portfolio page and configured project folders from the same FastAPI process.
 
 Protected local app routes and API routes require Basic Auth. Run:
 
@@ -34,11 +34,24 @@ Protected local app routes and API routes require Basic Auth. Run:
 APP_AUTH_USERNAME=palmer APP_AUTH_PASSWORD=your-password ./start.sh
 ```
 
-Poker, craps, and `/api/poker/*` remain public. Protected routes return `503` if `APP_AUTH_PASSWORD` is missing.
+Poker, craps, and `/api/poker/*` remain public. Stock research, Bitcoin chat, admin, and other `/api/*` routes are protected. Protected routes return `503` if `APP_AUTH_PASSWORD` is missing.
 
 ## Useful URLs
 
 - `http://127.0.0.1:8000/` - local site root when `LOCAL_SITE_ROOT=true`
 - `http://127.0.0.1:8000/stock-research/` - stock app
+- `http://127.0.0.1:8000/poker/` - poker app
+- `http://127.0.0.1:8000/craps/` - craps app
+- `http://127.0.0.1:8000/bitcoin-chat/` - Bitcoin chat app
+- `http://127.0.0.1:8000/admin/` - protected admin/log dashboard
 - `http://127.0.0.1:8000/health` - health check
 - `http://127.0.0.1:8000/docs` - FastAPI docs
+
+## Routers
+
+- `/api/stocks/*` - stock lookup, summary, earnings, and price history.
+- `/api/poker/*` - active integrated poker game API.
+- `/api/bitcoin/*` - Bitcoin node status, block/transaction/mempool lookups, and chat.
+- `/api/admin/*` - protected structured log and file-tail endpoints.
+
+The root deployment runs this shared backend. `poker/backend/` is a separate standalone poker service and is not imported here.

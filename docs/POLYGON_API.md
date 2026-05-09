@@ -1,8 +1,10 @@
 # Polygon.io API Integration Guide
 
-**Version:** v1.0.2  
-**Last Updated:** February 14, 2026  
-**API Version:** vX (latest)
+**Version:** v1.0.2
+
+**Last Updated:** May 9, 2026
+
+**API Version:** Polygon REST endpoints used by `backend/app/services/polygon_client.py`
 
 ## Overview
 
@@ -10,7 +12,34 @@ Polygon.io is our primary data source for the Stock Research App. This document 
 
 ## Current Endpoints in Use
 
-### 1. Ticker Details
+### 1. Ticker Search
+**Endpoint:** `GET /v3/reference/tickers`
+
+**Purpose:** Search active stock tickers by symbol or company name
+
+**Used in:** `polygon_client.py::search_stocks()`
+
+**Parameters we send:**
+- `search` - User query
+- `market=stocks`
+- `active=true`
+- `sort=ticker`
+- `order=asc`
+- `limit` - Defaults to 10
+
+**Response fields we use:**
+- `ticker`
+- `name`
+- `primary_exchange` - Displayed as the search result sector/fallback category
+
+**Example:**
+```bash
+curl "https://api.polygon.io/v3/reference/tickers?search=TSLA&market=stocks&active=true&limit=10&apiKey=YOUR_KEY"
+```
+
+---
+
+### 2. Ticker Details
 **Endpoint:** `GET /v3/reference/tickers/{ticker}`
 
 **Purpose:** Get company information and basic metrics
@@ -32,14 +61,12 @@ Polygon.io is our primary data source for the Stock Research App. This document 
 curl "https://api.polygon.io/v3/reference/tickers/TSLA?apiKey=YOUR_KEY"
 ```
 
-**Rate limit:** 100/min (Starter plan)
-
 ---
 
-### 2. Previous Close (Current Price)
+### 3. Previous Close (Fallback Current Price)
 **Endpoint:** `GET /v2/aggs/ticker/{ticker}/prev`
 
-**Purpose:** Get the previous trading day's OHLCV data
+**Purpose:** Get the previous trading day's OHLCV data. The app now prefers the most recent daily aggregate from `_get_price_history()` for displayed price and uses previous close as a fallback.
 
 **Used in:** `polygon_client.py::_get_previous_close()`
 
@@ -56,16 +83,14 @@ curl "https://api.polygon.io/v3/reference/tickers/TSLA?apiKey=YOUR_KEY"
 curl "https://api.polygon.io/v2/aggs/ticker/TSLA/prev?apiKey=YOUR_KEY"
 ```
 
-**Rate limit:** 100/min (Starter plan)
-
 ---
 
-### 3. Aggregates (Historical Prices)
+### 4. Aggregates (Historical Prices)
 **Endpoint:** `GET /v2/aggs/ticker/{ticker}/range/{multiplier}/{timespan}/{from}/{to}`
 
 **Purpose:** Get historical price data for charts
 
-**Used in:** `polygon_client.py::_get_52_week_range()`
+**Used in:** `polygon_client.py::_get_price_history()`
 
 **Parameters:**
 - `multiplier` - Number of timespans (1)
@@ -75,8 +100,8 @@ curl "https://api.polygon.io/v2/aggs/ticker/TSLA/prev?apiKey=YOUR_KEY"
 
 **Response fields we use:**
 - `results` - Array of OHLCV bars
-- `h` - High (52-week high)
-- `l` - Low (52-week low)
+- `t` - Timestamp, converted to `YYYY-MM-DD`
+- `o`, `h`, `l`, `c`, `v` - Open, high, low, close, volume
 
 **Example:**
 ```bash
@@ -84,11 +109,9 @@ curl "https://api.polygon.io/v2/aggs/ticker/TSLA/prev?apiKey=YOUR_KEY"
 curl "https://api.polygon.io/v2/aggs/ticker/TSLA/range/1/day/2024-02-14/2025-02-14?apiKey=YOUR_KEY"
 ```
 
-**Rate limit:** 100/min (Starter plan)
-
 ---
 
-### 4. Financial Statements (Quarterly)
+### 5. Financial Statements (Quarterly)
 **Endpoint:** `GET /vX/reference/financials`
 
 **Purpose:** Get quarterly financial statements (10-Q, 10-K)
@@ -98,7 +121,8 @@ curl "https://api.polygon.io/v2/aggs/ticker/TSLA/range/1/day/2024-02-14/2025-02-
 **Parameters:**
 - `ticker` - Stock symbol
 - `timeframe` - quarterly, annual
-- `limit` - Number of results (we use 8)
+- `order` - `desc`
+- `limit` - Number of results (we use 12, while most displayed history uses the latest 8 quarters)
 
 **Response sections we use:**
 
@@ -139,8 +163,6 @@ curl "https://api.polygon.io/v2/aggs/ticker/TSLA/range/1/day/2024-02-14/2025-02-
 curl "https://api.polygon.io/vX/reference/financials?ticker=TSLA&timeframe=quarterly&limit=8&apiKey=YOUR_KEY"
 ```
 
-**Rate limit:** 100/min (Starter plan)
-
 **Notes:**
 - This is our MOST IMPORTANT endpoint
 - Provides all data for: EPS, Revenue, FCF, ROE, Debt/Equity calculations
@@ -154,13 +176,23 @@ We calculate these metrics ourselves using Polygon data:
 
 | Metric | Calculation | Source Fields |
 |--------|-------------|---------------|
-| **P/E Ratio** | Price / TTM EPS | `close` / sum(4Q `basic_earnings_per_share`) |
+| **P/E Ratio** | Price / TTM EPS | latest close / sum(4Q `basic_earnings_per_share`) |
 | **Revenue Growth (YoY)** | (Q_now - Q_year_ago) / Q_year_ago × 100 | `revenues` current vs 4Q prior |
-| **ROE** | Net Income / Equity × 100 | `net_income_loss` / `equity` |
-| **Debt-to-Equity** | Liabilities / Equity | `liabilities` / `equity` |
-| **Free Cash Flow** | Operating Cash Flow | `net_cash_flow_from_operating_activities` |
-| **Profit Margin** | Net Income / Revenue × 100 | `net_income_loss` / `revenues` |
-| **Operating Margin** | Operating Income / Revenue × 100 | `operating_income_loss` / `revenues` |
+| **ROE** | TTM net income / latest equity × 100 | income statement + balance sheet |
+| **ROA** | TTM net income / latest assets × 100 | income statement + balance sheet |
+| **ROIC** | TTM operating income / invested capital × 100 | income statement + balance sheet |
+| **Debt-to-Equity** | Debt or liabilities / equity | balance sheet |
+| **Free Cash Flow** | Operating cash flow less capex when direct FCF is absent | cash flow statement |
+| **Profit Margin** | TTM net income / TTM revenue × 100 | income statement |
+| **Operating Margin** | TTM operating income / TTM revenue × 100 | income statement |
+| **Gross Margin** | TTM gross profit / TTM revenue × 100 | income statement |
+| **EBITDA Margin** | TTM EBITDA / TTM revenue × 100 | income statement |
+| **P/S, P/B, EV/EBITDA** | Market cap or enterprise value ratios | ticker details, price, financials |
+| **Current Ratio / Quick Ratio / Interest Coverage / Working Capital** | Balance-sheet and income-statement formulas | financials |
+
+## Optional Finnhub Enhancement
+
+When `FINNHUB_API_KEY` is configured, `stock_data_client.py` fetches earnings estimates from Finnhub and merges them into Polygon-derived earnings data. Polygon remains the primary source.
 
 ---
 
@@ -265,28 +297,23 @@ curl "https://api.polygon.io/v2/reference/news?ticker=TSLA&limit=10&apiKey=YOUR_
 
 ## Rate Limits by Plan
 
-| Plan | Price | Requests/Min | Requests/Day |
-|------|-------|--------------|--------------|
-| **Free** | $0 | 5 | 5 |
-| **Starter** | $49/mo | 100 | 10,000 |
-| **Developer** | $199/mo | 500 | 50,000 |
-| **Growth** | $499/mo | 1,000 | 100,000 |
-
-**Current:** We use the Starter plan ($49/month)
+Polygon plan limits can change and should be checked against the active Polygon account. The app reduces pressure on the API with database caching and by reusing aggregate price history for both chart data and the 52-week range.
 
 ---
 
 ## Best Practices
 
 ### 1. Caching Strategy
-- Cache for 1 hour (current implementation)
-- Financials change quarterly — could cache longer
-- Prices change continuously — keep 1 hour or shorter
+- Price cache target: 1 minute
+- Financials cache target: 24 hours
+- Company-info cache target: 24 hours
+- The combined stock summary currently uses the maximum configured TTL when deciding whether cached summary data is still usable.
 
 ### 2. Error Handling
 - Always check for `status: "OK"` in responses
 - Handle 429 (rate limit) with exponential backoff
-- Fallback to Yahoo Finance on Polygon failure
+- Serve stale cache on Polygon failure when available
+- Fall back to mock data only when `ALLOW_MOCK_FALLBACK=true`
 
 ### 3. Data Freshness
 - Financials: Available 30-45 days after quarter end
