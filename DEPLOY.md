@@ -7,6 +7,7 @@ The site is split into static project pages and a shared API backend.
 The active static site lives at the repo root:
 
 - `index.html`
+- `docs/`
 - `stock-research/`
 - `poker/`
 - `craps/`

@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Palmer Gill - Site Documentation</title>
+    <link rel="stylesheet" href="/docs/style.css">
+</head>
+<body>
+    <header class="docs-hero">
+        <nav class="top-nav" aria-label="Primary navigation">
+            <a class="brand" href="/">PG</a>
+            <div class="top-links">
+                <a href="/">Projects</a>
+                <a href="/stock-research/">Stock Research</a>
+                <a href="/poker/">Poker</a>
+                <a href="/craps/">Craps</a>
+                <a href="/blackjack/">Blackjack</a>
+                <a href="/bitcoin-chat/">Bitcoin Chat</a>
+            </div>
+        </nav>
+
+        <div class="hero-grid">
+            <div>
+                <p class="eyebrow">Website Docs</p>
+                <h1>Palmer Gill project site documentation</h1>
+                <p class="hero-copy">
+                    A single reference for the active pages, backend routes, local development,
+                    deployment model, authentication rules, and project-specific notes for this site.
+                </p>
+            </div>
+            <aside class="status-panel" aria-label="Site status summary">
+                <span class="status-label">Active site</span>
+                <strong>Static frontends + FastAPI backend</strong>
+                <p>Root pages are served statically. API requests are handled by the shared Railway FastAPI service.</p>
+            </aside>
+        </div>
+    </header>
+
+    <main class="docs-shell">
+        <aside class="toc" aria-label="Documentation sections">
+            <h2>Contents</h2>
+            <a href="#overview">Overview</a>
+            <a href="#site-map">Site Map</a>
+            <a href="#local-development">Local Development</a>
+            <a href="#architecture">Architecture</a>
+            <a href="#deployment">Deployment</a>
+            <a href="#authentication">Authentication</a>
+            <a href="#api">Backend API</a>
+            <a href="#projects">Project Docs</a>
+            <a href="#data-providers">Data Providers</a>
+            <a href="#testing">Testing</a>
+            <a href="#repo-layout">Repository Layout</a>
+            <a href="#source-docs">Source Docs</a>
+        </aside>
+
+        <div class="content">
+            <section id="overview" class="doc-section">
+                <p class="section-kicker">Overview</p>
+                <h2>What this website is</h2>
+                <p>
+                    This repository powers Palmer Gill's personal project website. The public root page
+                    is a project launcher, and each project lives in its own static folder. Shared API
+                    features run through a FastAPI backend in <code>backend/</code>.
+                </p>
+                <div class="summary-grid">
+                    <div class="summary-card">
+                        <span>Frontend</span>
+                        <strong>Static HTML, CSS, and JavaScript</strong>
+                        <p>Each app folder contains its own browser entrypoint and assets.</p>
+                    </div>
+                    <div class="summary-card">
+                        <span>Backend</span>
+                        <strong>FastAPI</strong>
+                        <p>Shared routes support stock data, poker, Bitcoin chat, and admin logs.</p>
+                    </div>
+                    <div class="summary-card">
+                        <span>Hosting</span>
+                        <strong>Vercel + Railway</strong>
+                        <p>Static routes stay on the website host; <code>/api/*</code> rewrites to Railway.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="site-map" class="doc-section">
+                <p class="section-kicker">Site Map</p>
+                <h2>Active website paths</h2>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Path</th>
+                                <th>Purpose</th>
+                                <th>Access</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>/</code></td>
+                                <td>Portfolio and project launcher.</td>
+                                <td>Public</td>
+                            </tr>
+                            <tr>
+                                <td><code>/docs/</code></td>
+                                <td>Static website documentation page.</td>
+                                <td>Public</td>
+                            </tr>
+                            <tr>
+                                <td><code>/stock-research/</code></td>
+                                <td>Stock research app for market data, fundamentals, and charts.</td>
+                                <td>Protected</td>
+                            </tr>
+                            <tr>
+                                <td><code>/poker/</code></td>
+                                <td>Texas Hold'em poker game with AI opponents and multiplayer support.</td>
+                                <td>Public</td>
+                            </tr>
+                            <tr>
+                                <td><code>/craps/</code></td>
+                                <td>Single-player Vegas-style craps game.</td>
+                                <td>Public</td>
+                            </tr>
+                            <tr>
+                                <td><code>/blackjack/</code></td>
+                                <td>Single-player blackjack table with Vegas-style rules.</td>
+                                <td>Public</td>
+                            </tr>
+                            <tr>
+                                <td><code>/bitcoin-chat/</code></td>
+                                <td>Natural-language Bitcoin node explorer and chat interface.</td>
+                                <td>Protected</td>
+                            </tr>
+                            <tr>
+                                <td><code>/admin/</code></td>
+                                <td>Backend log dashboard.</td>
+                                <td>Protected</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="local-development" class="doc-section">
+                <p class="section-kicker">Local Development</p>
+                <h2>Run the site locally</h2>
+                <p>Use the repo-level startup script to run the FastAPI backend and locally mounted static pages together.</p>
+                <pre><code>./start.sh</code></pre>
+                <p>Then open:</p>
+                <pre><code>http://127.0.0.1:8000</code></pre>
+                <p>
+                    Protected local app routes and API routes use Basic Auth when credentials are provided.
+                    Poker, craps, blackjack static hosting, and <code>/api/poker/*</code> are intended to stay public.
+                </p>
+                <pre><code>APP_AUTH_USERNAME=palmer APP_AUTH_PASSWORD=your-password ./start.sh</code></pre>
+                <p>Backend logs are written to:</p>
+                <pre><code>logs/backend.log</code></pre>
+                <p class="note">
+                    The shared backend still reserves <code>/docs</code> for generated FastAPI API docs when served directly.
+                    This static website documentation page is available as <code>/docs/</code> from static hosting.
+                </p>
+            </section>
+
+            <section id="architecture" class="doc-section">
+                <p class="section-kicker">Architecture</p>
+                <h2>How requests move through the system</h2>
+                <div class="flow">
+                    <div>Browser</div>
+                    <span>static pages</span>
+                    <div>Static host</div>
+                    <span><code>/api/*</code></span>
+                    <div>Railway FastAPI</div>
+                    <span>service clients</span>
+                    <div>Market data, Bitcoin RPC, database cache, logs</div>
+                </div>
+                <p>
+                    In local development, <code>LOCAL_SITE_ROOT=true</code> lets FastAPI serve the root site and active app
+                    folders from the same process. In production, the public website is static and the API backend is
+                    treated as a separate service.
+                </p>
+            </section>
+
+            <section id="deployment" class="doc-section">
+                <p class="section-kicker">Deployment</p>
+                <h2>Production model</h2>
+                <ul class="check-list">
+                    <li>Static hosting serves the repo root and active app directories.</li>
+                    <li>Vercel rewrites <code>/api/*</code> to the Railway backend.</li>
+                    <li>Railway builds from the root <code>Dockerfile</code> and runs <code>backend/app/main.py</code>.</li>
+                    <li>The root Dockerfile copies <code>backend/</code>; the standalone <code>poker/backend/</code> service is retained for reference.</li>
+                </ul>
+                <p>The Railway runtime command is:</p>
+                <pre><code>uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}</code></pre>
+                <p>Primary deployment variables:</p>
+                <div class="code-grid">
+                    <code>APP_AUTH_USERNAME</code>
+                    <code>APP_AUTH_PASSWORD</code>
+                    <code>USE_REAL_DATA</code>
+                    <code>POLYGON_API_KEY</code>
+                    <code>FINNHUB_API_KEY</code>
+                    <code>BITCOIN_RPC_URL</code>
+                    <code>BITCOIN_RPC_USER</code>
+                    <code>BITCOIN_RPC_PASSWORD</code>
+                    <code>OPENAI_API_KEY</code>
+                </div>
+            </section>
+
+            <section id="authentication" class="doc-section">
+                <p class="section-kicker">Authentication</p>
+                <h2>Protected and public routes</h2>
+                <p>
+                    App authentication uses HTTP Basic Auth. If <code>APP_AUTH_PASSWORD</code> is missing in production,
+                    protected routes return <code>503</code> instead of accidentally publishing private tools.
+                </p>
+                <div class="split-grid">
+                    <div class="panel">
+                        <h3>Public</h3>
+                        <ul>
+                            <li><code>/</code></li>
+                            <li><code>/docs/</code></li>
+                            <li><code>/poker/*</code></li>
+                            <li><code>/craps/*</code></li>
+                            <li><code>/blackjack/*</code></li>
+                            <li><code>/api/poker/*</code></li>
+                        </ul>
+                    </div>
+                    <div class="panel">
+                        <h3>Protected</h3>
+                        <ul>
+                            <li><code>/stock-research/*</code></li>
+                            <li><code>/bitcoin-chat/*</code></li>
+                            <li><code>/admin/*</code></li>
+                            <li><code>/api/*</code> except <code>/api/poker/*</code></li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section id="api" class="doc-section">
+                <p class="section-kicker">Backend API</p>
+                <h2>Shared FastAPI routes</h2>
+                <div class="api-list">
+                    <article>
+                        <h3><code>/api/stocks/*</code></h3>
+                        <p>Stock lookup, summaries, earnings, fundamentals, and price history for the stock research app.</p>
+                    </article>
+                    <article>
+                        <h3><code>/api/poker/*</code></h3>
+                        <p>Integrated poker game endpoints for game creation, game state, player actions, buy-back, next hand, and health.</p>
+                    </article>
+                    <article>
+                        <h3><code>/api/bitcoin/*</code></h3>
+                        <p>Bitcoin health, node status, latest block, block lookup, transaction lookup, mempool summary, and chat.</p>
+                    </article>
+                    <article>
+                        <h3><code>/api/admin/*</code></h3>
+                        <p>Protected structured log and file-tail endpoints used by the admin dashboard.</p>
+                    </article>
+                    <article>
+                        <h3><code>/health</code></h3>
+                        <p>Backend health check endpoint.</p>
+                    </article>
+                    <article>
+                        <h3><code>/docs</code></h3>
+                        <p>Generated FastAPI API documentation when talking directly to the backend service.</p>
+                    </article>
+                </div>
+            </section>
+
+            <section id="projects" class="doc-section">
+                <p class="section-kicker">Project Docs</p>
+                <h2>App-specific documentation</h2>
+                <div class="project-docs">
+                    <article>
+                        <h3>Stock Research</h3>
+                        <p>
+                            Uses Polygon as the primary market data source, with optional Finnhub earnings estimates.
+                            The backend derives ratios such as P/E, revenue growth, ROE, ROA, ROIC, debt-to-equity,
+                            margins, free cash flow, and balance-sheet metrics from provider data.
+                        </p>
+                        <a href="/stock-research/">Open app</a>
+                    </article>
+                    <article>
+                        <h3>Texas Hold'em Poker</h3>
+                        <p>
+                            Browser poker app with AI opponents, multiplayer lobbies, persisted player stats,
+                            theme controls, card deck themes, dark mode, PWA support, and a public integrated API.
+                        </p>
+                        <a href="/poker/">Open app</a>
+                    </article>
+                    <article>
+                        <h3>Craps</h3>
+                        <p>
+                            Single-player dice table with Pass Line, Come, and proposition betting. The game handles
+                            point state, payouts, and dice results in the browser.
+                        </p>
+                        <a href="/craps/">Open app</a>
+                    </article>
+                    <article>
+                        <h3>Blackjack</h3>
+                        <p>
+                            Single-player blackjack with a six-deck shoe, dealer hits soft 17, 3:2 naturals,
+                            double after split, pair splitting, split aces, insurance, and focused game-rule tests.
+                        </p>
+                        <a href="/blackjack/">Open app</a>
+                    </article>
+                    <article>
+                        <h3>Bitcoin Chat</h3>
+                        <p>
+                            Chat interface connected to read-only Bitcoin Core RPC methods through Railway and a
+                            Cloudflare Tunnel. It can answer questions about blocks, transactions, mempool fees,
+                            node status, and mined-BTC data.
+                        </p>
+                        <a href="/bitcoin-chat/">Open app</a>
+                    </article>
+                    <article>
+                        <h3>Admin</h3>
+                        <p>
+                            Protected dashboard for backend logs and operational inspection. Keep it behind Basic Auth
+                            in both Vercel and Railway environments.
+                        </p>
+                        <a href="/admin/">Open app</a>
+                    </article>
+                </div>
+            </section>
+
+            <section id="data-providers" class="doc-section">
+                <p class="section-kicker">Data Providers</p>
+                <h2>External services</h2>
+                <div class="split-grid">
+                    <div class="panel">
+                        <h3>Polygon.io</h3>
+                        <p>Primary Stock Research data source.</p>
+                        <ul>
+                            <li>Ticker search: <code>/v3/reference/tickers</code></li>
+                            <li>Ticker details: <code>/v3/reference/tickers/{ticker}</code></li>
+                            <li>Previous close: <code>/v2/aggs/ticker/{ticker}/prev</code></li>
+                            <li>Historical prices: <code>/v2/aggs/ticker/{ticker}/range/*</code></li>
+                            <li>Financial statements: <code>/vX/reference/financials</code></li>
+                        </ul>
+                    </div>
+                    <div class="panel">
+                        <h3>Bitcoin Core RPC</h3>
+                        <p>Read-only Bitcoin node data for Bitcoin Chat.</p>
+                        <ul>
+                            <li>Production tunnel hostname: <code>bitcoin-rpc.palmergill.com</code></li>
+                            <li>Allowed methods include block, transaction, mempool, and fee-estimate reads.</li>
+                            <li>Wallet, signing, broadcast, and private-key methods should stay disabled.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <section id="testing" class="doc-section">
+                <p class="section-kicker">Testing</p>
+                <h2>Available test commands</h2>
+                <p>Jest is configured for browser-game logic tests under poker, craps, and blackjack.</p>
+                <pre><code>npm test</code></pre>
+                <pre><code>npm run test:watch</code></pre>
+                <pre><code>npm run test:coverage</code></pre>
+                <p>Backend-specific tests also exist under <code>poker/backend/tests/</code> for the standalone poker service.</p>
+            </section>
+
+            <section id="repo-layout" class="doc-section">
+                <p class="section-kicker">Repository Layout</p>
+                <h2>Where things live</h2>
+                <div class="repo-grid">
+                    <code>index.html</code><span>Project launcher page.</span>
+                    <code>docs/</code><span>Static website docs plus provider/setup markdown docs.</span>
+                    <code>shared/</code><span>Shared navigation assets used by project pages.</span>
+                    <code>backend/</code><span>Active shared FastAPI API service.</span>
+                    <code>stock-research/</code><span>Stock research frontend.</span>
+                    <code>poker/</code><span>Poker frontend, tests, docs, and standalone backend reference code.</span>
+                    <code>craps/</code><span>Craps frontend and tests.</span>
+                    <code>blackjack/</code><span>Blackjack frontend and tests.</span>
+                    <code>bitcoin-chat/</code><span>Bitcoin chat frontend.</span>
+                    <code>admin/</code><span>Protected log dashboard.</span>
+                    <code>archive/</code><span>Legacy frontends, demos, and planning artifacts.</span>
+                </div>
+            </section>
+
+            <section id="source-docs" class="doc-section">
+                <p class="section-kicker">Source Docs</p>
+                <h2>Canonical markdown files</h2>
+                <p>
+                    This page summarizes the website documentation in one public HTML page. The source markdown files
+                    remain useful for implementation-level details.
+                </p>
+                <div class="source-list">
+                    <a href="/README.md">README.md</a>
+                    <a href="/ARCHITECTURE.md">ARCHITECTURE.md</a>
+                    <a href="/DEPLOY.md">DEPLOY.md</a>
+                    <a href="/backend/README.md">backend/README.md</a>
+                    <a href="/docs/BITCOIN_CHAT_SETUP.md">docs/BITCOIN_CHAT_SETUP.md</a>
+                    <a href="/docs/POLYGON_API.md">docs/POLYGON_API.md</a>
+                    <a href="/poker/API.md">poker/API.md</a>
+                    <a href="/poker/ARCHITECTURE.md">poker/ARCHITECTURE.md</a>
+                    <a href="/poker/USER_GUIDE.md">poker/USER_GUIDE.md</a>
+                    <a href="/poker/CONTRIBUTING.md">poker/CONTRIBUTING.md</a>
+                    <a href="/poker/CHANGELOG.md">poker/CHANGELOG.md</a>
+                    <a href="/poker/TASKS.md">poker/TASKS.md</a>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="docs-footer">
+        <p>Site documentation for Palmer Gill. Last organized May 9, 2026.</p>
+    </footer>
+</body>
+</html>

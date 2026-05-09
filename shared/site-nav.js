@@ -7,6 +7,12 @@
             icon: "layout-dashboard"
         },
         {
+            label: "Docs",
+            hint: "Site reference",
+            href: "/docs/",
+            icon: "book-open"
+        },
+        {
             label: "Stock Research",
             hint: "Market data",
             href: "/stock-research/",
