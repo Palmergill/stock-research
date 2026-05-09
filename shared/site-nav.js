@@ -25,6 +25,12 @@
             icon: "dices"
         },
         {
+            label: "Blackjack",
+            hint: "Vegas table",
+            href: "/blackjack/",
+            icon: "badge-dollar-sign"
+        },
+        {
             label: "Bitcoin Chat",
             hint: "Node console",
             href: "/bitcoin-chat/",

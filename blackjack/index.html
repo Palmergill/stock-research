@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blackjack - Vegas Table</title>
+    <link rel="stylesheet" href="/shared/site-nav.css?v=3">
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <main class="blackjack-shell">
+        <header class="game-header">
+            <div>
+                <h1>Blackjack</h1>
+            </div>
+            <div class="chip-ledger" aria-label="Chip balance">
+                <span>Bankroll</span>
+                <strong id="balance">$1000</strong>
+            </div>
+        </header>
+
+        <section class="table" aria-label="Blackjack table">
+            <div class="table-rail">
+                <div class="table-rules">
+                    <span>Blackjack pays 3 to 2</span>
+                    <span>Dealer hits soft 17</span>
+                </div>
+                <div class="shoe-meter">
+                    <span>Shoe</span>
+                    <strong id="shoeCount">312</strong>
+                </div>
+                <button class="icon-button" id="newShoeButton" type="button" title="New shoe" aria-label="New shoe">
+                    <i data-lucide="refresh-cw" aria-hidden="true"></i>
+                </button>
+                <button class="icon-button" id="resetButton" type="button" title="Reset bankroll" aria-label="Reset bankroll">
+                    <i data-lucide="rotate-ccw" aria-hidden="true"></i>
+                </button>
+            </div>
+
+            <section class="dealer-zone" aria-label="Dealer hand">
+                <div class="zone-heading">
+                    <span>Dealer</span>
+                    <strong id="dealerTotal">?</strong>
+                </div>
+                <div class="cards" id="dealerCards"></div>
+            </section>
+
+            <section class="player-zone" aria-label="Player hands">
+                <div class="zone-heading">
+                    <span>Your hands</span>
+                    <strong id="activeHandLabel">Bet $25</strong>
+                </div>
+                <div class="hands" id="playerHands"></div>
+            </section>
+        </section>
+
+        <aside class="control-panel" aria-label="Game controls">
+            <div class="panel-title">
+                <h2>Table Controls</h2>
+                <span>$5 min · $500 max</span>
+            </div>
+            <div class="status-bar" id="statusText" role="status">Place your bet.</div>
+
+            <div class="betting-controls" id="bettingControls">
+                <div class="bet-display">
+                    <span>Bet</span>
+                    <strong id="betAmount">$25</strong>
+                </div>
+                <div class="chip-row" aria-label="Bet chips">
+                    <button class="chip-button" type="button" data-chip="5">$5</button>
+                    <button class="chip-button" type="button" data-chip="25">$25</button>
+                    <button class="chip-button" type="button" data-chip="100">$100</button>
+                    <button class="chip-button" type="button" data-chip="500">$500</button>
+                </div>
+                <div class="bet-stepper">
+                    <button class="icon-button" id="betDownButton" type="button" title="Lower bet" aria-label="Lower bet">
+                        <i data-lucide="minus" aria-hidden="true"></i>
+                    </button>
+                    <button class="primary-button" id="dealButton" type="button">Deal</button>
+                    <button class="icon-button" id="betUpButton" type="button" title="Raise bet" aria-label="Raise bet">
+                        <i data-lucide="plus" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="insurance-controls" id="insuranceControls" hidden>
+                <button class="secondary-button" id="insuranceButton" type="button">Insurance</button>
+                <button class="primary-button" id="declineInsuranceButton" type="button">No Insurance</button>
+            </div>
+
+            <div class="action-grid" id="actionControls">
+                <button class="secondary-button" id="hitButton" type="button">Hit</button>
+                <button class="secondary-button" id="standButton" type="button">Stand</button>
+                <button class="secondary-button" id="doubleButton" type="button">Double</button>
+                <button class="secondary-button" id="splitButton" type="button">Split</button>
+            </div>
+
+            <div class="rules-strip" aria-label="Rules">
+                <span>3:2 blackjack</span>
+                <span>H17</span>
+                <span>DAS</span>
+                <span>6 decks</span>
+            </div>
+        </aside>
+    </main>
+
+    <script src="./blackjackGame.js"></script>
+    <script src="./app.js"></script>
+    <script src="/shared/site-nav.js"></script>
+</body>
+</html>
