@@ -570,10 +570,6 @@ button:disabled {
 }
 
 @media (max-width: 760px) {
-    body.has-site-nav {
-        overflow: hidden;
-    }
-
     .blackjack-shell {
         width: min(100vw - 20px, 1180px);
         min-height: calc(100vh - var(--site-nav-mobile-height, 56px));
@@ -581,9 +577,8 @@ button:disabled {
         height: calc(100vh - var(--site-nav-mobile-height, 56px));
         height: calc(100dvh - var(--site-nav-mobile-height, 56px));
         grid-template-rows: auto minmax(0, 1fr) auto;
-        gap: 8px;
-        overflow: hidden;
-        padding: 8px 0;
+        gap: 6px;
+        padding: 4px 0;
     }
 
     .game-header {
@@ -660,6 +655,10 @@ button:disabled {
         gap: 7px;
     }
 
+    .dealer-zone {
+        min-height: 102px;
+    }
+
     .hands {
         grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
         gap: 8px;
@@ -685,8 +684,8 @@ button:disabled {
     .control-panel {
         position: relative;
         bottom: auto;
-        gap: 8px;
-        padding: 9px;
+        gap: 7px;
+        padding: 8px;
     }
 
     .panel-title {
@@ -701,7 +700,7 @@ button:disabled {
     }
 
     .betting-controls {
-        gap: 8px;
+        gap: 7px;
     }
 
     .bet-display {
