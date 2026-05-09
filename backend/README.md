@@ -34,7 +34,7 @@ Protected local app routes and API routes require Basic Auth. Run:
 APP_AUTH_USERNAME=palmer APP_AUTH_PASSWORD=your-password ./start.sh
 ```
 
-Poker, craps, and `/api/poker/*` remain public. Stock research, Bitcoin chat, admin, and other `/api/*` routes are protected. Protected routes return `503` if `APP_AUTH_PASSWORD` is missing.
+Poker, craps, and `/api/poker/*` remain public. Stock research, Bitcoin chat, admin, FastAPI docs, OpenAPI JSON, and other `/api/*` routes are protected. Protected routes return `503` if `APP_AUTH_PASSWORD` is missing.
 
 ## Useful URLs
 
@@ -45,7 +45,7 @@ Poker, craps, and `/api/poker/*` remain public. Stock research, Bitcoin chat, ad
 - `http://127.0.0.1:8000/bitcoin-chat/` - Bitcoin chat app
 - `http://127.0.0.1:8000/admin/` - protected admin/log dashboard
 - `http://127.0.0.1:8000/health` - health check
-- `http://127.0.0.1:8000/docs` - FastAPI docs
+- `http://127.0.0.1:8000/docs` - protected FastAPI docs
 
 ## Routers
 

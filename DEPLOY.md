@@ -19,6 +19,7 @@ Production static hosting should serve those files directly. `vercel.json` rewri
 
 Vercel middleware keeps `/` public and requires Basic Auth for:
 
+- `/docs` and `/docs/*`
 - `/stock-research/*`
 - `/bitcoin-chat/*`
 - `/admin/*`
@@ -49,7 +50,7 @@ Health check:
 /health
 ```
 
-The backend mirrors the same Basic Auth check for protected `/api/*` routes and locally served app folders. Poker, craps, and `/api/poker/*` remain public in the backend; blackjack is served by static hosting in the current deployment. Stock research, Bitcoin chat, admin, and other `/api/*` routes are protected. Protected routes return `503` if `APP_AUTH_PASSWORD` is missing, so set the same `APP_AUTH_USERNAME` and `APP_AUTH_PASSWORD` values in Railway to keep direct backend access usable and protected.
+The backend mirrors the same Basic Auth check for protected API docs, `/api/*` routes, and locally served app folders. Poker, craps, and `/api/poker/*` remain public in the backend; blackjack is served by static hosting in the current deployment. Stock research, Bitcoin chat, admin, FastAPI docs, and other `/api/*` routes are protected. Protected routes return `503` if `APP_AUTH_PASSWORD` is missing, so set the same `APP_AUTH_USERNAME` and `APP_AUTH_PASSWORD` values in Railway to keep direct backend access usable and protected.
 
 The root Railway deployment uses the root `Dockerfile`, which copies only `backend/`. The standalone service under `poker/backend/` is not active in this deployment path.
 

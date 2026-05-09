@@ -5,7 +5,7 @@ Personal project site plus shared API backend.
 ## Active Site Paths
 
 - `/` - project index
-- `/docs/` - public website documentation
+- `/docs/` - protected website documentation
 - `/stock-research/` - polished stock research app
 - `/poker/` - Texas Hold'em poker app
 - `/craps/` - craps app
@@ -20,7 +20,7 @@ Personal project site plus shared API backend.
 - `/api/bitcoin/*` - Bitcoin chat API
 - `/api/admin/*` - protected admin/log APIs
 - `/health` - backend health check
-- `/docs` - FastAPI docs when accessing the backend service directly
+- `/docs` - protected FastAPI docs when accessing the backend service directly
 
 ## Local Development
 
@@ -61,7 +61,7 @@ logs/backend.log
 backend/          FastAPI API service
 admin/            Protected admin/log dashboard
 shared/           Shared static navigation assets
-docs/             Public website docs and provider/setup markdown docs
+docs/             Protected website docs and provider/setup markdown docs
 stock-research/   Active stock research frontend
 poker/            Active poker frontend and supporting docs/tests
 craps/            Active craps frontend

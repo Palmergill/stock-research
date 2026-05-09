@@ -103,7 +103,7 @@
                             <tr>
                                 <td><code>/docs/</code></td>
                                 <td>Static website documentation page.</td>
-                                <td>Public</td>
+                                <td>Protected</td>
                             </tr>
                             <tr>
                                 <td><code>/stock-research/</code></td>
@@ -156,7 +156,7 @@
                 <pre><code>logs/backend.log</code></pre>
                 <p class="note">
                     The shared backend still reserves <code>/docs</code> for generated FastAPI API docs when served directly.
-                    This static website documentation page is available as <code>/docs/</code> from static hosting.
+                    Both backend API docs and the static website docs route should stay behind Basic Auth.
                 </p>
             </section>
 
@@ -216,7 +216,6 @@
                         <h3>Public</h3>
                         <ul>
                             <li><code>/</code></li>
-                            <li><code>/docs/</code></li>
                             <li><code>/poker/*</code></li>
                             <li><code>/craps/*</code></li>
                             <li><code>/blackjack/*</code></li>
@@ -226,6 +225,7 @@
                     <div class="panel">
                         <h3>Protected</h3>
                         <ul>
+                            <li><code>/docs/*</code></li>
                             <li><code>/stock-research/*</code></li>
                             <li><code>/bitcoin-chat/*</code></li>
                             <li><code>/admin/*</code></li>

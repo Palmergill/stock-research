@@ -24,7 +24,7 @@ FastAPI backend
 The active public site is static:
 
 - `/` - portfolio/project launcher from `index.html`
-- `/docs/` - public website documentation from `docs/index.html`
+- `/docs/` - protected website documentation from `docs/index.html`
 - `/stock-research/` - stock research app
 - `/poker/` - poker app
 - `/craps/` - craps app
@@ -45,7 +45,7 @@ Important routes:
 - `/api/bitcoin/*`
 - `/api/admin/*`
 - `/health`
-- `/docs` - FastAPI docs when accessing the backend service directly
+- `/docs` - protected FastAPI docs when accessing the backend service directly
 
 In production, `/` returns API metadata from the Railway API service. In local development, `./start.sh` sets `LOCAL_SITE_ROOT=true`, which makes FastAPI serve the root portfolio page and most active static project folders from the same process.
 

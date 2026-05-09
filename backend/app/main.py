@@ -19,6 +19,8 @@ PUBLIC_PATH_PREFIXES = (
     "/craps",
 )
 PROTECTED_PATH_PREFIXES = (
+    "/docs",
+    "/openapi.json",
     "/api",
     "/stock-research",
     "/bitcoin-chat",
