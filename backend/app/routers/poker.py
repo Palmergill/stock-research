@@ -2,10 +2,11 @@
 Poker Game API Router - Simplified for debugging
 """
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
-from typing import Optional, Dict, List
+from pydantic import BaseModel, Field
+from typing import Optional, Dict
 import uuid
 import asyncio
+import secrets
 import time
 
 from app.poker_game import PokerGame
@@ -15,8 +16,9 @@ router = APIRouter(prefix="/api/poker", tags=["poker"])
 
 # In-memory game storage
 games: Dict[str, PokerGame] = {}
-ai_managers: Dict[str, AIManager] = {}
+ai_managers: Dict[str, Optional[AIManager]] = {}
 game_last_accessed: Dict[str, float] = {}
+player_tokens: Dict[str, Dict[str, str]] = {}
 
 GAME_MAX_AGE_SECONDS = 3600
 
@@ -31,40 +33,67 @@ def cleanup_old_games():
         games.pop(game_id, None)
         ai_managers.pop(game_id, None)
         game_last_accessed.pop(game_id, None)
+        player_tokens.pop(game_id, None)
     return len(games_to_remove)
 
 def update_game_access(game_id: str):
     """Update last access time for a game"""
     game_last_accessed[game_id] = time.time()
 
+
+def normalize_player_name(name: str) -> str:
+    cleaned = " ".join((name or "Player").strip().split()) or "Player"
+    if any(char in cleaned for char in "<>") or any(ord(char) < 32 for char in cleaned):
+        raise HTTPException(status_code=400, detail="Player name contains unsupported characters")
+    return cleaned[:32]
+
+
+def create_player_token(game_id: str, player_id: str) -> str:
+    token = secrets.token_urlsafe(24)
+    player_tokens.setdefault(game_id, {})[player_id] = token
+    return token
+
+
+def require_player_token(game_id: str, player_id: str, player_token: Optional[str]) -> None:
+    expected = player_tokens.get(game_id, {}).get(player_id)
+    if not expected or not player_token or not secrets.compare_digest(expected, player_token):
+        raise HTTPException(status_code=403, detail="Invalid player token")
+
+
 class CreateGameRequest(BaseModel):
-    player_name: str = "Player"
+    player_name: str = Field("Player", max_length=48)
     game_type: str = "single"
-    max_players: int = 6
+    max_players: int = Field(6, ge=2, le=6)
 
 class JoinGameRequest(BaseModel):
     game_id: str
-    player_name: str = "Player"
+    player_name: str = Field("Player", max_length=48)
 
 class ActionRequest(BaseModel):
     player_id: str
+    player_token: str
     action: str
     amount: Optional[int] = None
 
 class BuyBackRequest(BaseModel):
     player_id: str
+    player_token: str
     amount: int = 1000
 
 @router.post("/games")
 async def create_game(request: CreateGameRequest):
     """Create a new poker game"""
+    if request.game_type not in ("single", "multiplayer"):
+        raise HTTPException(status_code=400, detail="Unsupported game type")
+
     game_id = str(uuid.uuid4())[:8]
     game = PokerGame(game_id)
     game.game_type = request.game_type
     game.max_players = request.max_players
 
     # Add first player
-    human = game.add_player(request.player_name, is_human=True)
+    human = game.add_player(normalize_player_name(request.player_name), is_human=True)
+    player_token = create_player_token(game_id, human.id)
 
     if request.game_type == "single":
         # Add AI bots
@@ -84,6 +113,7 @@ async def create_game(request: CreateGameRequest):
         return {
             "game_id": game_id,
             "player_id": human.id,
+            "player_token": player_token,
             "state": game.to_dict(for_player=human.id),
             "game_type": "single"
         }
@@ -97,6 +127,7 @@ async def create_game(request: CreateGameRequest):
         return {
             "game_id": game_id,
             "player_id": human.id,
+            "player_token": player_token,
             "state": game.to_dict(for_player=human.id),
             "game_type": "multiplayer",
             "players": [p.to_dict() for p in game.players],
@@ -121,24 +152,27 @@ async def join_game(request: JoinGameRequest):
         raise HTTPException(status_code=400, detail="Game already started")
 
     # Add new player
-    player = game.add_player(request.player_name, is_human=True)
+    player = game.add_player(normalize_player_name(request.player_name), is_human=True)
+    player_token = create_player_token(request.game_id, player.id)
     update_game_access(request.game_id)
 
     return {
         "game_id": request.game_id,
         "player_id": player.id,
+        "player_token": player_token,
         "state": game.to_dict(for_player=player.id),
         "players": [p.to_dict() for p in game.players],
         "waiting": len(game.players) < 2
     }
 
 @router.post("/games/{game_id}/start")
-async def start_multiplayer_game(game_id: str, player_id: str):
+async def start_multiplayer_game(game_id: str, player_id: str, player_token: str):
     """Start a multiplayer game (host only)"""
     if game_id not in games:
         raise HTTPException(status_code=404, detail="Game not found")
 
     game = games[game_id]
+    require_player_token(game_id, player_id, player_token)
 
     if getattr(game, 'game_type', 'single') != "multiplayer":
         raise HTTPException(status_code=400, detail="Not a multiplayer game")
@@ -156,13 +190,14 @@ async def start_multiplayer_game(game_id: str, player_id: str):
     return game.to_dict(for_player=player_id)
 
 @router.get("/games/{game_id}")
-async def get_game_state(game_id: str, player_id: str, process_ai: bool = True):
+async def get_game_state(game_id: str, player_id: str, player_token: str, process_ai: bool = True):
     """Get current game state"""
     if game_id not in games:
         raise HTTPException(status_code=404, detail="Game not found")
 
-    update_game_access(game_id)
     game = games[game_id]
+    require_player_token(game_id, player_id, player_token)
+    update_game_access(game_id)
 
     # Process AI turns for single player
     is_single_player = getattr(game, 'game_type', 'single') == 'single'
@@ -186,8 +221,9 @@ async def player_action(game_id: str, request: ActionRequest):
     if game_id not in games:
         raise HTTPException(status_code=404, detail="Game not found")
 
-    update_game_access(game_id)
     game = games[game_id]
+    require_player_token(game_id, request.player_id, request.player_token)
+    update_game_access(game_id)
 
     current = game.get_current_player()
     if not current or current.id != request.player_id:
@@ -220,6 +256,7 @@ async def buy_back(game_id: str, request: BuyBackRequest):
         raise HTTPException(status_code=400, detail="Buy-back amount must be positive")
 
     game = games[game_id]
+    require_player_token(game_id, request.player_id, request.player_token)
     player = game._get_player(request.player_id)
     if not player:
         raise HTTPException(status_code=404, detail="Player not found")
@@ -235,12 +272,13 @@ async def buy_back(game_id: str, request: BuyBackRequest):
     return game.to_dict(for_player=request.player_id)
 
 @router.post("/games/{game_id}/next-hand")
-async def next_hand(game_id: str, player_id: str):
+async def next_hand(game_id: str, player_id: str, player_token: str):
     """Start next hand"""
     if game_id not in games:
         raise HTTPException(status_code=404, detail="Game not found")
 
     game = games[game_id]
+    require_player_token(game_id, player_id, player_token)
 
     if game.phase not in ('showdown', 'waiting'):
         raise HTTPException(status_code=400, detail="Hand still in progress")

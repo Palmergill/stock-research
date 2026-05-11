@@ -121,9 +121,9 @@ const AvatarManager = {
         const sizeClass = size === 'small' ? 'avatar-small' : size === 'large' ? 'avatar-large' : 'avatar-medium';
 
         if (avatar.type === 'emoji') {
-            return `<div class="avatar ${sizeClass}" style="background-color: ${avatar.bgColor};">${avatar.emoji}</div>`;
+            return `<div class="avatar ${sizeClass}" style="background-color: ${escapeHtml(avatar.bgColor)};">${escapeHtml(avatar.emoji)}</div>`;
         } else {
-            return `<div class="avatar ${sizeClass}" style="background-color: ${avatar.bgColor};"><span class="avatar-initials">${avatar.initials}</span></div>`;
+            return `<div class="avatar ${sizeClass}" style="background-color: ${escapeHtml(avatar.bgColor)};"><span class="avatar-initials">${escapeHtml(avatar.initials)}</span></div>`;
         }
     }
 };
@@ -626,6 +626,7 @@ document.head.appendChild(errorStyles);
 
 let gameState = null;
 let playerId = null;
+let playerToken = null;
 let gameId = null;
 let isMyTurn = false;
 let raiseAmount = 0;
@@ -658,6 +659,24 @@ let hasVibratedThisTurn = false; // Track if we've vibrated for current turn
 let seenCards = new Set(); // Track cards we've already animated
 let lastHandNumber = 0; // Track hand number for stats
 let handResultRecorded = false; // Prevent duplicate stat recording
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function gameRequestUrl(path, params = {}) {
+    const query = new URLSearchParams({
+        ...params,
+        player_id: playerId,
+        player_token: playerToken
+    });
+    return `${API_BASE}/api/poker${path}?${query.toString()}`;
+}
 
 // DOM Elements
 const screens = {
@@ -978,6 +997,7 @@ document.addEventListener('DOMContentLoaded', () => {
             stopPolling();
             gameId = null;
             playerId = null;
+            playerToken = null;
             gameState = null;
             switchScreen('start');
         });
@@ -1092,6 +1112,7 @@ async function startGame(gameType = 'single') {
         const data = await response.json();
         gameId = data.game_id;
         playerId = data.player_id;
+        playerToken = data.player_token;
         updateGameState(data.state);
 
         elements.yourName.textContent = name;
@@ -1139,12 +1160,13 @@ function showLobby(data) {
 function updateLobbyPlayers(players) {
     const container = document.getElementById('lobby-players');
     if (!container) return;
-    
-    container.innerHTML = players.map((p, i) => `
-        <div style="padding: 8px; background: rgba(255,255,255,0.1); border-radius: 8px; margin-bottom: 8px;">
-            ${i === 0 ? '👑 ' : ''}${p.name} ${p.id === playerId ? '(You)' : ''}
-        </div>
-    `).join('');
+
+    container.replaceChildren(...players.map((p, i) => {
+        const row = document.createElement('div');
+        row.style.cssText = 'padding: 8px; background: rgba(255,255,255,0.1); border-radius: 8px; margin-bottom: 8px;';
+        row.textContent = `${i === 0 ? 'Host ' : ''}${p.name} ${p.id === playerId ? '(You)' : ''}`;
+        return row;
+    }));
     
     const statusEl = document.getElementById('lobby-status');
     if (statusEl) {
@@ -1168,7 +1190,7 @@ function startLobbyPolling() {
         }
         
         try {
-            const response = await fetch(`${API_BASE}/api/poker/games/${gameId}?player_id=${playerId}&process_ai=false`);
+            const response = await fetch(gameRequestUrl(`/games/${gameId}`, { process_ai: 'false' }));
             if (response.ok) {
                 const data = await response.json();
                 updateLobbyPlayers(data.players);
@@ -1215,6 +1237,7 @@ async function joinMultiplayerGame() {
         const data = await response.json();
         gameId = data.game_id;
         playerId = data.player_id;
+        playerToken = data.player_token;
         
         elements.yourName.textContent = name;
         
@@ -1237,7 +1260,7 @@ async function startMultiplayerGame() {
     if (!gameId) return;
     
     try {
-        const response = await CSRFManager.fetch(`${API_BASE}/api/poker/games/${gameId}/start?player_id=${playerId}`, {
+        const response = await CSRFManager.fetch(gameRequestUrl(`/games/${gameId}/start`), {
             method: 'POST'
         });
         
@@ -1277,7 +1300,7 @@ function startPolling() {
         pollInFlight = true;
         
         try {
-            const response = await fetch(`${API_BASE}/api/poker/games/${gameId}?player_id=${playerId}&process_ai=${processAI}`);
+            const response = await fetch(gameRequestUrl(`/games/${gameId}`, { process_ai: String(processAI) }));
             if (!response.ok) {
                 if (response.status === 404) {
                     stopPolling();
@@ -1330,7 +1353,7 @@ async function playerAction(action) {
     isRequestPending = true;
     
     try {
-        const body = { player_id: playerId, action };
+        const body = { player_id: playerId, player_token: playerToken, action };
         if (amount !== null) body.amount = amount;
         if (actionToken) body.action_token = actionToken; // Include anti-replay token
         
@@ -1436,7 +1459,7 @@ async function nextHand() {
         elements.btnNextHand.disabled = true;
         showLoading('Dealing next hand...');
 
-        const response = await CSRFManager.fetch(`${API_BASE}/api/poker/games/${gameId}/next-hand?player_id=${playerId}`, {
+        const response = await CSRFManager.fetch(gameRequestUrl(`/games/${gameId}/next-hand`), {
             method: 'POST'
         });
 
@@ -1518,18 +1541,24 @@ function updateGameDisplay() {
         const handStrength = evaluateHandStrength(myPlayer.hand, gameState.community_cards);
         const currentStrength = elements.handStrength.textContent;
         if (handStrength && handStrength !== currentStrength) {
-            elements.handStrength.innerHTML = `<span class="hand-strength-text">${handStrength}</span>`;
+            const strengthText = document.createElement('span');
+            strengthText.className = 'hand-strength-text';
+            strengthText.textContent = handStrength;
+            elements.handStrength.replaceChildren(strengthText);
         } else if (!handStrength) {
-            elements.handStrength.innerHTML = '';
+            elements.handStrength.replaceChildren();
         }
         
         // Show AI action indicator
         if (gameState.last_ai_action) {
             const action = gameState.last_ai_action;
             const actionText = `${action.player_name}: ${formatActionLabel(action)}`;
-            elements.aiActionIndicator.innerHTML = `<span class="ai-action-text">${actionText}</span>`;
+            const aiActionText = document.createElement('span');
+            aiActionText.className = 'ai-action-text';
+            aiActionText.textContent = actionText;
+            elements.aiActionIndicator.replaceChildren(aiActionText);
         } else {
-            elements.aiActionIndicator.innerHTML = '';
+            elements.aiActionIndicator.replaceChildren();
         }
         
         // Add/remove active-turn class
@@ -1619,10 +1648,10 @@ function renderOpponent(player, seatClass = 'seat-1') {
                     : `<div class="card-back ${player.folded ? 'folded' : ''}">🂠</div><div class="card-back ${player.folded ? 'folded' : ''}">🂠</div>`
                 }
             </div>
-            <span class="opponent-name">${player.name}</span>
+            <span class="opponent-name">${escapeHtml(player.name)}</span>
             <span class="opponent-chips">${ChipStackVisualizer.renderCompact(player.chips)}</span>
             ${player.bet > 0 ? `<span class="opponent-bet">${ChipStackVisualizer.renderCompact(player.bet)}</span>` : ''}
-            ${actionLabel ? `<span class="opponent-action-badge">${actionLabel}</span>` : ''}
+            ${actionLabel ? `<span class="opponent-action-badge">${escapeHtml(actionLabel)}</span>` : ''}
         </div>
     `;
 }
@@ -1982,7 +2011,7 @@ async function buyBackIn() {
     try {
         const response = await CSRFManager.fetch(`${API_BASE}/api/poker/games/${gameId}/buy-back`, {
             method: 'POST',
-            body: JSON.stringify({ player_id: playerId, amount: 1000 })
+            body: JSON.stringify({ player_id: playerId, player_token: playerToken, amount: 1000 })
         });
 
         if (!response.ok) {
@@ -2040,7 +2069,7 @@ function endGame() {
         </div>
         <div class="stat-row">
             <span class="stat-label">Best Hand</span>
-            <span class="stat-value">${stats.bestHand}</span>
+            <span class="stat-value">${escapeHtml(stats.bestHand)}</span>
         </div>
     `;
     
@@ -2051,6 +2080,7 @@ function endGame() {
     setTimeout(() => {
         gameState = null;
         playerId = null;
+        playerToken = null;
         gameId = null;
         switchScreen('start');
     }, 100);
@@ -2083,7 +2113,7 @@ function showStats() {
         </div>
         <div class="stat-row">
             <span class="stat-label">Best Hand</span>
-            <span class="stat-value">${stats.bestHand}</span>
+            <span class="stat-value">${escapeHtml(stats.bestHand)}</span>
         </div>
     `;
     elements.statsModal.classList.remove('hidden');

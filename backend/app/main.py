@@ -140,6 +140,7 @@ if local_site_root_enabled:
         "/stock-research": "stock-research",
         "/poker": "poker",
         "/craps": "craps",
+        "/blackjack": "blackjack",
         "/bitcoin-chat": "bitcoin-chat",
         "/admin": "admin",
     }.items():

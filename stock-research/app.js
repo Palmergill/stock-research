@@ -378,15 +378,31 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        searchSuggestions.innerHTML = suggestions.map((item, index) => `
-            <div class="suggestion-item" data-ticker="${item.ticker}" data-index="${index}">
-                <div class="suggestion-main">
-                    <span class="suggestion-ticker">${item.ticker}</span>
-                    <span class="suggestion-name">${item.name}</span>
-                </div>
-                <span class="suggestion-sector">${item.sector}</span>
-            </div>
-        `).join('');
+        searchSuggestions.replaceChildren(...suggestions.map((item, index) => {
+            const suggestion = document.createElement('div');
+            suggestion.className = 'suggestion-item';
+            suggestion.dataset.ticker = item.ticker || '';
+            suggestion.dataset.index = String(index);
+
+            const main = document.createElement('div');
+            main.className = 'suggestion-main';
+
+            const ticker = document.createElement('span');
+            ticker.className = 'suggestion-ticker';
+            ticker.textContent = item.ticker || '';
+
+            const name = document.createElement('span');
+            name.className = 'suggestion-name';
+            name.textContent = item.name || '';
+
+            const sector = document.createElement('span');
+            sector.className = 'suggestion-sector';
+            sector.textContent = item.sector || '';
+
+            main.append(ticker, name);
+            suggestion.append(main, sector);
+            return suggestion;
+        }));
 
         searchSuggestions.classList.remove('hidden');
         // Trigger animation in next frame
@@ -815,7 +831,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Update progress bar
         updateLoadingProgress(1);
         
-        const url = `${API_BASE}/stocks/${ticker}?refresh=${forceRefresh}`;
+        const url = `${API_BASE}/stocks/${encodeURIComponent(ticker)}?refresh=${forceRefresh}`;
         console.log('Fetching URL:', url);
         
         try {
@@ -900,7 +916,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Show final attempt message
                 const retryCountdown = document.getElementById('retryCountdown');
                 if (retryCountdown) {
-                    retryCountdown.innerHTML = '<span style="color: var(--accent-red);">All retry attempts failed</span>';
+                    const failed = document.createElement('span');
+                    failed.style.color = 'var(--accent-red)';
+                    failed.textContent = 'All retry attempts failed';
+                    retryCountdown.replaceChildren(failed);
                     retryCountdown.classList.remove('hidden');
                 }
             }
@@ -913,7 +932,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 displayError = `Stock "${ticker}" not found. Please check the ticker symbol.`;
             }
             
-            errorMessage.innerHTML = `<strong>Error:</strong> ${displayError}<br><br><button onclick="document.getElementById('retryBtn').click()" class="retry-btn">Try Again</button>`;
+            const label = document.createElement('strong');
+            label.textContent = 'Error:';
+            const retryButton = document.createElement('button');
+            retryButton.type = 'button';
+            retryButton.className = 'retry-btn';
+            retryButton.textContent = 'Try Again';
+            retryButton.addEventListener('click', () => document.getElementById('retryBtn')?.click());
+            errorMessage.replaceChildren(label, document.createTextNode(` ${displayError}`), document.createElement('br'), document.createElement('br'), retryButton);
             console.error('Load error:', err);
         } finally {
             if (searchBtn) searchBtn.disabled = false;
