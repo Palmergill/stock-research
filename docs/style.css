@@ -93,6 +93,15 @@ pre code {
     text-decoration: none;
 }
 
+.brand img {
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    object-fit: cover;
+    object-position: center;
+    box-shadow: 0 0 18px rgba(96, 165, 250, 0.34);
+}
+
 .top-links {
     display: flex;
     align-items: center;

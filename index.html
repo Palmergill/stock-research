@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Palmer Gill - Projects</title>
-    <link rel="stylesheet" href="/shared/site-nav.css?v=3">
+    <link rel="icon" type="image/png" href="/assets/palmer-gill-logo-small.png">
+    <link rel="stylesheet" href="/shared/site-nav.css?v=4">
     <style>
         * {
             margin: 0;
@@ -39,13 +40,15 @@
         }
         
         h1 {
-            font-size: 3rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 8px;
+            margin-bottom: 18px;
+        }
+
+        .hero-logo {
+            display: block;
+            width: min(100%, 560px);
+            height: auto;
+            border-radius: 14px;
+            box-shadow: 0 20px 80px rgba(59, 130, 246, 0.18);
         }
         
         .tagline {
@@ -237,6 +240,10 @@
                 text-align: center;
             }
 
+            .hero-logo {
+                margin: 0 auto;
+            }
+
             .social-links {
                 justify-content: center;
             }
@@ -246,10 +253,6 @@
                 width: min(76vw, 300px);
             }
 
-            h1 {
-                font-size: 2rem;
-            }
-            
             .projects-grid {
                 grid-template-columns: 1fr;
             }
@@ -271,7 +274,9 @@
     <header>
         <div class="hero">
             <div class="hero-copy">
-                <h1>Palmer Gill</h1>
+                <h1>
+                    <img class="hero-logo" src="/assets/palmer-gill-logo.png" alt="Palmer Gill">
+                </h1>
                 <p class="tagline">Hello, welcome to my personal website! These are some side projects that I have been working on.</p>
                 <div class="social-links" aria-label="Social links">
                     <a class="social-link" href="https://github.com/Palmergill" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
@@ -462,7 +467,7 @@
     <footer>
         <p>© 2026 Palmer Gill. Built with care. <span style="color: #475569;">v2.0.4</span></p>
     </footer>
-    <script src="/shared/site-nav.js"></script>
+    <script src="/shared/site-nav.js?v=4"></script>
     <script>
         (() => {
             const grid = document.querySelector('.projects-grid');

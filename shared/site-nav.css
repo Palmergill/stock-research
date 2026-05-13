@@ -59,6 +59,16 @@ body.has-site-nav {
     transition: width 180ms ease, background 150ms ease, border-color 150ms ease;
 }
 
+.site-nav__brand-logo {
+    flex: 0 0 28px;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    object-fit: cover;
+    object-position: center;
+    box-shadow: 0 0 18px rgba(96, 165, 250, 0.34);
+}
+
 .site-nav__items {
     display: flex;
     flex: 1;

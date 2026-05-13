@@ -64,6 +64,16 @@
         document.head.appendChild(script);
     }
 
+    function ensureFavicon() {
+        if (document.querySelector("link[rel~='icon']")) return;
+
+        const icon = document.createElement("link");
+        icon.rel = "icon";
+        icon.type = "image/png";
+        icon.href = "/assets/palmer-gill-logo-small.png";
+        document.head.appendChild(icon);
+    }
+
     function isCurrent(href) {
         const path = window.location.pathname;
         if (href === "/") {
@@ -105,12 +115,13 @@
             '</button>',
             '<div class="site-nav__backdrop" aria-hidden="true"></div>',
             '<div class="site-nav__panel">',
-            '<a class="site-nav__brand" href="/" title="Palmer Gill"><span>PG</span><span class="site-nav__label">Palmer Gill</span></a>',
+            '<a class="site-nav__brand" href="/" title="Palmer Gill"><img class="site-nav__brand-logo" src="/assets/palmer-gill-logo-small.png" alt="" aria-hidden="true"><span class="site-nav__label">Palmer Gill</span></a>',
             `<div class="site-nav__items">${links}</div>`,
             '</div>'
         ].join("");
 
         document.body.prepend(nav);
+        ensureFavicon();
         loadLucide();
 
         const toggle = nav.querySelector(".site-nav__toggle");
