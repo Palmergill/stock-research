@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Palmer Gill</title>
+    <link rel="icon" type="image/png" href="/assets/palmer-gill-logo-small.png">
+    <link rel="stylesheet" href="/shared/site-nav.css?v=4">
+    <style>
+        :root {
+            --ink: #080a0d;
+            --panel: #111722;
+            --panel-soft: rgba(255, 255, 255, 0.06);
+            --line: rgba(255, 255, 255, 0.14);
+            --text: #f7f3ea;
+            --muted: rgba(247, 243, 234, 0.7);
+            --quiet: rgba(247, 243, 234, 0.48);
+            --gold: #d6b25e;
+            --teal: #58d3ad;
+            --blue: #72a9ff;
+            --coral: #ff7a6e;
+            --radius: 8px;
+            --max: 1120px;
+            --shadow: 0 26px 80px rgba(0, 0, 0, 0.28);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            background: var(--ink);
+            color-scheme: dark;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            min-width: 320px;
+            background:
+                linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px) 0 0 / 84px 84px,
+                linear-gradient(180deg, #080a0d 0%, #0b1017 48%, #0a0d12 100%);
+            color: var(--text);
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            line-height: 1.5;
+            overflow-x: hidden;
+        }
+
+        a {
+            color: inherit;
+        }
+
+        img {
+            display: block;
+        }
+
+        .page-shell {
+            min-height: 100svh;
+        }
+
+        .about-hero {
+            position: relative;
+            overflow: hidden;
+            padding: clamp(104px, 11vw, 154px) 24px clamp(56px, 8vw, 92px);
+        }
+
+        .about-hero::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            z-index: -2;
+            background:
+                linear-gradient(120deg, rgba(8, 10, 13, 0.98), rgba(8, 10, 13, 0.82) 52%, rgba(88, 211, 173, 0.12)),
+                linear-gradient(315deg, rgba(114, 169, 255, 0.18), transparent 32%);
+        }
+
+        .about-hero::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            z-index: -3;
+            background:
+                linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px) 0 0 / 92px 92px,
+                linear-gradient(180deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px) 0 0 / 92px 92px;
+            opacity: 0.56;
+        }
+
+        .hero-inner,
+        .section,
+        footer {
+            width: min(100%, var(--max));
+            margin: 0 auto;
+        }
+
+        .hero-inner {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+            align-items: end;
+            gap: clamp(34px, 6vw, 86px);
+        }
+
+        .brand-mark {
+            width: clamp(112px, 14vw, 180px);
+            margin-bottom: clamp(34px, 5vw, 60px);
+        }
+
+        .eyebrow {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 22px;
+            color: var(--gold);
+            font-size: 0.78rem;
+            font-weight: 850;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+        }
+
+        .eyebrow::before {
+            content: "";
+            width: 44px;
+            height: 1px;
+            background: currentColor;
+        }
+
+        h1,
+        h2,
+        .feature-title {
+            font-family: Georgia, "Times New Roman", serif;
+            font-weight: 500;
+            letter-spacing: 0;
+        }
+
+        h1 {
+            max-width: 760px;
+            font-size: clamp(3.3rem, 8.2vw, 7.4rem);
+            line-height: 0.94;
+        }
+
+        .lede {
+            max-width: 720px;
+            margin-top: 30px;
+            color: var(--muted);
+            font-size: clamp(1.08rem, 1.8vw, 1.42rem);
+        }
+
+        .quick-card {
+            display: grid;
+            gap: 22px;
+            padding: 28px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background:
+                linear-gradient(145deg, rgba(255, 255, 255, 0.105), rgba(255, 255, 255, 0.028)),
+                rgba(17, 23, 34, 0.78);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+        }
+
+        .quick-card img {
+            width: min(100%, 260px);
+            justify-self: end;
+            opacity: 0.94;
+            filter: drop-shadow(0 18px 40px rgba(0, 0, 0, 0.28));
+        }
+
+        .quick-list {
+            display: grid;
+            gap: 14px;
+            list-style: none;
+        }
+
+        .quick-list li {
+            display: grid;
+            grid-template-columns: 24px 1fr;
+            gap: 12px;
+            color: var(--muted);
+        }
+
+        .quick-list i,
+        .quick-list svg {
+            width: 21px;
+            height: 21px;
+            color: var(--teal);
+        }
+
+        .section {
+            padding: clamp(68px, 9vw, 112px) 24px;
+        }
+
+        .section-header {
+            max-width: 760px;
+            margin-bottom: 34px;
+        }
+
+        .section-kicker {
+            margin-bottom: 12px;
+            color: var(--gold);
+            font-size: 0.76rem;
+            font-weight: 850;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+        }
+
+        h2 {
+            font-size: clamp(2.25rem, 5vw, 4.7rem);
+            line-height: 0.98;
+        }
+
+        .section-copy {
+            margin-top: 22px;
+            color: var(--muted);
+            font-size: 1.04rem;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(12, minmax(0, 1fr));
+            gap: 18px;
+        }
+
+        .feature-card {
+            min-height: 278px;
+            grid-column: span 4;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 24px;
+            padding: 24px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background:
+                linear-gradient(145deg, rgba(255, 255, 255, 0.095), rgba(255, 255, 255, 0.024)),
+                var(--panel);
+            box-shadow: 0 18px 64px rgba(0, 0, 0, 0.15);
+        }
+
+        .feature-icon {
+            display: grid;
+            width: 58px;
+            height: 58px;
+            place-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: var(--radius);
+            background: var(--panel-soft);
+            color: var(--accent, var(--blue));
+        }
+
+        .feature-icon i,
+        .feature-icon svg {
+            width: 30px;
+            height: 30px;
+        }
+
+        .feature-title {
+            font-size: clamp(1.7rem, 3vw, 2.45rem);
+            line-height: 1;
+        }
+
+        .feature-copy {
+            margin-top: 16px;
+            color: var(--muted);
+            font-size: 0.98rem;
+        }
+
+        .feature-card:nth-child(1) {
+            --accent: var(--blue);
+        }
+
+        .feature-card:nth-child(2) {
+            --accent: var(--teal);
+        }
+
+        .feature-card:nth-child(3) {
+            --accent: var(--coral);
+        }
+
+        .work-band {
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.025);
+        }
+
+        .work-list {
+            display: grid;
+            gap: 1px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            overflow: hidden;
+            background: var(--line);
+        }
+
+        .work-item {
+            display: grid;
+            grid-template-columns: minmax(180px, 0.32fr) minmax(0, 1fr);
+            gap: 24px;
+            padding: 22px;
+            background: rgba(17, 23, 34, 0.86);
+        }
+
+        .work-item strong {
+            color: #ffffff;
+            font-size: 1rem;
+        }
+
+        .work-item p {
+            color: var(--muted);
+        }
+
+        .link-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 30px;
+        }
+
+        .button {
+            display: inline-flex;
+            min-height: 48px;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 0 18px;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: var(--radius);
+            color: #ffffff;
+            font-size: 0.88rem;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            text-decoration: none;
+            transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+        }
+
+        .button i,
+        .button svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .button-primary {
+            background: #f7f3ea;
+            color: #0a0d12;
+            border-color: #f7f3ea;
+        }
+
+        .button-secondary {
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .button:hover,
+        .button:focus-visible {
+            transform: translateY(-2px);
+            outline: none;
+        }
+
+        .button-secondary:hover,
+        .button-secondary:focus-visible {
+            border-color: rgba(214, 178, 94, 0.5);
+            background: rgba(214, 178, 94, 0.1);
+        }
+
+        footer {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 18px;
+            padding: 36px 24px 48px;
+            color: var(--quiet);
+            font-size: 0.9rem;
+        }
+
+        footer a {
+            color: rgba(247, 243, 234, 0.74);
+            text-decoration: none;
+        }
+
+        footer a:hover,
+        footer a:focus-visible {
+            color: #ffffff;
+            outline: none;
+        }
+
+        .social-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .social-link {
+            min-height: 40px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 0 12px;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: var(--radius);
+            color: rgba(247, 243, 234, 0.68);
+            font-size: 0.78rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-decoration: none;
+            text-transform: uppercase;
+            transition: transform 180ms ease, border-color 180ms ease, color 180ms ease, background 180ms ease;
+        }
+
+        .social-link:hover,
+        .social-link:focus-visible {
+            transform: translateY(-2px);
+            border-color: rgba(214, 178, 94, 0.58);
+            background: rgba(214, 178, 94, 0.12);
+            color: #ffffff;
+            outline: none;
+        }
+
+        .social-link i,
+        .social-link svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .version {
+            color: rgba(247, 243, 234, 0.34);
+        }
+
+        @media (max-width: 980px) {
+            .hero-inner {
+                grid-template-columns: 1fr;
+            }
+
+            .quick-card {
+                max-width: 520px;
+            }
+
+            .quick-card img {
+                justify-self: start;
+            }
+
+            .feature-card {
+                grid-column: span 6;
+            }
+        }
+
+        @media (max-width: 680px) {
+            .about-hero {
+                padding: 68px 18px 44px;
+            }
+
+            .section {
+                padding: 68px 18px;
+            }
+
+            .feature-card {
+                grid-column: 1 / -1;
+                min-height: 238px;
+            }
+
+            .work-item {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .button {
+                width: 100%;
+            }
+
+            footer {
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-shell">
+        <header class="about-hero">
+            <div class="hero-inner">
+                <div>
+                    <a href="/" aria-label="Palmer Gill home">
+                        <img class="brand-mark" src="/assets/palmer-gill-logo.png" alt="" aria-hidden="true">
+                    </a>
+                    <p class="eyebrow">About</p>
+                    <h1>Palmer Gill</h1>
+                    <p class="lede">I am a backend-leaning full-stack software engineer based in Austin, with professional experience in storage automation, backup systems, internal tools, and customer-facing technical support.</p>
+                    <div class="link-row">
+                        <a class="button button-primary" href="/#projects">
+                            View projects
+                            <i data-lucide="arrow-right" aria-hidden="true"></i>
+                        </a>
+                        <a class="button button-secondary" href="https://www.linkedin.com/in/palmer-gill-0081a7129/" target="_blank" rel="noopener noreferrer">
+                            LinkedIn
+                            <i data-lucide="external-link" aria-hidden="true"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <aside class="quick-card" aria-label="About summary">
+                    <img src="/assets/palmer-gill-wordmark.png" alt="" aria-hidden="true">
+                    <ul class="quick-list">
+                        <li><i data-lucide="server-cog" aria-hidden="true"></i><span>Software engineering background in enterprise storage and backup automation.</span></li>
+                        <li><i data-lucide="code-2" aria-hidden="true"></i><span>Python, Django, Django REST Framework, JavaScript, HTML, CSS, SQL, C/C++, and REST APIs.</span></li>
+                        <li><i data-lucide="graduation-cap" aria-hidden="true"></i><span>Computer Science BA from the University of Colorado Boulder.</span></li>
+                    </ul>
+                </aside>
+            </div>
+        </header>
+
+        <main>
+            <section class="section" aria-labelledby="focus-title">
+                <div class="section-header">
+                    <p class="section-kicker">Focus</p>
+                    <h2 id="focus-title">What I Bring</h2>
+                    <p class="section-copy">My resume centers on full-stack engineering work for large internal systems, with the strongest emphasis on backend automation. This site extends that background into personal tools for markets, Bitcoin, and browser games.</p>
+                </div>
+
+                <div class="feature-grid">
+                    <article class="feature-card">
+                        <span class="feature-icon" aria-hidden="true"><i data-lucide="layers-3"></i></span>
+                        <div>
+                            <h3 class="feature-title">Backend Automation</h3>
+                            <p class="feature-copy">At General Motors, I worked on backup automation using Dell NetWorker and DataDomain products for a team responsible for daily backups across more than 30,000 servers.</p>
+                        </div>
+                    </article>
+
+                    <article class="feature-card">
+                        <span class="feature-icon" aria-hidden="true"><i data-lucide="chart-candlestick"></i></span>
+                        <div>
+                            <h3 class="feature-title">Full-Stack Tools</h3>
+                            <p class="feature-copy">I have worked across frontend and backend surfaces for internal storage automation, from smaller bug fixes to focused backend framework work.</p>
+                        </div>
+                    </article>
+
+                    <article class="feature-card">
+                        <span class="feature-icon" aria-hidden="true"><i data-lucide="gamepad-2"></i></span>
+                        <div>
+                            <h3 class="feature-title">Technical Support</h3>
+                            <p class="feature-copy">Before full-time software engineering, I worked in Apple Retail as a product specialist, technical specialist, and technical expert handling support and repairs.</p>
+                        </div>
+                    </article>
+                </div>
+            </section>
+
+            <section class="work-band">
+                <div class="section" aria-labelledby="approach-title">
+                    <div class="section-header">
+                        <p class="section-kicker">Approach</p>
+                        <h2 id="approach-title">Background</h2>
+                    </div>
+
+                    <div class="work-list">
+                        <div class="work-item">
+                            <strong>General Motors software engineer</strong>
+                            <p>Promoted out of the new college hire program after two years, then continued on the same team with lead backup automation responsibilities.</p>
+                        </div>
+                        <div class="work-item">
+                            <strong>General Motors new college hire</strong>
+                            <p>Placed on the Storage Automation team inside Enterprise Technology Services, working on the full stack of an internal storage automation frontend and backend.</p>
+                        </div>
+                        <div class="work-item">
+                            <strong>Apple Retail technical roles</strong>
+                            <p>Started in product support, moved to Genius Bar technical support, and later repaired devices and assisted customers as a technical expert.</p>
+                        </div>
+                        <div class="work-item">
+                            <strong>Education</strong>
+                            <p>Computer Science BA from the University of Colorado Boulder, after transferring from Miami University in Oxford, Ohio.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section" aria-labelledby="current-title">
+                <div class="section-header">
+                    <p class="section-kicker">Current Site</p>
+                    <h2 id="current-title">Selected Projects</h2>
+                    <p class="section-copy">The live work on this site applies that engineering background to tools and experiments: stock research, Bitcoin chat, Texas Hold'em poker, blackjack, craps, and a compact documentation area for the underlying system.</p>
+                    <div class="link-row">
+                        <a class="button button-primary" href="/stock-research/">
+                            Stock Research
+                            <i data-lucide="arrow-right" aria-hidden="true"></i>
+                        </a>
+                        <a class="button button-secondary" href="/bitcoin-chat/">
+                            Bitcoin Chat
+                            <i data-lucide="arrow-right" aria-hidden="true"></i>
+                        </a>
+                        <a class="button button-secondary" href="/poker/">
+                            Poker
+                            <i data-lucide="arrow-right" aria-hidden="true"></i>
+                        </a>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>&copy; 2026 Palmer Gill. Built with care. <span class="version">v2.0.4</span></p>
+            <nav class="social-links" aria-label="Social links">
+                <a class="social-link" href="https://github.com/Palmergill" target="_blank" rel="noopener noreferrer">
+                    <i data-lucide="github" aria-hidden="true"></i>
+                    GitHub
+                </a>
+                <a class="social-link" href="https://www.linkedin.com/in/palmer-gill-0081a7129/" target="_blank" rel="noopener noreferrer">
+                    <i data-lucide="linkedin" aria-hidden="true"></i>
+                    LinkedIn
+                </a>
+            </nav>
+        </footer>
+    </div>
+
+    <script src="/shared/site-nav.js?v=4"></script>
+</body>
+</html>

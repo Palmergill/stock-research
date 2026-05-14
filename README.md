@@ -5,6 +5,7 @@ Personal project site plus shared API backend.
 ## Active Site Paths
 
 - `/` - project index
+- `/about/` - professional background and selected project context
 - `/docs/` - protected website documentation
 - `/stock-research/` - polished stock research app
 - `/poker/` - Texas Hold'em poker app
@@ -34,7 +35,7 @@ Open:
 http://127.0.0.1:8000
 ```
 
-The local server runs FastAPI and, with `LOCAL_SITE_ROOT=true`, also serves the static root page plus `assets/`, `shared/`, `stock-research/`, `poker/`, `craps/`, `blackjack/`, `bitcoin-chat/`, and `admin/`.
+The local server runs FastAPI and, with `LOCAL_SITE_ROOT=true`, also serves the static root page plus `assets/`, `shared/`, `about/`, `stock-research/`, `poker/`, `craps/`, `blackjack/`, `bitcoin-chat/`, and `admin/`.
 
 Protected local app routes and API routes require Basic Auth. Set:
 
@@ -61,6 +62,7 @@ logs/backend.log
 backend/          FastAPI API service
 admin/            Protected admin/log dashboard
 shared/           Shared static navigation assets
+about/            About page
 docs/             Protected website docs and provider/setup markdown docs
 stock-research/   Active stock research frontend
 poker/            Active poker frontend and supporting docs/tests

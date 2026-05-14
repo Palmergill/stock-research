@@ -138,6 +138,7 @@ if local_site_root_enabled:
     for route, folder in {
         "/assets": "assets",
         "/shared": "shared",
+        "/about": "about",
         "/stock-research": "stock-research",
         "/poker": "poker",
         "/craps": "craps",

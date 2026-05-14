@@ -7,6 +7,12 @@
             icon: "layout-dashboard"
         },
         {
+            label: "About",
+            hint: "Palmer Gill",
+            href: "/about/",
+            icon: "user-round"
+        },
+        {
             label: "Stock Research",
             hint: "Market data",
             href: "/stock-research/",
