@@ -296,40 +296,6 @@
             background: rgba(214, 178, 94, 0.1);
         }
 
-        .hero-meta {
-            grid-column: 1 / -1;
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            border-top: 1px solid rgba(255, 255, 255, 0.16);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.16);
-        }
-
-        .meta-item {
-            min-height: 104px;
-            padding: 24px clamp(14px, 2.2vw, 26px);
-            border-right: 1px solid rgba(255, 255, 255, 0.12);
-        }
-
-        .meta-item:last-child {
-            border-right: 0;
-        }
-
-        .meta-label {
-            color: var(--quiet);
-            font-size: 0.72rem;
-            font-weight: 800;
-            letter-spacing: 0.16em;
-            text-transform: uppercase;
-        }
-
-        .meta-value {
-            margin-top: 9px;
-            color: rgba(247, 243, 234, 0.9);
-            font-size: clamp(1.1rem, 2.2vw, 1.55rem);
-            font-weight: 700;
-            letter-spacing: 0;
-        }
-
         main {
             position: relative;
             z-index: 1;
@@ -342,10 +308,6 @@
         }
 
         .section-header {
-            display: grid;
-            grid-template-columns: minmax(0, 0.9fr) minmax(280px, 0.55fr);
-            gap: clamp(28px, 6vw, 72px);
-            align-items: end;
             margin-bottom: 34px;
         }
 
@@ -364,11 +326,6 @@
             font-weight: 500;
             line-height: 0.96;
             letter-spacing: 0;
-        }
-
-        .section-copy {
-            color: var(--muted);
-            font-size: 1.02rem;
         }
 
         .projects-grid {
@@ -659,25 +616,6 @@
                 padding-bottom: 0;
             }
 
-            .hero-meta,
-            .section-header {
-                grid-template-columns: 1fr;
-            }
-
-            .hero-meta {
-                margin-top: 18px;
-            }
-
-            .meta-item {
-                min-height: auto;
-                border-right: 0;
-                border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-            }
-
-            .meta-item:last-child {
-                border-bottom: 0;
-            }
-
             .section {
                 padding: 74px 18px;
             }
@@ -776,7 +714,7 @@
                         <span class="sr-only">Palmer Gill</span>
                         <img class="hero-wordmark" src="/assets/palmer-gill-wordmark.png" alt="" aria-hidden="true">
                     </h1>
-                    <p class="hero-copy">A portfolio of interactive tools, market research, Bitcoin experiments, and browser games, designed to feel crisp, useful, and a little more refined than a typical side project.</p>
+                    <p class="hero-copy">A portfolio of interactive tools, market research, Bitcoin experiments, and browser games.</p>
                     <div class="hero-actions">
                         <a class="button button-primary" href="#projects">
                             View projects
@@ -793,20 +731,6 @@
                     </div>
                 </div>
 
-                <div class="hero-meta" aria-label="Site highlights">
-                    <div class="meta-item">
-                        <p class="meta-label">Focus</p>
-                        <p class="meta-value">Useful web apps</p>
-                    </div>
-                    <div class="meta-item">
-                        <p class="meta-label">Build style</p>
-                        <p class="meta-value">Fast and readable</p>
-                    </div>
-                    <div class="meta-item">
-                        <p class="meta-label">Projects</p>
-                        <p class="meta-value">Markets to games</p>
-                    </div>
-                </div>
             </div>
         </header>
 
@@ -817,7 +741,6 @@
                         <p class="section-kicker">Selected work</p>
                         <h2 class="section-title" id="projects-title">Projects</h2>
                     </div>
-                    <p class="section-copy">Every project below is live on this site. The collection mixes data-heavy interfaces, casino game logic, Bitcoin tooling, and documentation for the stack behind it.</p>
                 </div>
 
                 <div class="projects-grid">

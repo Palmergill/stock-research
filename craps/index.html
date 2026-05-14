@@ -3,182 +3,473 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Craps - Classic Green</title>
+    <title>Craps - Palmer Gill</title>
     <link rel="stylesheet" href="/shared/site-nav.css?v=4">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --ink: #080a0d;
+            --panel: #111722;
+            --panel-soft: rgba(255, 255, 255, 0.055);
+            --line: rgba(255, 255, 255, 0.14);
+            --line-strong: rgba(255, 255, 255, 0.24);
+            --text: #f7f3ea;
+            --muted: rgba(247, 243, 234, 0.68);
+            --quiet: rgba(247, 243, 234, 0.46);
+            --gold: #d6b25e;
+            --teal: #58d3ad;
+            --blue: #72a9ff;
+            --coral: #ff7a6e;
+            --danger: #ff6f7d;
+            --radius: 8px;
+            --max: 1080px;
+            --shadow: 0 28px 90px rgba(0, 0, 0, 0.36);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            background: var(--ink);
+            color-scheme: dark;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0d3320;
-            color: #f8fafc;
+            min-width: 320px;
             min-height: 100vh;
+            background:
+                linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px) 0 0 / 84px 84px,
+                radial-gradient(circle at 78% 8%, rgba(88, 211, 173, 0.18), transparent 28%),
+                radial-gradient(circle at 12% 74%, rgba(37, 130, 92, 0.2), transparent 30%),
+                linear-gradient(180deg, #080d0b 0%, #091611 48%, #080f0c 100%);
+            color: var(--text);
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            line-height: 1.5;
             -webkit-tap-highlight-color: transparent;
         }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 16px;
-            background: #1a472a;
-            border-bottom: 3px solid #c9a227;
-        }
-        .header h1 { font-size: 1.1rem; color: #fff; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
-        .balance { font-size: 1.2rem; color: #ffd700; font-weight: 700; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
 
-        .table { padding: 12px; max-width: 600px; margin: 0 auto; }
+        button,
+        input {
+            font: inherit;
+        }
+
+        button {
+            color: inherit;
+        }
+
+        .craps-page {
+            position: relative;
+            width: min(100%, var(--max));
+            margin: 0 auto;
+            padding: clamp(22px, 4vw, 46px) 24px 24px;
+            isolation: isolate;
+        }
+
+        .craps-page::before {
+            content: "";
+            position: fixed;
+            inset: clamp(24px, 3vw, 46px);
+            z-index: -1;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            pointer-events: none;
+        }
+
+        .header {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 18px;
+            justify-content: space-between;
+            align-items: end;
+            margin-bottom: 22px;
+            padding-top: clamp(18px, 4vw, 42px);
+        }
+
+        .eyebrow {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+            color: var(--gold);
+            font-size: 0.76rem;
+            font-weight: 850;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+        }
+
+        .eyebrow::before {
+            content: "";
+            width: 44px;
+            height: 1px;
+            background: currentColor;
+        }
+
+        .header h1 {
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: clamp(3.4rem, 9vw, 7rem);
+            font-weight: 500;
+            line-height: 0.9;
+            letter-spacing: 0;
+        }
+
+        .balance-card {
+            min-width: 178px;
+            padding: 18px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background:
+                linear-gradient(145deg, rgba(255, 255, 255, 0.105), rgba(255, 255, 255, 0.026)),
+                var(--panel);
+            box-shadow: 0 18px 70px rgba(0, 0, 0, 0.16);
+        }
+
+        .balance-label {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--quiet);
+            font-size: 0.72rem;
+            font-weight: 850;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+        }
+
+        .balance {
+            color: var(--gold);
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: clamp(1.75rem, 4vw, 2.55rem);
+            font-weight: 500;
+            line-height: 1;
+        }
+
+        .table {
+            position: relative;
+            display: grid;
+            grid-template-columns: minmax(0, 1.08fr) minmax(310px, 0.92fr);
+            gap: 18px;
+            padding: 18px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background:
+                linear-gradient(145deg, rgba(255, 255, 255, 0.105), rgba(255, 255, 255, 0.026)),
+                rgba(17, 23, 34, 0.84);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+        }
+
+        .table::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background:
+                linear-gradient(135deg, rgba(255, 122, 110, 0.15), transparent 42%),
+                radial-gradient(circle at 88% 14%, rgba(214, 178, 94, 0.16), transparent 30%);
+            pointer-events: none;
+        }
 
         .status-bar {
-            text-align: center;
-            padding: 8px 12px;
-            margin-bottom: 10px;
-            background: rgba(0,0,0,0.3);
-            border-radius: 8px;
-            border: 1px solid rgba(201,162,39,0.3);
-            font-size: 0.85rem;
-            color: #ffd700;
-            min-height: 36px;
+            position: relative;
+            z-index: 1;
+            grid-column: 1 / -1;
             display: flex;
             align-items: center;
-            justify-content: center;
+            min-height: 46px;
+            padding: 0 16px;
+            border: 1px solid rgba(214, 178, 94, 0.28);
+            border-radius: var(--radius);
+            background: rgba(214, 178, 94, 0.1);
+            color: color-mix(in srgb, var(--gold) 80%, #ffffff);
+            font-size: 0.88rem;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
         }
 
         .main-bets {
+            position: relative;
+            z-index: 1;
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 10px;
-            margin-bottom: 10px;
         }
-        .bet-btn {
-            width: 100%;
-            padding: 20px 16px;
-            border-radius: 12px;
-            border: 2px solid #c9a227;
-            text-align: center;
-            cursor: pointer;
-            position: relative;
-            background: linear-gradient(180deg, #2d5a3d, #1a472a);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1);
-            transition: transform 0.1s;
-            color: inherit;
-            font: inherit;
-        }
-        .bet-btn:active { background: linear-gradient(180deg, #1a472a, #0d3320); transform: translateY(1px); }
-        .bet-btn .label { font-size: 0.85rem; font-weight: 700; display: block; color: #fff; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
-        .bet-btn .amt { font-size: 0.7rem; margin-top: 4px; display: block; color: #c9a227; }
-        .bet-btn.disabled { opacity: 0.4; pointer-events: none; }
 
-        .pass { border-color: #fff; }
-        .pass .label { color: #fff; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
-        .pass .amt { color: #c9a227; }
-        .dont { border-color: #000; }
-        .dont .label { color: #fff; }
-        .dont .amt { color: #c9a227; }
-        .come { border-color: #dc2626; }
-        .come .label { color: #fff; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
-        .come .amt { color: #c9a227; }
-        .dont-come { border-color: #000; }
-        .dont-come .label { color: #fff; }
-        .dont-come .amt { color: #c9a227; }
-        .place { border-color: #ffd700; }
-        .place .label { color: #fff5cc; }
-        .place .amt { color: #c9a227; }
-        .center { border-color: #ff6b6b; }
-        .center .label { color: #ffcccc; }
-        .center .amt { color: #c9a227; }
+        .bet-btn {
+            --accent: var(--gold);
+            position: relative;
+            width: 100%;
+            min-height: 112px;
+            overflow: hidden;
+            padding: 18px;
+            border: 1px solid color-mix(in srgb, var(--accent) 42%, rgba(255, 255, 255, 0.14));
+            border-radius: var(--radius);
+            background:
+                linear-gradient(145deg, color-mix(in srgb, var(--accent) 15%, transparent), rgba(255, 255, 255, 0.026)),
+                rgba(8, 10, 13, 0.58);
+            box-shadow: 0 18px 48px rgba(0, 0, 0, 0.17);
+            color: inherit;
+            cursor: pointer;
+            transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+            text-align: center;
+        }
+
+        .bet-btn::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(135deg, color-mix(in srgb, var(--accent) 30%, transparent), transparent 48%),
+                radial-gradient(circle at 86% 16%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 32%);
+            opacity: 0.72;
+            pointer-events: none;
+        }
+
+        .bet-btn:hover,
+        .bet-btn:focus-visible {
+            transform: translateY(-3px);
+            border-color: color-mix(in srgb, var(--accent) 66%, rgba(255, 255, 255, 0.2));
+            background:
+                linear-gradient(145deg, color-mix(in srgb, var(--accent) 20%, transparent), rgba(255, 255, 255, 0.04)),
+                rgba(8, 10, 13, 0.72);
+            outline: none;
+        }
+
+        .bet-btn:active {
+            transform: translateY(0);
+        }
+
+        .bet-btn .label,
+        .bet-btn .amt {
+            position: relative;
+            z-index: 1;
+            display: block;
+        }
+
+        .bet-btn .label {
+            color: #ffffff;
+            font-size: 0.88rem;
+            font-weight: 850;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .bet-btn .amt {
+            margin-top: 10px;
+            color: var(--muted);
+            font-size: 0.78rem;
+            font-weight: 750;
+        }
+
+        .bet-btn.disabled {
+            opacity: 0.4;
+            pointer-events: none;
+        }
+
+        .pass { --accent: #f7f3ea; }
+        .dont,
+        .dont-come { --accent: var(--blue); }
+        .come { --accent: var(--coral); }
+        .place { --accent: var(--gold); }
+        .center { --accent: var(--teal); }
 
         .odds-chip {
             position: absolute;
-            top: -6px;
-            right: 8px;
-            padding: 3px 8px;
-            background: #ffd700;
-            border-radius: 10px;
-            font-size: 0.6rem;
-            color: #1a472a;
-            font-weight: 700;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            top: 10px;
+            right: 10px;
+            z-index: 2;
             display: none;
+            padding: 4px 8px;
+            border: 1px solid rgba(214, 178, 94, 0.48);
+            border-radius: 999px;
+            background: rgba(214, 178, 94, 0.16);
+            color: var(--gold);
+            font-size: 0.62rem;
+            font-weight: 850;
+            letter-spacing: 0.04em;
         }
+
         .odds-chip.visible { display: block; }
 
+        .quick-actions,
         .active-bets-strip {
+            position: relative;
+            z-index: 1;
+        }
+
+        .quick-actions {
             display: flex;
             flex-wrap: wrap;
-            gap: 6px;
-            margin-bottom: 10px;
+            grid-column: 1;
+            gap: 8px;
+            align-content: start;
+            justify-content: flex-start;
+        }
+
+        .quick-btn,
+        .close-btn,
+        .quick-amt,
+        .modal-btn,
+        .odds-btn,
+        .skip-btn {
+            min-height: 42px;
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, color 160ms ease;
+        }
+
+        .quick-btn {
+            padding: 0 14px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.055);
+            color: rgba(247, 243, 234, 0.78);
+            font-size: 0.76rem;
+            font-weight: 850;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .quick-btn:hover,
+        .quick-btn:focus-visible {
+            transform: translateY(-2px);
+            border-color: rgba(214, 178, 94, 0.5);
+            background: rgba(214, 178, 94, 0.1);
+            color: #ffffff;
+            outline: none;
+        }
+
+        .quick-btn:disabled {
+            opacity: 0.38;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .active-bets-strip {
+            grid-column: 1 / -1;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
             min-height: 0;
         }
+
         .active-bets-strip:empty { display: none; }
+
         .bet-chip {
             display: inline-flex;
             align-items: center;
-            gap: 4px;
-            padding: 4px 10px;
-            background: rgba(201,162,39,0.15);
-            border: 1px solid rgba(201,162,39,0.4);
-            border-radius: 20px;
-            font-size: 0.7rem;
-            color: #ffd700;
-        }
-        .bet-chip .chip-x {
-            cursor: pointer;
-            color: #ff6b6b;
-            font-weight: 700;
-            margin-left: 2px;
-            background: transparent;
-            border: 0;
-            font: inherit;
-            padding: 0 2px;
-        }
-        .bet-chip .chip-odds {
-            cursor: pointer;
-            color: #bbf7d0;
-            font-weight: 700;
-            margin-left: 2px;
-            background: rgba(34,197,94,0.12);
-            border: 1px solid rgba(187,247,208,0.35);
+            gap: 6px;
+            min-height: 34px;
+            padding: 4px 10px 4px 12px;
+            border: 1px solid rgba(214, 178, 94, 0.34);
             border-radius: 999px;
-            font: inherit;
-            padding: 1px 6px;
+            background: rgba(214, 178, 94, 0.1);
+            color: color-mix(in srgb, var(--gold) 72%, #ffffff);
+            font-size: 0.74rem;
+            font-weight: 760;
         }
+
+        .bet-chip .chip-x,
+        .bet-chip .chip-odds {
+            min-height: 24px;
+            padding: 1px 7px;
+            border-radius: 999px;
+            font-size: 0.68rem;
+            font-weight: 850;
+            letter-spacing: 0.04em;
+            cursor: pointer;
+        }
+
+        .bet-chip .chip-x {
+            border: 1px solid rgba(255, 122, 110, 0.34);
+            background: rgba(255, 122, 110, 0.09);
+            color: var(--coral);
+        }
+
+        .bet-chip .chip-odds {
+            border: 1px solid rgba(88, 211, 173, 0.38);
+            background: rgba(88, 211, 173, 0.1);
+            color: var(--teal);
+        }
+
         .bet-chip .chip-x:disabled {
             cursor: not-allowed;
-            color: rgba(248,250,252,0.35);
+            opacity: 0.36;
         }
 
         .dice-area {
-            text-align: center;
-            padding: 20px;
-            background: linear-gradient(180deg, #1a472a, #0d3320);
-            border-radius: 12px;
-            margin-top: 10px;
-            border: 2px solid #c9a227;
-            box-shadow: inset 0 2px 10px rgba(0,0,0,0.3);
-            overflow: hidden;
             position: relative;
+            z-index: 1;
+            grid-column: 2;
+            grid-row: 2 / span 2;
+            display: flex;
+            min-height: 100%;
+            flex-direction: column;
+            justify-content: center;
+            overflow: hidden;
+            padding: clamp(22px, 4vw, 36px);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            border-radius: var(--radius);
+            background:
+                linear-gradient(145deg, rgba(255, 255, 255, 0.095), rgba(255, 255, 255, 0.024)),
+                rgba(8, 10, 13, 0.56);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+            text-align: center;
         }
-        .dice-container { display: flex; gap: 20px; justify-content: center; margin-bottom: 12px; }
+
+        .dice-area::before {
+            content: "";
+            position: absolute;
+            inset: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: var(--radius);
+            pointer-events: none;
+        }
+
+        .dice-container {
+            display: flex;
+            gap: clamp(14px, 3vw, 26px);
+            justify-content: center;
+            margin-bottom: 18px;
+        }
+
         .die {
-            width: 64px;
-            height: 64px;
-            background: linear-gradient(145deg, #f8fafc 0%, #e2e8f0 100%);
-            border-radius: 12px;
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             grid-template-rows: repeat(3, 1fr);
-            padding: 6px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+            width: clamp(74px, 11vw, 108px);
+            height: clamp(74px, 11vw, 108px);
+            padding: clamp(8px, 1.3vw, 13px);
+            border: 1px solid rgba(255, 255, 255, 0.72);
+            border-radius: var(--radius);
+            background:
+                linear-gradient(145deg, #fffaf0 0%, #d8dce2 100%);
+            box-shadow:
+                0 24px 48px rgba(0, 0, 0, 0.32),
+                inset 0 1px 0 rgba(255, 255, 255, 0.8);
         }
+
         .die-dot {
-            width: 11px;
-            height: 11px;
-            background: #1a472a;
-            border-radius: 50%;
             align-self: center;
             justify-self: center;
+            width: clamp(11px, 1.55vw, 16px);
+            height: clamp(11px, 1.55vw, 16px);
+            border-radius: 50%;
+            background: #111722;
+            box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.35);
         }
+
         .die-dot.hidden { opacity: 0; }
-        .point-display { color: #ffd700; font-weight: 600; margin-bottom: 12px; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); min-height: 20px; }
+
+        .point-display {
+            min-height: 24px;
+            margin-bottom: 16px;
+            color: var(--gold);
+            font-size: 0.84rem;
+            font-weight: 850;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
         .roll-result-burst {
             position: absolute;
             top: 14px;
@@ -186,12 +477,12 @@
             z-index: 5;
             min-width: 104px;
             padding: 8px 14px;
+            border: 1px solid currentColor;
             border-radius: 999px;
-            border: 2px solid currentColor;
-            background: rgba(13, 51, 32, 0.92);
-            box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+            background: rgba(8, 10, 13, 0.92);
+            box-shadow: 0 18px 42px rgba(0, 0, 0, 0.38);
             font-size: 1.15rem;
-            font-weight: 800;
+            font-weight: 850;
             letter-spacing: 0;
             opacity: 0;
             pointer-events: none;
@@ -199,12 +490,12 @@
             transform: translate(-50%, 8px) scale(0.85);
         }
         .roll-result-burst.win {
-            color: #bbf7d0;
-            text-shadow: 0 0 12px rgba(34,197,94,0.75);
+            color: var(--teal);
+            text-shadow: 0 0 12px rgba(88, 211, 173, 0.55);
         }
         .roll-result-burst.loss {
-            color: #fecaca;
-            text-shadow: 0 0 12px rgba(220,38,38,0.75);
+            color: var(--coral);
+            text-shadow: 0 0 12px rgba(255, 122, 110, 0.55);
         }
         .roll-result-burst.active {
             animation: rollResultBurst 1.2s ease-out forwards;
@@ -217,162 +508,295 @@
         }
         .roll-btn {
             width: 100%;
-            padding: 18px;
-            background: linear-gradient(180deg, #c9a227, #a08020);
-            border: 2px solid #ffd700;
-            border-radius: 12px;
-            color: #1a472a;
-            font-size: 1.2rem;
-            font-weight: 700;
+            min-height: 56px;
+            border: 1px solid #f7f3ea;
+            border-radius: var(--radius);
+            background: #f7f3ea;
+            color: #0a0d12;
+            font-size: 0.95rem;
+            font-weight: 900;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
             cursor: pointer;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-            text-shadow: 0 1px 0 rgba(255,255,255,0.3);
+            transition: transform 180ms ease, background 180ms ease, border-color 180ms ease, opacity 180ms ease;
         }
-        .roll-btn:active { background: linear-gradient(180deg, #a08020, #806010); transform: translateY(1px); }
-        .roll-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        /* Quick action buttons */
-        .quick-actions {
-            display: flex;
-            gap: 8px;
-            justify-content: center;
-            margin-bottom: 10px;
+        .roll-btn:hover,
+        .roll-btn:focus-visible {
+            transform: translateY(-2px);
+            border-color: var(--gold);
+            background: var(--gold);
+            outline: none;
         }
-        .quick-btn {
-            padding: 8px 14px;
-            font-size: 0.75rem;
-            background: rgba(201,162,39,0.15);
-            color: #c9a227;
-            border: 1px solid rgba(201,162,39,0.3);
-            border-radius: 6px;
-            cursor: pointer;
-        }
-        .quick-btn:hover { background: rgba(201,162,39,0.25); }
-        .quick-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-        /* Fullscreen submenus */
+        .roll-btn:active {
+            transform: translateY(0);
+        }
+
+        .roll-btn:disabled {
+            opacity: 0.48;
+            cursor: not-allowed;
+            transform: none;
+        }
+
         .submenu {
             display: none;
             position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: #0d3320;
+            inset: 0;
             z-index: 100;
             flex-direction: column;
+            background:
+                linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px) 0 0 / 84px 84px,
+                radial-gradient(circle at 78% 8%, rgba(88, 211, 173, 0.14), transparent 28%),
+                linear-gradient(180deg, #080d0b 0%, #091611 48%, #080f0c 100%);
         }
+
         .submenu.active { display: flex; }
+
         .menu-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 16px;
-            background: #1a472a;
-            border-bottom: 3px solid #c9a227;
+            gap: 16px;
+            padding: clamp(18px, 4vw, 34px) clamp(18px, 5vw, 48px);
+            border-bottom: 1px solid var(--line);
+            background: rgba(8, 10, 13, 0.82);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
         }
-        .menu-header h2 { font-size: 1.1rem; color: #fff; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
+
+        .menu-header h2 {
+            color: var(--text);
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: clamp(2rem, 5vw, 4rem);
+            font-weight: 500;
+            line-height: 0.96;
+            letter-spacing: 0;
+        }
+
         .close-btn {
-            padding: 8px 14px;
-            background: #2d5a3d;
-            border: 2px solid #c9a227;
-            border-radius: 8px;
-            color: #ffd700;
-            cursor: pointer;
-            font-size: 1rem;
+            padding: 0 16px;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            background: rgba(255, 255, 255, 0.06);
+            color: #ffffff;
+            font-size: 0.84rem;
+            font-weight: 850;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
         }
+
+        .close-btn:hover,
+        .close-btn:focus-visible {
+            transform: translateY(-2px);
+            border-color: rgba(214, 178, 94, 0.5);
+            background: rgba(214, 178, 94, 0.1);
+            outline: none;
+        }
+
+        .numbers-grid,
+        .center-grid {
+            width: min(100%, var(--max));
+            margin: 0 auto;
+            overflow-y: auto;
+        }
+
         .numbers-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 12px;
-            padding: 16px;
+            padding: clamp(18px, 4vw, 40px) 24px 36px;
         }
+
         .number-btn {
             width: 100%;
             aspect-ratio: 1;
-            background: linear-gradient(180deg, #2d5a3d, #1a472a);
-            border: 2px solid #ffd700;
-            border-radius: 16px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            padding: 12px;
+            border: 1px solid rgba(214, 178, 94, 0.34);
+            border-radius: var(--radius);
+            background:
+                linear-gradient(145deg, rgba(214, 178, 94, 0.14), rgba(255, 255, 255, 0.024)),
+                var(--panel);
+            color: var(--gold);
+            box-shadow: 0 18px 70px rgba(0, 0, 0, 0.16);
             cursor: pointer;
-            color: #ffd700;
             font: inherit;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
         }
-        .number-btn:active { background: linear-gradient(180deg, #1a472a, #0d3320); }
-        .number-btn .num { font-size: 2rem; font-weight: 700; color: #fff; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
-        .number-btn .payout { font-size: 0.7rem; margin-top: 4px; color: #c9a227; }
-        .number-btn .bet-info { font-size: 0.65rem; margin-top: 2px; color: #ffd700; }
-        .number-btn.has-bet { border-color: #fff; background: linear-gradient(180deg, #3d6a4d, #2a573a); }
+
+        .number-btn:hover,
+        .number-btn:focus-visible,
+        .center-btn-tile:hover,
+        .center-btn-tile:focus-visible {
+            transform: translateY(-4px);
+            outline: none;
+        }
+
+        .number-btn .num {
+            color: #ffffff;
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: clamp(2.5rem, 8vw, 5rem);
+            font-weight: 500;
+            line-height: 0.95;
+        }
+
+        .number-btn .payout,
+        .number-btn .bet-info {
+            margin-top: 8px;
+            color: var(--muted);
+            font-size: 0.76rem;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .number-btn .bet-info {
+            color: var(--gold);
+        }
+
+        .number-btn.has-bet {
+            border-color: rgba(247, 243, 234, 0.68);
+            background:
+                linear-gradient(145deg, rgba(214, 178, 94, 0.24), rgba(255, 255, 255, 0.045)),
+                var(--panel);
+        }
 
         .center-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 10px;
-            padding: 16px;
-            overflow-y: auto;
+            padding: clamp(18px, 4vw, 40px) 24px 36px;
         }
+
         .center-btn-tile {
             width: 100%;
             aspect-ratio: 1;
-            background: linear-gradient(180deg, #8b0000, #5c0000);
-            border: 2px solid #ff6b6b;
-            border-radius: 12px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
             padding: 8px;
+            border: 1px solid rgba(255, 122, 110, 0.34);
+            border-radius: var(--radius);
+            background:
+                linear-gradient(145deg, rgba(255, 122, 110, 0.14), rgba(255, 255, 255, 0.024)),
+                var(--panel);
+            box-shadow: 0 18px 70px rgba(0, 0, 0, 0.16);
+            cursor: pointer;
             font: inherit;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
         }
-        .center-btn-tile:active { background: linear-gradient(180deg, #6b0000, #3c0000); }
-        .center-btn-tile .label { font-size: 0.75rem; font-weight: 600; text-align: center; color: #ffcccc; }
-        .center-btn-tile .payout { font-size: 0.6rem; color: #ffd700; margin-top: 4px; }
-        .center-btn-tile .bet-info { font-size: 0.6rem; color: #ffd700; margin-top: 2px; }
-        .center-btn-tile.has-bet { border-color: #ffd700; }
 
-        /* Bet Modal */
+        .center-btn-tile .label {
+            max-width: 9ch;
+            color: #ffffff;
+            font-size: clamp(0.9rem, 2.8vw, 1.35rem);
+            font-weight: 850;
+            line-height: 1.05;
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        .center-btn-tile .payout,
+        .center-btn-tile .bet-info {
+            margin-top: 8px;
+            color: var(--muted);
+            font-size: 0.7rem;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            text-align: center;
+            text-transform: uppercase;
+        }
+
+        .center-btn-tile .bet-info {
+            color: var(--gold);
+        }
+
+        .center-btn-tile.has-bet {
+            border-color: rgba(214, 178, 94, 0.72);
+            background:
+                linear-gradient(145deg, rgba(255, 122, 110, 0.2), rgba(214, 178, 94, 0.08)),
+                var(--panel);
+        }
+
         .bet-modal {
             display: none;
             position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.85);
+            inset: 0;
             align-items: center;
             justify-content: center;
             padding: 20px;
             z-index: 200;
+            background: rgba(0, 0, 0, 0.72);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
         }
+
         .bet-modal.active { display: flex; }
+
         .bet-modal-content {
-            background: linear-gradient(180deg, #1a472a, #0d3320);
-            padding: 24px;
-            border-radius: 16px;
             width: 100%;
-            max-width: 320px;
-            border: 3px solid #c9a227;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            max-width: 380px;
+            padding: 24px;
+            border: 1px solid rgba(214, 178, 94, 0.34);
+            border-radius: var(--radius);
+            background:
+                linear-gradient(145deg, rgba(255, 255, 255, 0.105), rgba(255, 255, 255, 0.026)),
+                #111722;
+            box-shadow: var(--shadow);
         }
-        .bet-modal h3 { margin-bottom: 16px; text-align: center; color: #ffd700; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
-        .bet-modal .current-bet-info {
+
+        .bet-modal h3 {
+            margin-bottom: 10px;
+            color: var(--text);
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 2rem;
+            font-weight: 500;
+            line-height: 1;
             text-align: center;
-            font-size: 0.8rem;
-            color: #c9a227;
-            margin-bottom: 12px;
         }
+
+        .bet-modal .current-bet-info {
+            min-height: 20px;
+            margin-bottom: 14px;
+            color: var(--muted);
+            font-size: 0.82rem;
+            font-weight: 700;
+            text-align: center;
+        }
+
         .bet-modal input {
             width: 100%;
-            padding: 18px;
-            font-size: 1.75rem;
+            margin-bottom: 14px;
+            padding: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: var(--radius);
+            background: rgba(8, 10, 13, 0.64);
+            color: var(--text);
+            appearance: textfield;
+            -moz-appearance: textfield;
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 2.1rem;
+            font-weight: 500;
             text-align: center;
-            background: #0d3320;
-            border: 2px solid #c9a227;
-            border-radius: 12px;
-            color: #ffd700;
-            margin-bottom: 16px;
         }
-        .bet-modal input::placeholder { color: rgba(201,162,39,0.4); }
+
+        .bet-modal input::-webkit-outer-spin-button,
+        .bet-modal input::-webkit-inner-spin-button {
+            margin: 0;
+            -webkit-appearance: none;
+        }
+
+        .bet-modal input:focus {
+            border-color: rgba(214, 178, 94, 0.62);
+            outline: none;
+        }
+
+        .bet-modal input::placeholder { color: rgba(247, 243, 234, 0.32); }
+
         .sr-only {
             position: absolute;
             width: 1px;
@@ -384,121 +808,167 @@
             white-space: nowrap;
             border: 0;
         }
+
         .quick-amounts {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 8px;
-            margin-bottom: 16px;
+            margin-bottom: 14px;
         }
+
         .quick-amt {
-            padding: 12px;
-            background: linear-gradient(180deg, #2d5a3d, #1a472a);
-            border: 1px solid #c9a227;
-            border-radius: 8px;
-            color: #ffd700;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            background: rgba(255, 255, 255, 0.055);
+            color: rgba(247, 243, 234, 0.82);
             font-size: 0.9rem;
-            cursor: pointer;
+            font-weight: 800;
             text-align: center;
         }
-        .quick-amt:active { background: #1a472a; }
+
+        .quick-amt:hover,
+        .quick-amt:focus-visible {
+            border-color: rgba(214, 178, 94, 0.5);
+            background: rgba(214, 178, 94, 0.1);
+            outline: none;
+        }
+
         .modal-actions {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 10px;
         }
-        .modal-actions.three-col { grid-template-columns: 1fr 1fr 1fr; }
-        .modal-btn {
-            padding: 14px;
-            border-radius: 10px;
-            border: none;
-            font-size: 0.95rem;
-            cursor: pointer;
-        }
-        .modal-btn.cancel { background: #2d5a3d; color: #c9a227; border: 2px solid #c9a227; }
-        .modal-btn.confirm { background: linear-gradient(180deg, #c9a227, #a08020); color: #1a472a; font-weight: 700; border: 2px solid #ffd700; }
-        .modal-btn.remove { background: #5c0000; color: #ff6b6b; border: 2px solid #ff6b6b; }
 
-        /* Point Established Popup */
+        .modal-actions.three-col { grid-template-columns: 1fr 1fr 1fr; }
+
+        .modal-btn {
+            padding: 0 12px;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            font-size: 0.82rem;
+            font-weight: 850;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .modal-btn:hover,
+        .modal-btn:focus-visible,
+        .odds-btn:hover,
+        .odds-btn:focus-visible,
+        .skip-btn:hover,
+        .skip-btn:focus-visible {
+            transform: translateY(-2px);
+            outline: none;
+        }
+
+        .modal-btn.cancel {
+            background: rgba(255, 255, 255, 0.055);
+            color: rgba(247, 243, 234, 0.8);
+        }
+
+        .modal-btn.confirm {
+            border-color: #f7f3ea;
+            background: #f7f3ea;
+            color: #0a0d12;
+        }
+
+        .modal-btn.remove {
+            border-color: rgba(255, 122, 110, 0.48);
+            background: rgba(255, 122, 110, 0.11);
+            color: var(--coral);
+        }
+
         .point-popup {
             display: none;
             position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.85);
+            inset: 0;
             align-items: center;
             justify-content: center;
             padding: 20px;
             z-index: 300;
+            background: rgba(0, 0, 0, 0.72);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
         }
+
         .point-popup.active { display: flex; }
+
         .point-popup-content {
-            background: linear-gradient(180deg, #1a472a, #0d3320);
-            padding: 28px;
-            border-radius: 16px;
             width: 100%;
-            max-width: 340px;
-            border: 3px solid #c9a227;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            max-width: 380px;
+            padding: 28px;
+            border: 1px solid rgba(214, 178, 94, 0.34);
+            border-radius: var(--radius);
+            background:
+                linear-gradient(145deg, rgba(255, 255, 255, 0.105), rgba(255, 255, 255, 0.026)),
+                #111722;
+            box-shadow: var(--shadow);
             text-align: center;
         }
+
         .point-popup h2 {
-            color: #ffd700;
-            font-size: 1.4rem;
+            color: var(--gold);
+            font-size: 0.78rem;
+            font-weight: 900;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
             margin-bottom: 8px;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
         }
+
         .point-popup .point-number {
-            font-size: 4rem;
-            font-weight: 700;
-            color: #fff;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
             margin: 16px 0;
+            color: #ffffff;
+            font-family: Georgia, "Times New Roman", serif;
+            font-size: 5rem;
+            font-weight: 500;
+            line-height: 0.9;
         }
+
         .point-popup .point-text {
-            color: #c9a227;
-            font-size: 1rem;
             margin-bottom: 20px;
+            color: var(--muted);
+            font-size: 1rem;
         }
+
         .odds-buttons {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 10px;
             margin-bottom: 16px;
         }
+
         .odds-btn {
-            padding: 14px 8px;
-            background: linear-gradient(180deg, #2d5a3d, #1a472a);
-            border: 2px solid #c9a227;
-            border-radius: 10px;
-            color: #ffd700;
+            border: 1px solid rgba(214, 178, 94, 0.34);
+            background: rgba(214, 178, 94, 0.1);
+            color: var(--gold);
             font-size: 0.9rem;
-            font-weight: 600;
-            cursor: pointer;
+            font-weight: 850;
         }
-        .odds-btn:active { background: linear-gradient(180deg, #1a472a, #0d3320); }
+
         .odds-btn.max-btn {
             grid-column: span 3;
-            background: linear-gradient(180deg, #c9a227, #a08020);
-            color: #1a472a;
-            border-color: #ffd700;
+            border-color: #f7f3ea;
+            background: #f7f3ea;
+            color: #0a0d12;
         }
-        .odds-btn.max-btn:active { background: linear-gradient(180deg, #a08020, #806010); }
+
         .point-popup .skip-btn {
-            padding: 12px 24px;
+            padding: 0 24px;
             background: transparent;
-            border: 2px solid rgba(201,162,39,0.5);
-            border-radius: 8px;
-            color: #c9a227;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            color: var(--muted);
             font-size: 0.9rem;
-            cursor: pointer;
+            font-weight: 850;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
         }
-        .point-popup .skip-btn:active { background: rgba(201,162,39,0.1); }
+
         .point-popup .timer-bar {
             height: 4px;
-            background: #c9a227;
-            border-radius: 2px;
             margin-top: 16px;
+            border-radius: 999px;
+            background: linear-gradient(90deg, var(--gold), var(--coral));
             animation: timerCountdown 10s linear forwards;
         }
+
         @keyframes timerCountdown {
             from { width: 100%; }
             to { width: 0%; }
@@ -506,19 +976,146 @@
 
         footer {
             text-align: center;
-            padding: 16px;
-            color: rgba(201,162,39,0.4);
-            font-size: 0.7rem;
+            padding: 22px 24px 34px;
+            color: var(--quiet);
+            font-size: 0.78rem;
+        }
+
+        @media (max-width: 980px) {
+            .table {
+                grid-template-columns: 1fr;
+            }
+
+            .dice-area {
+                grid-column: 1;
+                grid-row: auto;
+            }
+
+            .quick-actions {
+                grid-column: 1;
+            }
+        }
+
+        @media (max-width: 899px) {
+            .craps-page {
+                padding: 18px 18px 20px;
+            }
+
+            .craps-page::before {
+                inset: calc(var(--site-nav-mobile-height, 56px) + 14px) 14px 14px;
+            }
+
+            .submenu,
+            .bet-modal,
+            .point-popup {
+                top: var(--site-nav-mobile-height, 56px);
+            }
+        }
+
+        @media (max-width: 620px) {
+            .header {
+                grid-template-columns: 1fr;
+                align-items: start;
+                gap: 14px;
+                margin-bottom: 16px;
+                padding-top: 8px;
+            }
+
+            .header h1 {
+                font-size: clamp(3rem, 15vw, 4.2rem);
+            }
+
+            .balance-card {
+                width: 100%;
+                padding: 14px 16px;
+            }
+
+            .balance {
+                font-size: 1.95rem;
+            }
+
+            .table {
+                padding: 12px;
+                gap: 10px;
+            }
+
+            .status-bar {
+                min-height: 42px;
+                font-size: 0.76rem;
+                letter-spacing: 0.05em;
+            }
+
+            .main-bets {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 8px;
+            }
+
+            .bet-btn {
+                min-height: 84px;
+                padding: 12px 8px;
+            }
+
+            .bet-btn .label {
+                font-size: 0.64rem;
+                line-height: 1.15;
+            }
+
+            .bet-btn .amt {
+                margin-top: 8px;
+                font-size: 0.7rem;
+                line-height: 1.2;
+            }
+
+            .quick-actions {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .quick-btn {
+                padding: 0 8px;
+                font-size: 0.68rem;
+            }
+
+            .dice-area {
+                padding: 20px 16px;
+            }
+
+            .numbers-grid,
+            .center-grid {
+                grid-template-columns: repeat(2, 1fr);
+                padding-inline: 18px;
+            }
+
+            .modal-actions.three-col {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                transition-duration: 0.01ms !important;
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>Craps</h1>
-        <div class="balance" id="balance">$1,000</div>
-    </div>
+    <div class="craps-page">
+        <header class="header">
+            <div>
+                <p class="eyebrow">Dice table</p>
+                <h1>Craps</h1>
+            </div>
+            <div class="balance-card" aria-label="Current bankroll">
+                <span class="balance-label">Bankroll</span>
+                <div class="balance" id="balance">$1,000</div>
+            </div>
+        </header>
 
-    <div class="table">
+    <main class="table">
         <div class="status-bar" id="gameStatus">Place bets & roll</div>
 
         <div class="main-bets">
@@ -569,6 +1166,7 @@
             <div class="roll-result-burst" id="rollResultBurst" aria-live="polite" aria-atomic="true"></div>
             <button class="roll-btn" id="rollButton" onclick="rollDice()">ROLL DICE</button>
         </div>
+    </main>
     </div>
 
     <!-- Place Bets Submenu -->
@@ -646,7 +1244,7 @@
     </div>
 
     <footer>
-        <p>v3.0.0 &middot; Classic Green</p>
+        <p>v3.1.0 &middot; Palmer Gill</p>
     </footer>
 
     <script>

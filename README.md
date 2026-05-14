@@ -34,7 +34,7 @@ Open:
 http://127.0.0.1:8000
 ```
 
-The local server runs FastAPI and, with `LOCAL_SITE_ROOT=true`, also serves the static root page plus `shared/`, `stock-research/`, `poker/`, `craps/`, `bitcoin-chat/`, and `admin/`.
+The local server runs FastAPI and, with `LOCAL_SITE_ROOT=true`, also serves the static root page plus `assets/`, `shared/`, `stock-research/`, `poker/`, `craps/`, `blackjack/`, `bitcoin-chat/`, and `admin/`.
 
 Protected local app routes and API routes require Basic Auth. Set:
 
