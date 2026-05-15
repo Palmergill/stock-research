@@ -110,39 +110,9 @@
             display: grid;
             min-height: calc(100svh - clamp(96px, 10vw, 148px) - 32px);
             grid-template-columns: minmax(0, 1fr);
-            grid-template-rows: auto auto minmax(0, 1fr) auto;
+            grid-template-rows: auto minmax(0, 1fr);
             align-items: start;
             row-gap: clamp(26px, 4vw, 52px);
-        }
-
-        .masthead {
-            grid-column: 1;
-            grid-row: 1;
-            display: inline-flex;
-            flex-direction: column;
-            align-items: flex-start;
-            justify-content: flex-start;
-            gap: 14px;
-            justify-self: start;
-        }
-
-        .brand-lockup {
-            display: inline-flex;
-            align-items: center;
-            gap: 18px;
-            color: rgba(247, 243, 234, 0.78);
-            font-size: 0.78rem;
-            font-weight: 700;
-            letter-spacing: 0.22em;
-            text-transform: uppercase;
-        }
-
-        .brand-lockup img {
-            width: clamp(180px, 18vw, 280px);
-            height: clamp(180px, 18vw, 280px);
-            border: 0;
-            object-fit: contain;
-            box-shadow: none;
         }
 
         .social-links {
@@ -188,10 +158,10 @@
 
         .hero-content {
             grid-column: 1;
-            grid-row: 2;
+            grid-row: 1;
             align-self: start;
             width: min(720px, 100%);
-            margin-top: clamp(-78px, -5vw, -46px);
+            margin-top: 0;
             padding-bottom: clamp(16px, 3vw, 34px);
         }
 
@@ -584,7 +554,7 @@
 
             .hero-inner {
                 min-height: calc(100svh - var(--site-nav-mobile-height, 56px) - 82px);
-                grid-template-rows: auto auto minmax(0, 1fr) auto;
+                grid-template-rows: auto minmax(0, 1fr);
                 row-gap: 34px;
             }
 
@@ -592,14 +562,9 @@
                 inset: 14px;
             }
 
-            .brand-lockup img {
-                width: clamp(126px, 34vw, 172px);
-                height: clamp(126px, 34vw, 172px);
-            }
-
             .hero-content {
                 grid-column: 1;
-                grid-row: 2;
+                grid-row: 1;
                 align-self: start;
                 width: min(680px, 100%);
                 margin-top: 0;
@@ -691,12 +656,6 @@
         <header class="hero">
             <div class="hero-frame" aria-hidden="true"></div>
             <div class="hero-inner">
-                <div class="masthead">
-                    <a class="brand-lockup" href="/" aria-label="Palmer Gill home">
-                        <img src="/assets/palmer-gill-logo.png" alt="" aria-hidden="true">
-                    </a>
-                </div>
-
                 <div class="hero-content">
                     <p class="eyebrow">Personal studio</p>
                     <h1 class="hero-title">
