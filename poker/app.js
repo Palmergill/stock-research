@@ -1520,18 +1520,7 @@ function updateGameDisplay() {
     const myPlayer = gameState.players.find(p => p.id === playerId);
     if (myPlayer) {
         elements.yourChips.innerHTML = ChipStackVisualizer.render(myPlayer.chips, true, true);
-
-        // Update player avatar
-        const playerAvatar = AvatarManager.getPlayerAvatar(elements.yourName.textContent || 'Player');
-        const avatarHTML = AvatarManager.render(playerAvatar, 'medium');
-        // Check if avatar container exists, create if not
-        let avatarContainer = document.querySelector('.your-avatar-container');
-        if (!avatarContainer) {
-            avatarContainer = document.createElement('div');
-            avatarContainer.className = 'your-avatar-container';
-            elements.yourName.parentNode.insertBefore(avatarContainer, elements.yourName);
-        }
-        avatarContainer.innerHTML = avatarHTML;
+        document.querySelector('.your-avatar-container')?.remove();
         
         // Your cards with staggered animation (deal player cards first)
         const cardsHTML = myPlayer.hand.map((card, index) => renderCard(card, true, index)).join('');
@@ -1630,16 +1619,9 @@ function renderOpponent(player, seatClass = 'seat-1') {
     const recentAIAction = gameState.last_ai_action?.player_name === player.name ? gameState.last_ai_action : null;
     const recentActionClass = recentAIAction ? 'recent-ai-action' : '';
     const actionLabel = recentAIAction ? formatActionLabel(recentAIAction) : '';
-    // Use bot avatar for AI, generate from name for humans
-    const avatar = player.is_human 
-        ? AvatarManager.getPlayerAvatar(player.name)
-        : AvatarManager.getBotAvatar(player.name);
 
     return `
         <div class="opponent ${seatClass} ${recentActionClass} ${player.folded ? 'folded' : ''} ${isCurrent ? 'active-turn' : ''} ${isWinner ? 'winner' : ''}">
-            <div class="opponent-avatar">
-                ${AvatarManager.render(avatar, 'small')}
-            </div>
             <div class="opponent-cards">
                 ${showCards
                     ? player.hand.map(c => renderCard(c)).join('')
