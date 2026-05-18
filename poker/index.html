@@ -1143,6 +1143,7 @@
         }
 
         .opponent-action-badge {
+            display: inline-block;
             max-width: 100%;
             padding: 2px 6px;
             border-radius: 999px;
@@ -1151,7 +1152,9 @@
             font-size: clamp(8px, 2.2vw, 10px);
             font-weight: 900;
             line-height: 1.2;
-            white-space: nowrap;
+            text-align: center;
+            white-space: normal;
+            overflow-wrap: anywhere;
             box-shadow: 0 5px 12px rgba(0,0,0,0.25);
             animation: aiBadgeReveal 1.65s ease-out both;
         }
@@ -1542,6 +1545,7 @@
         
         .ai-action-text {
             display: inline-block;
+            max-width: min(calc(100vw - 44px), 420px);
             padding: 7px 14px;
             background: rgba(8, 15, 22, 0.82);
             border: 1px solid rgba(255, 215, 0, 0.32);
@@ -1549,7 +1553,8 @@
             font-size: 13px;
             font-weight: 800;
             color: #f6d35e;
-            white-space: nowrap;
+            white-space: normal;
+            overflow-wrap: anywhere;
             box-shadow: 0 8px 18px rgba(0,0,0,0.28);
         }
         
@@ -3364,7 +3369,7 @@
             flex: 1 1 auto;
             min-height: 420px;
             margin: 0;
-            overflow: hidden;
+            overflow: visible;
             padding: clamp(64px, 11vh, 96px) clamp(20px, 5vw, 42px) clamp(42px, 8vh, 64px);
             border: 10px solid #5a301c;
             border-radius: var(--radius);
