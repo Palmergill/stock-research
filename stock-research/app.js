@@ -2080,6 +2080,10 @@ function drawPriceChart(data) {
     const gradient = ctx.createLinearGradient(0, 0, 0, 300);
     gradient.addColorStop(0, isPositive ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)');
     gradient.addColorStop(1, isPositive ? 'rgba(16, 185, 129, 0.02)' : 'rgba(239, 68, 68, 0.02)');
+    const isCoarsePointer = window.matchMedia?.('(pointer: coarse)').matches;
+    const chartEvents = isCoarsePointer
+        ? ['click']
+        : ['mousemove', 'mouseout', 'click', 'touchstart', 'touchmove'];
     
     // Create Chart.js chart
     priceChartInstance = new Chart(ctx, {
@@ -2114,6 +2118,7 @@ function drawPriceChart(data) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            events: chartEvents,
             interaction: {
                 intersect: false,
                 mode: 'index'
