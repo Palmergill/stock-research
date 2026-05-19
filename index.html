@@ -66,11 +66,11 @@
 
         .hero {
             position: relative;
-            min-height: 100svh;
+            min-height: 80svh;
             display: grid;
             align-items: stretch;
             overflow: hidden;
-            padding: clamp(96px, 10vw, 148px) 24px 32px;
+            padding: clamp(84px, 8vw, 118px) 24px 32px;
         }
 
         .hero::before {
@@ -108,7 +108,7 @@
             width: min(100%, var(--max));
             margin: 0 auto;
             display: grid;
-            min-height: calc(100svh - clamp(96px, 10vw, 148px) - 32px);
+            min-height: calc(80svh - clamp(84px, 8vw, 118px) - 32px);
             grid-template-columns: minmax(0, 1fr);
             grid-template-rows: auto minmax(0, 1fr);
             align-items: start;
@@ -185,6 +185,7 @@
         }
 
         .hero-title {
+            width: min(620px, 100%);
             max-width: min(620px, 100%);
             line-height: 1;
         }
@@ -277,7 +278,7 @@
         .section {
             width: min(100%, var(--max));
             margin: 0 auto;
-            padding: clamp(72px, 10vw, 126px) 24px;
+            padding: clamp(64px, 8vw, 104px) 24px;
         }
 
         .section-header {
@@ -309,11 +310,12 @@
 
         .project-card {
             position: relative;
-            min-height: 410px;
+            min-height: 520px;
             grid-column: span 4;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
+            justify-content: flex-start;
+            gap: 22px;
             overflow: hidden;
             padding: 26px;
             border: 1px solid var(--line);
@@ -357,7 +359,7 @@
 
         .project-card.featured {
             grid-column: span 8;
-            min-height: 508px;
+            min-height: 570px;
         }
 
         .project-top,
@@ -370,6 +372,39 @@
             display: flex;
             justify-content: space-between;
             gap: 20px;
+        }
+
+        .project-screenshot {
+            position: relative;
+            z-index: 1;
+            aspect-ratio: 16 / 9;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: var(--radius);
+            background: rgba(0, 0, 0, 0.22);
+            box-shadow: 0 18px 50px rgba(0, 0, 0, 0.22);
+        }
+
+        .project-card.featured .project-screenshot {
+            aspect-ratio: 16 / 7.5;
+        }
+
+        .project-screenshot img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: top center;
+            filter: saturate(0.96) contrast(1.02);
+            transition: transform 260ms ease;
+        }
+
+        .project-card:hover .project-screenshot img,
+        .project-card:focus-visible .project-screenshot img {
+            transform: scale(1.035);
+        }
+
+        .project-bottom {
+            margin-top: auto;
         }
 
         .project-number {
@@ -538,7 +573,7 @@
             .project-card,
             .project-card.featured {
                 grid-column: span 6;
-                min-height: 430px;
+                min-height: 500px;
             }
 
             .featured .project-title {
@@ -548,12 +583,12 @@
 
         @media (max-width: 899px) {
             .hero {
-                min-height: calc(100svh - var(--site-nav-mobile-height, 56px));
+                min-height: auto;
                 padding: 58px 18px 24px;
             }
 
             .hero-inner {
-                min-height: calc(100svh - var(--site-nav-mobile-height, 56px) - 82px);
+                min-height: auto;
                 grid-template-rows: auto minmax(0, 1fr);
                 row-gap: 34px;
             }
@@ -578,8 +613,12 @@
             .project-card,
             .project-card.featured {
                 grid-column: 1 / -1;
-                min-height: 390px;
+                min-height: 500px;
                 padding: 22px;
+            }
+
+            .project-card.featured .project-screenshot {
+                aspect-ratio: 16 / 9;
             }
 
             .project-icon {
@@ -596,11 +635,17 @@
 
         @media (max-width: 520px) {
             .hero-title {
-                max-width: 100%;
+                width: min(100%, 330px);
+                max-width: min(100%, 330px);
+            }
+
+            .hero-copy {
+                margin-top: 22px;
             }
 
             .hero-actions {
                 flex-direction: column;
+                margin-top: 28px;
             }
 
             .button {
@@ -709,6 +754,9 @@
                                 </svg>
                             </span>
                         </div>
+                        <figure class="project-screenshot">
+                            <img src="/assets/project-screenshots/stock-research.png" alt="Stock Research app screenshot" loading="lazy" decoding="async">
+                        </figure>
                         <div class="project-bottom">
                             <h3 class="project-title">Stock Research</h3>
                             <p class="project-description">A market research workspace for comparing real-time data, company fundamentals, and financial trends with interactive charts and practical metrics close at hand.</p>
@@ -731,6 +779,9 @@
                                 </svg>
                             </span>
                         </div>
+                        <figure class="project-screenshot">
+                            <img src="/assets/project-screenshots/poker.png" alt="Texas Hold'em Poker app screenshot" loading="lazy" decoding="async">
+                        </figure>
                         <div class="project-bottom">
                             <h3 class="project-title">Texas Hold'em Poker</h3>
                             <p class="project-description">A mobile-friendly No-Limit Hold'em game with realistic table flow, hand evaluation, and AI opponents that make each hand feel different.</p>
@@ -754,6 +805,9 @@
                                 </svg>
                             </span>
                         </div>
+                        <figure class="project-screenshot">
+                            <img src="/assets/project-screenshots/craps.png" alt="Craps app screenshot" loading="lazy" decoding="async">
+                        </figure>
                         <div class="project-bottom">
                             <h3 class="project-title">Craps</h3>
                             <p class="project-description">A single-player Vegas-style dice table with Pass Line, Come, proposition bets, point handling, payouts, and fast browser gameplay.</p>
@@ -777,6 +831,9 @@
                                 </svg>
                             </span>
                         </div>
+                        <figure class="project-screenshot">
+                            <img src="/assets/project-screenshots/blackjack.png" alt="Blackjack app screenshot" loading="lazy" decoding="async">
+                        </figure>
                         <div class="project-bottom">
                             <h3 class="project-title">Blackjack</h3>
                             <p class="project-description">A crisp single-player casino table with a six-deck shoe, splits, doubles, insurance, dealer rules, and testable rule logic.</p>
@@ -799,6 +856,9 @@
                                 </svg>
                             </span>
                         </div>
+                        <figure class="project-screenshot">
+                            <img src="/assets/project-screenshots/bitcoin-chat.png" alt="Bitcoin Chat app screenshot" loading="lazy" decoding="async">
+                        </figure>
                         <div class="project-bottom">
                             <h3 class="project-title">Bitcoin Chat</h3>
                             <p class="project-description">A plain-English interface for exploring blocks, transactions, mempool fees, node status, and read-only blockchain data.</p>
@@ -821,6 +881,9 @@
                                 </svg>
                             </span>
                         </div>
+                        <figure class="project-screenshot">
+                            <img src="/assets/project-screenshots/docs.png" alt="Site Documentation screenshot" loading="lazy" decoding="async">
+                        </figure>
                         <div class="project-bottom">
                             <h3 class="project-title">Site Documentation</h3>
                             <p class="project-description">A compact reference for website paths, backend routes, local development, deployment, authentication, providers, and tests.</p>
